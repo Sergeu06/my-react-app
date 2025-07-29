@@ -1,0 +1,156 @@
+/* Запрет выделения текста по всему приложению */
+body,
+#root,
+.safe-container {
+  user-select: none;
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* IE/Edge */
+}
+
+/* Запрет перетаскивания и выделения изображений */
+img {
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: auto; /* Чтобы клики на картинки оставались активными, если нужно */
+}
+
+.game-version {
+  position: fixed;
+  bottom: 1px;
+  left: 1px;
+  font-size: 10px;
+  color: rgba(125, 125, 125); /* Полупрозрачный белый цвет */
+  z-index: 10000; /* Чтобы надпись была поверх других элементов */
+}
+/* Затемнённый фон */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #121212;
+  color: #f0f0f0;
+  overflow-x: hidden;
+}
+.safe-container {
+  min-height: var(--tg-viewport-stable-height, 100vh);
+  padding-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top));
+  padding-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom));
+  padding-left: var(--tg-safe-area-inset-left, env(safe-area-inset-left));
+  padding-right: var(--tg-safe-area-inset-right, env(safe-area-inset-right));
+  display: flex;
+  flex-direction: column;
+}
+/* Контейнер для фонового изображения */
+.background-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url("/public/photo_2025-07-29_06-44-47.jpg"); /* замените на свой путь */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: -2;
+}
+/* Тёмное затемнение поверх изображения с виньеткой */
+.background-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0) 40%,
+    rgba(0, 0, 0, 0.5) 75%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Основа панели */
+.custom-nav {
+  background-color: #2e2e2e !important;
+  border-top: 1px solid #444;
+  height: 55px;
+}
+
+/* Все элементы */
+.custom-nav .MuiBottomNavigationAction-root {
+  position: relative;
+  color: #aaa !important;
+  font-size: 12px;
+  transition: color 0.3s ease, transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Активный элемент */
+.custom-nav .MuiBottomNavigationAction-root.Mui-selected {
+  color: #ffa500 !important;
+  transform: scale(1.07); /* эффект увеличения */
+}
+
+/* Анимация значка */
+.custom-nav .MuiBottomNavigationAction-root .MuiSvgIcon-root {
+  transition: transform 0.3s ease;
+}
+
+.custom-nav .MuiBottomNavigationAction-root.Mui-selected .MuiSvgIcon-root {
+  transform: scale(1.15);
+}
+
+/* Анимация текста */
+.custom-nav .MuiBottomNavigationAction-label {
+  transition: opacity 0.3s ease;
+  opacity: 0.7;
+}
+
+.custom-nav
+  .MuiBottomNavigationAction-root.Mui-selected
+  .MuiBottomNavigationAction-label {
+  font-weight: bold;
+  opacity: 1;
+}
+
+/* Подчёркивание — регулируем height здесь */
+.custom-nav .MuiBottomNavigationAction-root::after {
+  content: "";
+  position: absolute;
+  bottom: 3px; /* отступ от нижнего края */
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  transform-origin: center;
+  width: 50%;
+  height: 4px; /* <— здесь настраиваешь толщину полоски */
+  background-color: #ffa500;
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(255, 165, 0, 0.4);
+  transition: transform 0.4s ease, opacity 0.4s ease;
+  opacity: 0;
+}
+
+/* Включаем полосу у активной вкладки */
+.custom-nav .MuiBottomNavigationAction-root.Mui-selected::after {
+  transform: translateX(-50%) scaleX(1);
+  opacity: 1;
+}
+
+/* === Удаляет синие выделения при клике/тапе по элементам === */
+*:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+*:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-focus-ring-color: transparent;
+}

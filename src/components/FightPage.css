@@ -1,0 +1,325 @@
+.fight-overlay,
+.fight-countdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.fight-overlay {
+  background-color: rgba(0, 0, 0, 0.6);
+  flex-direction: column;
+  text-align: center;
+}
+
+.fight-spinner {
+  border: 5px solid #2f2f2f;
+  border-top: 5px solid #ffa500; /* ярко-оранжевый */
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  animation: spin 1s linear infinite;
+  box-shadow: 0 0 8px #ffa500;
+}
+
+.fight-time {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 25px;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 5px #ffa500;
+}
+
+.fight-btn-cancel {
+  padding: 12px 30px;
+  font-size: 18px;
+  border-radius: 12px;
+  border: none;
+  background-color: #2f2f2f;
+  color: #ffa500;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  box-shadow: 0 0 10px #ffa500;
+}
+
+.fight-btn-cancel:hover {
+  background-color: #ffa500;
+  color: #2f2f2f;
+  box-shadow: 0 0 15px #ffb933;
+}
+
+.fight-countdown-overlay {
+  background-color: rgba(0, 0, 0, 0.85);
+  font-size: 64px;
+  font-weight: 900;
+  text-shadow: 0 0 15px #ffa500;
+  user-select: none;
+  animation: fadeInScale 0.6s ease forwards;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.fight-container {
+  text-align: center;
+  margin-top: 55vh;
+  pointer-events: auto;
+  transition: opacity 0.4s ease;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px; /* расстояние между кнопками */
+}
+
+.fight-container.disabled {
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+.fight-btn-search {
+  padding: 15px 40px;
+  font-size: 20px;
+  border-radius: 14px;
+  border: none;
+  background-color: #2f2f2f;
+  color: #ffa500;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 0 12px #ffa500;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.fight-btn-search:hover {
+  background-color: #ffa500;
+  color: #2f2f2f;
+  box-shadow: 0 0 18px #ffb933;
+}
+
+.fight-btn-raid {
+  padding: 15px 40px;
+  font-size: 20px;
+  border-radius: 14px;
+  border: none;
+  background-color: #2f2f2f;
+  color: #ff4c4c; /* красный текст */
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 0 12px #ff4c4c;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.fight-btn-raid:hover {
+  background-color: #ff4c4c;
+  color: #2f2f2f;
+  box-shadow: 0 0 18px #ff6666;
+}
+
+.fight-tip {
+  position: fixed;
+  bottom: 120px;
+  left: 10%;
+  transform: translateX(-5%);
+  background-color: #2f2f2f99;
+  padding: 12px 20px;
+  border-radius: 12px;
+  color: #ffa500;
+  font-size: 16px;
+  animation: fadeTip 0.5s ease;
+  z-index: 3000;
+}
+
+@keyframes fadeTip {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.skill-slot-container {
+  position: fixed;
+  bottom: 70px; /* отступ от нижней границы */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  text-align: center;
+}
+
+.skill-slot-button {
+  padding: 10px 20px;
+  background-color: #ffa500;
+  color: black;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s ease;
+}
+.skill-slot-button:hover {
+  background-color: #ff8c00;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+}
+
+.modal-window {
+  background-color: #2e2e2e;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 100%;
+  color: white;
+  text-align: center;
+}
+
+.close-button {
+  float: right;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.skill-option-button {
+  margin: 5px;
+  padding: 8px 12px;
+  background-color: #444;
+  color: white;
+  border: 1px solid #888;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.skill-option-button:hover {
+  background-color: #666;
+}
+
+/* --- Лидерборд в правом верхнем углу --- */
+.leaderboard-container {
+  position: fixed;
+  top: 35px;
+  right: 20px;
+  background-color: rgba(30, 30, 30, 0.85);
+  border-radius: 10px;
+  padding: 10px;
+  width: 250px;
+  color: #ffa500;
+  cursor: pointer;
+  z-index: 150000;
+  user-select: none;
+}
+.leaderboard-container h4 {
+  margin: 0 0 10px 0;
+  text-align: center;
+}
+.leaderboard-container div {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.leaderboard-container div img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin: 0 8px 0 4px;
+  object-fit: cover;
+}
+
+/* --- Модальное окно полного лидерборда --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 200000;
+  padding: 20px;
+}
+.modal-content {
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  padding: 20px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80%;
+  overflow-y: auto;
+  color: #ffa500;
+  position: relative;
+  box-shadow: 0 0 15px #ffa500aa;
+}
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+.modal-content button.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: #ffa500;
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+}
+.modal-content div.player-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 6px;
+}
+.modal-content div.player-row img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 12px;
+  object-fit: cover;
+}

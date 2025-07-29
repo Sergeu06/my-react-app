@@ -1,0 +1,90 @@
+.player-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 0;
+  box-sizing: border-box;
+  z-index: 1000;
+  background: linear-gradient(
+    to top,
+    rgba(30, 30, 30, 0.95),
+    transparent 100px
+  );
+  pointer-events: none;
+}
+
+.player-bottom-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.player-hand-platform {
+  position: relative;
+  max-width: 900px;
+  margin-bottom: 0px;
+  background: linear-gradient(145deg, #2e2e2e, #1a1a1a);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  padding: 24px 28px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  z-index: 2;
+
+  /* pointer-events: none;  <-- Удалите эту строку */
+  user-select: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.5),
+    inset 0 8px 16px rgba(255, 165, 0, 0.05),
+    inset 0 -6px 12px rgba(0, 0, 0, 0.2);
+  overflow: visible;
+}
+
+/* Явно сохраняем тень при фокусе и активном состоянии */
+.player-hand-platform:focus,
+.player-hand-platform:active {
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.5),
+    inset 0 8px 16px rgba(255, 165, 0, 0.05),
+    inset 0 -6px 12px rgba(0, 0, 0, 0.2);
+  outline: none;
+}
+
+.player-hand-platform::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  right: 10%;
+  height: 8px;
+  background: radial-gradient(ellipse at center, #ffa50033, transparent);
+  opacity: 0.7;
+  z-index: 0;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.5),
+    inset 0 8px 16px rgba(255, 165, 0, 0.05),
+    inset 0 -6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.energy-indicator {
+  position: absolute;
+  top: -12px;
+  left: -18px;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #00ff00; /* ярко-зелёный */
+  text-shadow: 1px 1px 2px #000;
+  padding: 4px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  user-select: none;
+}

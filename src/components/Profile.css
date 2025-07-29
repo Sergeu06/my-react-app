@@ -1,0 +1,434 @@
+.profile-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5vh 5vw;
+  color: #f0f0f0;
+  min-height: 100vh;
+  animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.profile-avatar img {
+  width: 32vw;
+  max-width: 140px;
+  height: auto;
+  border-radius: 50%;
+  border: 3px solid #ffa500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.profile-avatar img:hover {
+  transform: scale(1.05);
+}
+
+.profile-info {
+  text-align: center;
+  margin: 2vh 0;
+}
+
+.profile-info h2 {
+  font-size: 6vw;
+  color: #ffa500;
+  margin-bottom: 1vh;
+}
+
+.profile-info .uid {
+  font-size: 3.5vw;
+  font-family: monospace;
+  color: #aaa;
+}
+
+.profile-stats {
+  width: 100%;
+  margin-top: 2vh;
+  padding-bottom: 70px; /* или margin-bottom: 70px; */
+}
+
+.stat {
+  padding: 10px;
+  font-size: 4.2vw;
+  border-bottom: 1px solid #444;
+  color: #f0f0f0;
+}
+
+/* Skeleton */
+.profile-skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 15vh;
+  gap: 10px;
+}
+
+.skeleton-circle,
+.skeleton-line {
+  background: linear-gradient(90deg, #3a3a3a 25%, #4a4a4a 50%, #3a3a3a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+
+.skeleton-circle {
+  width: 32vw;
+  height: 32vw;
+  border-radius: 50%;
+}
+
+.skeleton-line {
+  height: 14px;
+  border-radius: 8px;
+  width: 60vw;
+}
+
+.skeleton-line.short {
+  width: 30vw;
+}
+
+.skeleton-line.long {
+  width: 70vw;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-window {
+  position: relative; /* Добавлено для позиционирования крестика */
+  background: #2e2e2e;
+  padding: 20px;
+  border-radius: 16px;
+  color: #f0f0f0;
+  max-width: 80vw;
+  text-align: center;
+  animation: fadeIn 0.3s ease-in-out;
+  box-shadow: 0 0 20px rgba(255, 165, 0, 0.2);
+}
+
+.modal-window a {
+  color: #ffa500;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  border: none;
+  background: none;
+  font-size: 22px;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.close-button:hover {
+  color: #ffa500;
+}
+
+.error-message {
+  text-align: center;
+  font-size: 16px;
+  margin-top: 40px;
+  color: #ff6b6b;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.profile-avatar {
+  position: relative; /* Для позиционирования дочерних элементов */
+  cursor: pointer;
+}
+
+.avatar-level {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background-color: #ffa500;
+  color: #222;
+  font-weight: bold;
+  font-size: 14px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 12px;
+  box-shadow: 0 0 6px #ffa500;
+  user-select: none;
+  pointer-events: none; /* Чтобы не мешать клику на аватар */
+}
+
+.level-reward-wrapper {
+  margin-top: 30px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.level-reward-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  padding: 10px;
+  box-sizing: border-box;
+  border-top: 1px solid #444;
+  border-bottom: 1px solid #444;
+  scroll-behavior: smooth;
+}
+
+.level-reward-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  min-width: max-content;
+}
+
+.level-marker {
+  flex: 0 0 60px; /* фиксированная ширина */
+  height: 60px;
+  background-color: #2a2a2a;
+  color: #ccc;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  border: 2px solid #444;
+  position: relative;
+}
+
+.level-marker.earned {
+  background-color: #336633;
+  border-color: #55aa55;
+  color: #aaffaa;
+}
+
+.level-marker.special {
+  border-color: #ffa500;
+  background-color: #332200;
+  color: #ffa500;
+}
+
+.claim-reward {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  padding: 3px 6px;
+  background-color: #ffa500;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.showcase-container {
+  margin: 20px 0;
+}
+.showcase-slots {
+  display: flex;
+  gap: 12px;
+  flex-wrap: nowrap; /* по умолчанию один ряд */
+}
+.showcase-slot {
+  width: 120px;
+  height: 160px;
+  border: 2px dashed #aaa;
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #1a1a1a;
+}
+.showcase-card-image {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 6px;
+}
+
+/* При экранах <= 450px делаем два столбца */
+@media (max-width: 520px) {
+  .showcase-slots {
+    flex-wrap: wrap; /* разрешаем перенос */
+    justify-content: center; /* центрируем блоки */
+  }
+  .showcase-slot {
+    width: calc(50% - 6px); /* половина ширины минус половина gap */
+    margin-bottom: 12px; /* вертикальный отступ между рядами */
+  }
+}
+.remove-slot-btn {
+  position: absolute;
+  top: 2px;
+  left: 4px; /* сдвигаем влево */
+  background: rgba(255, 0, 0, 0.7);
+  border: none;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 3px;
+  z-index: 10; /* добавьте, чтобы была выше изображения */
+  width: 24px; /* фиксированный размер для удобства */
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+}
+
+.empty-slot-placeholder {
+  color: #777;
+  font-size: 0.9em;
+  text-align: center;
+}
+select {
+  width: 100%;
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px;
+  cursor: pointer;
+}
+select option {
+  background: #222;
+  color: #fff;
+}
+
+.card-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 10, 10, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99;
+}
+
+.card-modal-content {
+  background: #2e2e2e;
+  border-radius: 16px;
+  height: 40%;
+  padding: 1.5rem 2rem; /* чуть больше паддингов для ощущения простора */
+  width: 95vw; /* увеличить ширину до 95% экрана */
+  max-width: 1200px; /* ограничить максимальную ширину для больших экранов */
+  max-height: 95vh; /* чуть больше высоты */
+  overflow-y: auto;
+  position: relative;
+  z-index: 10;
+  display: flex; /* сделаем флекс-контейнером для внутреннего контента */
+  gap: 20px; /* промежуток между колонками */
+}
+
+.card-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.close-button {
+  margin-top: 1rem;
+  padding: 0.5rem 1.5rem;
+  background: #ff4f4f;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.card-style {
+  background-color: rgba(30, 30, 30, 0.3); /* Прозрачный фон */
+  color: #f0f0f0;
+  border: 1px solid #2e2e2e; /* Непрозрачный контур */
+  border-radius: 16px;
+  max-height: 250px; /* Ограничение максимальной высоты картинки */
+  padding: 1rem;
+  width: 180px;
+  aspect-ratio: 3 / 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: start;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  z-index: 10;
+}
+
+.card-style img {
+  max-width: 100%;
+  max-height: 300px; /* Ограничение максимальной высоты картинки */
+  object-fit: contain;
+  border-radius: 12px;
+  margin-top: 8px;
+  box-shadow: 0 0 8px rgba(255, 165, 0, 0.7);
+  background-color: #222;
+  display: block;
+}
+
+.card-stat-text {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  color: #ffa500;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+  text-shadow: 0 0 5px #000;
+  pointer-events: none; /* чтобы не мешал кликам */
+  user-select: none;
+}
+
+.deck-selector {
+  margin-bottom: 1rem;
+  color: #ffa500;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+.deck-selector select {
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: #222;
+  color: #fff;
+  border: 1px solid #ffa500;
+  cursor: pointer;
+}

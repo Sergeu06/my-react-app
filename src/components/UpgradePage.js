@@ -1,0 +1,533 @@
+import React, { useEffect, useState } from "react";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { ref, get as rtdbGet, update as rtdbUpdate } from "firebase/database";
+import { db, database } from "./firebase";
+import { useUser } from "./UserContext";
+import "./UpgradePage.css";
+import { toRoman } from "../utils/toRoman";
+
+function UpgradePage() {
+  const { userData } = useUser();
+  const uid = userData?.uid;
+
+  const [upgradeResult, setUpgradeResult] = useState(null);
+  const [animating, setAnimating] = useState(false);
+  const [animationSuccess, setAnimationSuccess] = useState(null);
+
+  const [playerCards, setPlayerCards] = useState([]);
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [loadingUpgrade, setLoadingUpgrade] = useState(false);
+
+  useEffect(() => {
+    if (!uid) return;
+    const fetchCards = async () => {
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) return;
+
+      const userData = userSnap.data();
+      const allIds = new Set([
+        ...(userData.cards || []),
+        ...(userData.deck_raid || []),
+        ...(userData.deck_pvp || []),
+      ]);
+      const cardIds = Array.from(allIds);
+
+      const deckRaid = new Set(userData.deck_raid || []);
+      const deckPvp = new Set(userData.deck_pvp || []);
+
+      const cardPromises = cardIds.map(async (cardId) => {
+        const cardSnap = await rtdbGet(ref(database, `cards/${cardId}`));
+        if (!cardSnap.exists()) return null;
+        const cardData = cardSnap.val();
+        const inRaid = deckRaid.has(cardId);
+        const inPvp = deckPvp.has(cardId);
+        return {
+          ...cardData,
+          card_id: cardId,
+          inRaid,
+          inPvp,
+        };
+      });
+
+      const allCards = await Promise.all(cardPromises);
+      const validCards = allCards.filter(Boolean);
+      setPlayerCards(validCards);
+    };
+
+    fetchCards();
+  }, [uid]);
+
+  const handleCardSelect = async (card) => {
+    if (!card.original_id) {
+      setSelectedCard(card);
+      setShowCardModal(false);
+      return;
+    }
+
+    try {
+      const templateRef = doc(db, "cards", card.original_id);
+      const templateSnap = await getDoc(templateRef);
+      const templateData = templateSnap.exists() ? templateSnap.data() : {};
+
+      setSelectedCard({
+        ...card,
+        templateDot: Array.isArray(templateData.damage_over_time)
+          ? templateData.damage_over_time
+          : [],
+      });
+    } catch (error) {
+      console.error("Ошибка загрузки шаблона карты:", error);
+      setSelectedCard(card); // fallback
+    }
+
+    setShowCardModal(false);
+  };
+
+  const getBaseSuccessRate = (level) => {
+    const lvl = Math.max(1, Number(level));
+    if (lvl === 1) return 0.75;
+    if (lvl === 2) return 0.5;
+    if (lvl === 3) return 0.25;
+    if (lvl === 4) return 0.2;
+    if (lvl === 5) return 0.15;
+
+    const rate = 0.15 - 0.05 * (lvl - 5);
+    return rate > 0.01 ? rate : 0.01;
+  };
+
+  const getSuccessRate = (level, bonus) => {
+    const baseRate = getBaseSuccessRate(level);
+    const total = baseRate + (bonus || 0);
+    return total > 1 ? 1 : total;
+  };
+
+  const upgradeSelectedCard = async () => {
+    if (!selectedCard || !uid || !userData) return;
+
+    setLoadingUpgrade(true);
+    setUpgradeResult(null);
+    setAnimationSuccess(null);
+    setAnimating(true);
+
+    const currentLevel = selectedCard.lvl || 1;
+    const upgradeCost = currentLevel * 100;
+    const secretCost = Math.max(0, currentLevel - 1);
+
+    if ((userData.balance ?? 0) < upgradeCost) {
+      alert(`Недостаточно монет: требуется ${upgradeCost}`);
+      setLoadingUpgrade(false);
+      setAnimating(false);
+      return;
+    }
+
+    if ((userData.SecretRecipes ?? 0) < secretCost) {
+      alert(`Недостаточно SecretRecipes: требуется ${secretCost}`);
+      setLoadingUpgrade(false);
+      setAnimating(false);
+      return;
+    }
+
+    const currentBonus = selectedCard.upgradeBonus || 0;
+    const successRate = getSuccessRate(currentLevel, currentBonus);
+    const success = Math.random() < successRate;
+
+    try {
+      // 1. Получаем пользователя
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) throw new Error("Пользователь не найден");
+      const userDoc = userSnap.data();
+
+      // 2. Получаем данные карты из RTDB
+      const cardRef = ref(database, `cards/${selectedCard.card_id}`);
+      const cardSnap = await rtdbGet(cardRef);
+      if (!cardSnap.exists()) throw new Error("Карта не найдена");
+      const cardData = cardSnap.val();
+
+      const updatedCard = { ...cardData };
+
+      // 3. Загружаем шаблон карты из Firestore по original_id
+      if (!updatedCard.original_id)
+        throw new Error("original_id карты отсутствует");
+      const templateRef = doc(db, "cards", updatedCard.original_id);
+      const templateSnap = await getDoc(templateRef);
+      if (!templateSnap.exists()) throw new Error("Шаблон карты не найден");
+      const templateData = templateSnap.data();
+
+      // Определяем изначальную длину damage_over_time из шаблона
+      const originalDot = Array.isArray(templateData.damage_over_time)
+        ? templateData.damage_over_time
+        : null;
+      const originalDotLength = originalDot ? originalDot.length : 0;
+
+      if (success) {
+        updatedCard.lvl = (updatedCard.lvl || 1) + 1;
+        updatedCard.bonus = updatedCard.bonus || {};
+
+        const inc = Number(updatedCard.increase ?? 1);
+
+        if ("damage" in updatedCard) {
+          updatedCard.bonus.damage = (updatedCard.bonus.damage || 0) + inc;
+        }
+        if ("heal" in updatedCard) {
+          updatedCard.bonus.heal = (updatedCard.bonus.heal || 0) + inc;
+        }
+        if ("damage_multiplier" in updatedCard) {
+          updatedCard.bonus.damage_multiplier = parseFloat(
+            ((updatedCard.bonus.damage_multiplier || 0) + inc).toFixed(3)
+          );
+        }
+        if (Array.isArray(updatedCard.damage_over_time)) {
+          const dot = [...updatedCard.damage_over_time];
+          const baseSum = (originalDot || []).reduce(
+            (sum, val) => sum + val,
+            0
+          );
+          const dynamicInc = (baseSum / 100) * inc;
+
+          if (dot.length < originalDotLength + 1) {
+            dot.push(dynamicInc);
+          } else {
+            dot[originalDotLength] += dynamicInc;
+          }
+
+          updatedCard.damage_over_time = dot;
+        }
+
+        if (Array.isArray(updatedCard.damage_delayed)) {
+          const base = updatedCard.damage_delayed[2] || 0;
+          const incDelayed = Number(
+            updatedCard.bonus?.damage_delayed_percent_increase ?? 0.1
+          );
+          updatedCard.damage_delayed[2] = +(base + incDelayed).toFixed(3);
+          updatedCard.bonus.damage_delayed_percent =
+            updatedCard.damage_delayed[2];
+        }
+
+        updatedCard.upgradeBonus = 0;
+      } else {
+        updatedCard.upgradeBonus = (updatedCard.upgradeBonus || 0) + 0.0025;
+      }
+
+      // Сохраняем обновления
+      await rtdbUpdate(cardRef, updatedCard);
+      await updateDoc(userRef, {
+        balance: (userDoc.balance ?? 0) - upgradeCost,
+        SecretRecipes: (userDoc.SecretRecipes ?? 0) - secretCost,
+      });
+
+      setAnimationSuccess(success);
+
+      setTimeout(() => {
+        setSelectedCard({ ...updatedCard, card_id: selectedCard.card_id });
+        setPlayerCards((prev) =>
+          prev.map((c) =>
+            c.card_id === selectedCard.card_id
+              ? { ...updatedCard, card_id: selectedCard.card_id }
+              : c
+          )
+        );
+
+        setUpgradeResult(success ? "success" : "fail");
+        setLoadingUpgrade(false);
+        setAnimating(false);
+        setTimeout(() => setUpgradeResult(null), 2000);
+        setAnimationSuccess(null);
+      }, 2200);
+    } catch (e) {
+      console.error("Ошибка улучшения:", e);
+      alert("Произошла ошибка при улучшении.");
+      setLoadingUpgrade(false);
+      setAnimating(false);
+      setAnimationSuccess(null);
+    }
+  };
+
+  const renderCardDetails = (card) => {
+    const details = [];
+
+    if (card.random_value !== undefined)
+      details.push(`Случайное значение: ${card.random_value}`);
+    const bonus = card.bonus || {};
+    if (card.damage !== undefined) {
+      const total = card.damage + (bonus.damage || 0);
+      details.push(`Урон: ${total} `);
+    }
+
+    if (card.heal !== undefined) {
+      const total = card.heal + (bonus.heal || 0);
+      details.push(`Лечение: ${total} `);
+    }
+
+    if (card.damage_multiplier !== undefined) {
+      const total = card.damage_multiplier + (bonus.damage_multiplier || 0);
+      details.push(`Множитель урона: x${total.toFixed(2)} `);
+    }
+
+    if (
+      Array.isArray(card.damage_over_time) &&
+      card.damage_over_time.length > 0
+    ) {
+      const dotString = card.damage_over_time.join("-");
+      details.push(`Урон по ходам: ${dotString}`);
+    }
+
+    // Добавим отображение damage_delayed, если есть
+    if (Array.isArray(card.damage_delayed)) {
+      const delayedPercent = card.damage_delayed[2] || 0;
+      details.push(`Задержанный урон: ${delayedPercent.toFixed(3)}`);
+    }
+
+    if (card.remove_multiplier) details.push(`Удаляет множитель`);
+
+    return (
+      <div className="card-details">
+        {details.map((line, i) => (
+          <p key={i}>{line}</p>
+        ))}
+      </div>
+    );
+  };
+
+  const renderPreviewCard = () => {
+    if (!selectedCard) {
+      return (
+        <div className="empty-card">
+          <div className="card-name">Предпросмотр</div>
+        </div>
+      );
+    }
+
+    const preview = {
+      ...selectedCard,
+      bonus: { ...(selectedCard.bonus || {}) },
+      lvl: (selectedCard.lvl || 1) + 1,
+    };
+
+    const inc = Number(preview.increase) || 1;
+
+    if ("damage" in preview)
+      preview.bonus.damage = (preview.bonus.damage || 0) + inc;
+    if ("heal" in preview) preview.bonus.heal = (preview.bonus.heal || 0) + inc;
+    if ("damage_multiplier" in preview)
+      preview.bonus.damage_multiplier =
+        (preview.bonus.damage_multiplier || 0) + inc;
+
+    // Условно формируем damage_over_time только если есть исходный массив с элементами
+    if (
+      Array.isArray(selectedCard.damage_over_time) &&
+      selectedCard.damage_over_time.length > 0
+    ) {
+      const dot = [...selectedCard.damage_over_time];
+      const templateDot = Array.isArray(selectedCard.templateDot)
+        ? selectedCard.templateDot
+        : [];
+      const templateLength = templateDot.length;
+      const baseSum = templateDot.reduce((sum, val) => sum + val, 0);
+      const dynamicInc = (baseSum / 100) * inc;
+
+      if (dot.length < templateLength + 1) {
+        dot.push(dynamicInc);
+      } else {
+        dot[templateLength] += dynamicInc;
+      }
+
+      preview.damage_over_time = dot;
+    } else {
+      // Если damage_over_time нет — удаляем это поле, чтобы не отображалось
+      delete preview.damage_over_time;
+    }
+
+    if (Array.isArray(preview.damage_delayed)) {
+      const prev = preview.damage_delayed;
+      const currPercent = prev[2] || 0;
+      const incDelayed = preview.bonus?.damage_delayed_percent_increase || 0.1;
+      preview.damage_delayed[2] = +(currPercent + incDelayed).toFixed(3);
+    }
+
+    return (
+      <>
+        <div className="card-name">{preview.name}</div>
+        <div className="card-image-wrapper">
+          <img src={preview.image_url} alt="preview" />
+          {preview.lvl && (
+            <div className="card-level-overlay">{toRoman(preview.lvl)}</div>
+          )}
+        </div>
+        {renderCardDetails(preview)}
+      </>
+    );
+  };
+
+  return (
+    <div
+      className={`upgrade-container ${
+        animationSuccess !== null
+          ? animationSuccess
+            ? "success-glow"
+            : "fail-glow"
+          : ""
+      }`}
+    >
+      <h1 className="upgrade-title">Повышение ранга</h1>
+
+      <div
+        className="upgrade-panel"
+        style={{ display: "flex", alignItems: "center" }}
+      >
+        <div className="card-style">{renderPreviewCard()}</div>
+
+        <div
+          className="arrow-up"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            margin: "0 20px",
+            position: "relative",
+            fontSize: "24px",
+            fontWeight: "bold",
+          }}
+        >
+          ↑
+          <div
+            className="success-rate"
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "100%",
+              transform: "translate(10px, -50%)",
+              fontWeight: "normal",
+              fontSize: "16px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {selectedCard
+              ? Math.round(
+                  getSuccessRate(
+                    Number(selectedCard.lvl) || 1,
+                    selectedCard.upgradeBonus || 0
+                  ) * 100
+                ) + "%"
+              : ""}
+          </div>
+        </div>
+
+        <div
+          className={`card-style clickable
+              ${animating ? "upgrade-glow-pulse" : ""}
+              ${
+                animationSuccess === null && animating
+                  ? "upgrade-glow-flicker"
+                  : ""
+              }
+              ${animationSuccess === true ? "upgrade-success-glow" : ""}
+              ${animationSuccess === false ? "upgrade-fail-shake-glow" : ""}
+            `}
+          style={{ position: "relative" }}
+          onClick={() => setShowCardModal(true)}
+        >
+          {animating && <div className="upgrade-mystic-fog" />}
+          {selectedCard ? (
+            <>
+              <div className="card-name">{selectedCard.name}</div>
+              <div className="card-image-wrapper">
+                <img src={selectedCard.image_url} alt="selected" />
+                {selectedCard.lvl && (
+                  <div className="card-level-overlay">
+                    {toRoman(selectedCard.lvl)}
+                  </div>
+                )}
+              </div>
+              {renderCardDetails(selectedCard)}
+            </>
+          ) : (
+            <div className="empty-card">
+              <div className="card-name">Выберите карту</div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <button
+        className="upgrade-button"
+        onClick={upgradeSelectedCard}
+        disabled={!selectedCard || loadingUpgrade || animating}
+      >
+        {loadingUpgrade ? (
+          "Улучшение..."
+        ) : selectedCard ? (
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span>{(selectedCard.lvl || 1) * 100}</span>
+            <img
+              src="moneta.png"
+              alt="coin"
+              style={{ width: 20, height: 20 }}
+            />
+            <span>+</span>
+            <span>{Math.max(0, (selectedCard.lvl || 1) - 1)}</span>
+            <img
+              src="Secret Recipes.png"
+              alt="secret"
+              style={{ width: 20, height: 20 }}
+            />
+          </span>
+        ) : (
+          "Улучшить"
+        )}
+      </button>
+
+      {upgradeResult === "success" && (
+        <div className="upgrade-result upgrade-success">Успешно!</div>
+      )}
+      {upgradeResult === "fail" && (
+        <div className="upgrade-result upgrade-failure">Провал!</div>
+      )}
+
+      {showCardModal && (
+        <div className="card-modal">
+          <div className="card-modal-content">
+            <h2>Выберите карту</h2>
+            <div className="card-list">
+              {playerCards.map((card) => (
+                <div
+                  className="card-style clickable"
+                  key={card.card_id}
+                  onClick={() => handleCardSelect(card)}
+                >
+                  <div className="card-name">{card.name}</div>
+                  <img src={card.image_url} alt={card.name} />
+                  {renderCardDetails(card)}
+
+                  {(card.inRaid || card.inPvp) && (
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: "14px",
+                        color: "#ffa500",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      В колоде {card.inRaid ? "(Рейд)" : ""}{" "}
+                      {card.inPvp ? "(ПвП)" : ""}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button
+              className="close-button"
+              onClick={() => setShowCardModal(false)}
+            >
+              Закрыть
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default UpgradePage;

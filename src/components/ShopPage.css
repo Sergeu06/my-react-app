@@ -1,0 +1,860 @@
+/* Основной контейнер */
+.shop-container {
+  padding: 20px;
+  background-color: var(--secondary-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  font-family: Arial, sans-serif;
+  color: #333;
+}
+
+/* Заголовок */
+.shop-container h1 {
+  text-align: center;
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* Карточка игрока */
+.player-cards h2,
+.available-cards h2 {
+  font-size: 24px;
+  color: #444;
+  margin-bottom: 10px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Всегда 2 колонки */
+  gap: 1.5em 2em;
+  padding: 0.5em;
+  justify-items: center;
+  padding: 1em;
+  padding-bottom: 70px; /* или margin-bottom: 70px; */
+}
+
+/* Стиль карточек */
+.card {
+  background-color: #1e1e1e;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  padding: 15px;
+  text-align: center;
+  position: relative; /* добавьте это для корректного позиционирования */
+  font-family: "Arial", sans-serif;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Изображения карт */
+.card img {
+  width: 100%;
+  height: 100%; /* Масштабировать изображение по высоте */
+  object-fit: contain; /* Вписывать изображение, сохраняя пропорции */
+  border-radius: 8px;
+  margin-bottom: 10px;
+  max-height: 200px; /* Ограничить максимальную высоту (можно настроить) */
+}
+
+.card .card-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin-top: 8px;
+}
+
+.card .card-price,
+.card .card-quantity {
+  font-size: 14px;
+  color: #666;
+}
+/* Бейдж количества карт */
+.card-quantity-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.7); /* Полупрозрачный фон */
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 12px;
+  z-index: 1; /* Поверх содержимого карточки */
+}
+
+/* Кнопка покупки */
+.card button,
+.overlay button,
+.confirmation-overlay button {
+  background-color: #373a40;
+  color: #dc5f00;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.card button:hover,
+.overlay button:hover,
+.confirmation-overlay button:hover {
+  background-color: #ffffff;
+}
+
+/* Оверлей для отображения подробной информации */
+.overlay,
+.confirmation-overlay {
+  position: fixed;
+  color: #373a40;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.overlay-content,
+.confirmation-content {
+  background: #686d76;
+  padding: 20px;
+  border-radius: 15px;
+  max-width: 400px;
+  width: 80%;
+  text-align: center;
+  box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.overlay-content h3 {
+  font-size: 22px;
+  color: #bababa;
+}
+
+.overlay-image {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+/* Сообщение об ошибке */
+.error-message {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.price-row {
+  display: inline-flex;
+  gap: 5px;
+  font-size: 18px; /* или то, что у тебя по умолчанию */
+  line-height: 1; /* это помогает избежать смещений */
+}
+
+.price-row img {
+  height: 18px !important;
+  width: 18px !important;
+  object-fit: contain;
+}
+
+/* Неактивная карточка */
+.inactive-card {
+  background-color: #bababa;
+  cursor: pointer;
+  opacity: 0.6;
+  border: 2px dashed #ccc;
+}
+
+.inactive-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Неактивная кнопка */
+.buy-btn:disabled {
+  color: #666;
+  pointer-events: none;
+}
+
+/* Центрирование label и input */
+.overlay-content label {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Центрирует по горизонтали */
+  margin-top: 10px;
+  font-size: 16px;
+  color: #f0f0f0;
+  text-align: center;
+}
+
+.overlay-content input[type="number"] {
+  width: 100%;
+  max-width: 120px;
+  padding: 6px 10px;
+  margin-top: 4px;
+  font-size: 16px;
+  border: 1px solid #ffa500;
+  border-radius: 6px;
+  background-color: #1f1f1f;
+  color: #fff;
+  transition: border-color 0.2s ease-in-out;
+  text-align: center; /* Центрирует цифры внутри поля */
+}
+
+.overlay-content input[type="number"]:focus {
+  outline: none;
+  border-color: #ffcc66;
+  box-shadow: 0 0 4px #ffa500;
+}
+
+.tabs {
+  margin-top: 50px;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  gap: 10px;
+}
+
+.tab {
+  flex: 1;
+  padding: 18px;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  background-color: #000000;
+  color: #ffffff;
+  transition: color 0.4s ease-in-out, font-weight 0.4s ease-in-out,
+    transform 0.4s ease-in-out;
+  position: relative;
+  z-index: 1;
+  font-weight: 400;
+  opacity: 1;
+  transform: scale(1);
+  letter-spacing: 0.5px;
+}
+
+.tab::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  height: 3px;
+  width: 0;
+  background: #ffa500;
+  box-shadow: none;
+  transition: width 0.4s ease-in-out, box-shadow 0.4s ease-in-out;
+}
+
+.tab.active {
+  color: #ffa500;
+  font-weight: 400;
+  opacity: 1;
+  animation: neonPulseOnce 1s ease-in-out 1 forwards;
+}
+
+@keyframes neonPulseOnce {
+  0% {
+    color: #ffa500;
+    text-shadow: none;
+  }
+  50% {
+    color: #ffb733;
+    text-shadow: 0 0 8px #ffb733, 0 0 16px #ffb733;
+  }
+  100% {
+    color: #ffa500;
+    text-shadow: none;
+  }
+}
+
+.tab.active::after {
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(
+    to bottom,
+    #ffa500 0%,
+    rgba(255, 165, 0, 0.6) 60%,
+    rgba(255, 165, 0, 0.05) 100%
+  );
+  box-shadow: 0 4px 12px rgba(255, 165, 0, 0.8),
+    0 20px 24px rgba(255, 165, 0, 0.6);
+  filter: blur(1px);
+  border-radius: 2px;
+  /* Позиция: чтобы не мешать тексту */
+  pointer-events: none;
+}
+
+.tab:hover:not(.active) {
+  background-color: #111111;
+  color: #ffffff;
+  opacity: 1;
+}
+
+/* Добавляем анимацию для "погашения" карты */
+.card.removing {
+  animation: removeCard 5s forwards;
+}
+
+@keyframes removeCard {
+  0% {
+    background-color: red;
+    transform: scale(1);
+  }
+  50% {
+    background-color: darkred;
+    transform: scale(1.1);
+  }
+  100% {
+    background-color: transparent;
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+/* -------------------- ТЕМА ДЛЯ РЫНКА -------------------- */
+.market-container {
+  color: #e0e0e0;
+  padding: 20px;
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* Заголовок */
+.market-container h1 {
+  color: #f5f5f5;
+}
+
+/* Карточки */
+.market-container .card {
+  background-color: #1e1e1e;
+  color: #f0f0f0;
+  border: 1px solid #2e2e2e;
+}
+
+.market-container .card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 20px rgba(255, 140, 0, 0.2);
+}
+
+/* Текст внутри карточек */
+.market-container .card-name {
+  color: #ffb347;
+}
+
+.market-container .card-price,
+.market-container .card-quantity {
+  color: #bbbbbb;
+}
+
+/* Кнопки */
+.market-container button {
+  background-color: #252525;
+  color: #ffa500;
+  border: 1px solid #444;
+  transition: background-color 0.3s ease;
+}
+
+.market-container button:hover {
+  background-color: #ffa500;
+  color: #000;
+}
+
+/* Пагинация */
+.market-container .pagination {
+  margin-bottom: 50px; /* отступ снизу, чтобы не перекрывались */
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 10px;
+  color: #ddd;
+  font-size: 16px;
+}
+
+.market-container .pagination button {
+  background-color: #1c1c1c;
+  color: #ccc;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #333;
+}
+
+.market-container .pagination button:hover {
+  background-color: #ffa500;
+  color: #000;
+}
+
+.page-btn {
+  background-color: #373a40;
+  color: #dc5f00;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+  background-color: #555960;
+}
+
+.page-btn:disabled {
+  color: #666;
+  cursor: not-allowed;
+  background-color: #2a2c30;
+}
+
+.skeleton-card {
+  width: 100%;
+  max-width: 160px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  background-color: #1a1a1a;
+  border-radius: 10px;
+  padding: 16px;
+  animation: pulse 1.5s infinite ease-in-out;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+.skeleton-text {
+  width: 80%;
+  height: 20px;
+}
+
+.skeleton-image {
+  width: 100%;
+  height: 80%;
+}
+
+.skeleton-price,
+.skeleton-seller {
+  width: 60%;
+  height: 16px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Улучшенное модальное окно в темной теме */
+.market-container .overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(18, 18, 18, 0.85); /* затемнённый фон */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+}
+
+.market-container .overlay-content {
+  position: relative;
+  background-color: #1c1c1c;
+  color: #f0f0f0;
+  padding: 30px 40px;
+  border-radius: 12px;
+  box-shadow: 0 0 25px rgba(255, 165, 0, 0.2);
+  max-width: 500px;
+  width: 90%;
+  animation: slideUp 0.3s ease;
+}
+
+.market-container .overlay-content h3 {
+  margin-top: 0;
+  font-size: 24px;
+  color: #ffa500;
+  margin-bottom: 20px;
+}
+
+.market-container .overlay-content p {
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.market-container .overlay-content button {
+  padding: 10px 20px;
+  background-color: #2e2e2e;
+  color: #ffa500;
+  border: 1px solid #444;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.market-container .overlay-content button:hover {
+  background-color: #ffa500;
+  color: #000;
+  box-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from {
+    background-color: rgba(18, 18, 18, 0);
+  }
+  to {
+    background-color: rgba(18, 18, 18, 0.85);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.card-frame-wrapper > .card-border-frame {
+  position: absolute;
+  top: -0.5em;
+  left: -0.5em;
+  width: calc(100% + 1em);
+  height: calc(100% + 1em);
+  object-fit: fill;
+  z-index: 11;
+  pointer-events: none;
+}
+
+.framed-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 40%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.12),
+    transparent
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Название карты */
+.card-name {
+  font-weight: bold;
+  text-align: center;
+  font-size: 20px; /* 👉 размер шрифта названия */
+}
+
+/* Описание карты */
+.card-description {
+  margin-top: 6px; /* 👉 отступ сверху от названия */
+  font-size: 14px; /* 👉 размер шрифта описания */
+  text-align: center;
+  color: #ccc;
+  flex-grow: 1; /* 👉 описание занимает всё свободное пространство */
+  overflow-y: auto; /* 👉 если текста много — появляется прокрутка */
+}
+
+/* Значок количества карт */
+.card-quantity-badge {
+  position: absolute;
+  top: 40px; /* 👉 отступ от верхнего края */
+  right: 10px; /* 👉 отступ от правого края */
+  background-color: #444;
+  padding: 2px 5px; /* 👉 внутренние отступы бейджа */
+  font-size: 10px; /* 👉 размер текста количества */
+  border-radius: 6px;
+  color: #fff;
+  z-index: 100;
+}
+
+/* Строка с ценой и иконкой */
+.price-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px; /* 👉 размер текста цены */
+  color: #ffd700;
+  margin-top: 50px; /* добавьте этот отступ снизу для расстояния от нижнего края */
+}
+
+/* Иконка монеты рядом с ценой */
+.price-row img {
+  width: 14px; /* 👉 ширина иконки монеты */
+  height: 14px;
+  margin-left: 0px; /* 👉 отступ между ценой и иконкой */
+}
+
+@media (min-width: 600px) {
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+}
+@media (max-width: 450px) {
+  .framed-container {
+    height: 100%; /* увеличиваем высоту карты на широком экране */
+  }
+  /* При уменьшении размера лучше подкорректировать margin в grid, чтобы не было лишних пробелов */
+  .grid {
+    gap: 0em 1em;
+    padding: 0.5em;
+  }
+}
+
+.sort-refresh-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  margin-top: -10px; /* ⬅️ Поднимаем выше */
+  gap: 10px;
+}
+
+.refresh-button {
+  background-color: #2e2e2e;
+  color: #ffa500;
+  border: 1px solid #ffa500;
+  border-radius: 5px;
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 100px; /* минимальная ширина */
+  transition: background-color 0.3s ease;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.refresh-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.refresh-button:hover:not(:disabled) {
+  color: #2e2e2e;
+}
+
+.sort-select {
+  background-color: #2e2e2e;
+  color: #ffa500;
+  border-radius: 5px;
+  padding: 6px 12px;
+  font-size: 14px;
+  height: 36px;
+  min-width: 180px;
+  display: flex;
+  align-items: center;
+  user-select: none;
+  box-sizing: border-box;
+  transition: border 0.3s ease, box-shadow 0.3s ease;
+}
+
+.sort-select .MuiOutlinedInput-notchedOutline {
+  border-color: #444 !important;
+}
+
+.sort-select.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #444 !important;
+  box-shadow: none !important;
+}
+
+.sort-select .MuiSelect-select {
+  display: flex;
+  align-items: center;
+  padding: 0;
+}
+
+.sort-select:focus {
+  outline: none;
+  box-shadow: 0 0 6px #ffa500;
+}
+
+.search-refresh-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* выравнивание слева */
+  gap: 0.75rem; /* расстояние между input и кнопкой */
+  margin-bottom: 1rem;
+  flex-wrap: nowrap; /* чтобы не переносилось на новую строку */
+}
+
+.search-bar {
+  position: relative;
+  flex: 1;
+  max-width: 90%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  background-color: #1a1a1a;
+  border: 1px solid #555;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 8px 12px 8px 36px;
+  background: transparent;
+  color: #f0f0f0;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  z-index: 2;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  color: #ffa500;
+  z-index: 2;
+}
+
+.placeholder-mask {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 36px; /* отступ, соответствующий padding-left у input */
+  right: 12px; /* отступ, соответствующий padding-right у input */
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.scrolling-text {
+  white-space: nowrap;
+  color: #888;
+  font-size: 13px;
+  animation: scroll-text 10s linear infinite;
+}
+
+@keyframes scroll-text {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.card-category {
+  margin-bottom: 2em;
+}
+
+.category-title {
+  font-size: 1.4em;
+  color: #ffa500;
+  margin-bottom: 0.5em;
+  border-bottom: 1px solid #444;
+  padding-bottom: 0.3em;
+}
+
+.info-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: #ffa500;
+  color: #2e2e2e;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  z-index: 10;
+}
+.info-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.info-btn:hover {
+  background-color: #ffb733;
+}
+.fade-in {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.fade-in.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.box-contents {
+  opacity: 0;
+  transform: translateY(10px);
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.4s ease, transform 0.4s ease, max-height 0.4s ease;
+}
+
+.box-contents.show {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 500px;
+}
+
+.box-contents.hiding {
+  opacity: 0;
+  transform: translateY(10px);
+  max-height: 0;
+}

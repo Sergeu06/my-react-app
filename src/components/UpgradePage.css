@@ -1,0 +1,489 @@
+body,
+button {
+  font-family: "Rubik", sans-serif;
+}
+
+.upgrade-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  color: #fff;
+  min-height: 100vh;
+  position: relative;
+  z-index: 10;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.upgrade-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.card-style {
+  background-color: rgba(30, 30, 30, 0.3); /* Прозрачный фон */
+  color: #f0f0f0;
+  border: 1px solid #2e2e2e; /* Непрозрачный контур */
+  border-radius: 16px;
+  padding: 1rem;
+  width: 180px;
+  aspect-ratio: 3 / 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: start;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  z-index: 10;
+}
+
+.card-style:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 20px rgba(255, 140, 0, 0.2);
+}
+
+.card-style img {
+  display: block;
+  width: 150px;
+  height: auto;
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 0 auto 16px;
+  transition: transform 0.3s ease;
+}
+
+.card-style .card-name {
+  color: #ffb347;
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 0.3rem;
+}
+
+.card-style .card-details {
+  color: #bbbbbb;
+  font-size: 0.85rem;
+}
+
+.card-style.clickable {
+  cursor: pointer;
+}
+
+.empty-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  opacity: 0.3;
+}
+
+.arrow-up {
+  font-size: 2rem;
+  text-align: center;
+}
+
+.success-rate {
+  font-size: 0.9rem;
+  color: #ffa500;
+}
+
+.upgrade-button {
+  margin-top: 1rem;
+  padding: 0.75rem 2rem;
+  background-color: rgba(25, 25, 25, 0.3); /* Прозрачный фон */
+
+  color: #ffa500;
+  border: 1px solid #444;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  position: relative;
+  z-index: 10;
+}
+
+.upgrade-button:hover {
+  background-color: #333;
+}
+
+.card-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 10, 10, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99;
+}
+
+.card-modal-content {
+  background: #2e2e2e;
+  border-radius: 16px;
+  padding: 1rem;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: 10;
+}
+
+.card-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.close-button {
+  margin-top: 1rem;
+  padding: 0.5rem 1.5rem;
+  background: #ff4f4f;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.upgrade-result {
+  font-size: 1.5rem;
+  margin-top: 1rem;
+  font-weight: bold;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.upgrade-success {
+  color: #00ff88;
+  animation: pulseSuccess 0.8s ease-in-out;
+}
+
+.upgrade-failure {
+  color: #ff4f4f;
+  animation: shakeFailure 0.6s ease-in-out;
+}
+
+@keyframes pulseSuccess {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+}
+
+@keyframes shakeFailure {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+  75% {
+    transform: translateX(-6px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.upgrade-container.success-glow {
+  animation: glow-green 1.5s ease forwards;
+}
+
+.upgrade-container.fail-glow {
+  animation: glow-red 1.5s ease forwards;
+}
+
+@keyframes glow-green {
+  0% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+  50% {
+    background-color: rgba(0, 255, 0, 0.3);
+    box-shadow: 0 0 30px 10px rgba(0, 255, 0, 0.7);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+@keyframes glow-red {
+  0% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+  50% {
+    background-color: rgba(255, 0, 0, 0.3);
+    box-shadow: 0 0 30px 10px rgba(255, 0, 0, 0.7);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+/* Эффекты */
+.upgrade-wave {
+  position: fixed;
+  bottom: -100px;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: wave-up 2s ease forwards;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+@keyframes wave-up {
+  0% {
+    bottom: -100px;
+  }
+  100% {
+    bottom: 100vh;
+  }
+}
+
+.upgrade-mystic-fog {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.05) 60%,
+    transparent 100%
+  );
+  filter: blur(6px);
+  animation: fogPulse 2.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+
+@keyframes fogPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.upgrade-glow-pulse {
+  box-shadow: 0 0 10px 5px rgba(255, 165, 0, 0.7);
+  animation: pulseGlow 2s ease-in-out forwards;
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 5px 2px rgba(255, 165, 0, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 20px 8px rgba(255, 165, 0, 0.7);
+    transform: scale(1.05);
+  }
+  100% {
+    box-shadow: 0 0 8px 3px rgba(255, 165, 0, 0.5);
+    transform: scale(1);
+  }
+}
+
+.upgrade-glow-flicker {
+  animation: flickerGlow 1.2s ease-in-out infinite;
+}
+
+@keyframes flickerGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 15px 6px rgba(255, 165, 0, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 25px 10px rgba(255, 140, 0, 1);
+  }
+}
+
+.upgrade-success-glow {
+  animation: successGlow 1.8s ease forwards;
+}
+
+@keyframes successGlow {
+  0% {
+    box-shadow: 0 0 10px 3px #00ff88;
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 40px 12px #00ff88;
+    transform: scale(1.1);
+  }
+  100% {
+    box-shadow: 0 0 15px 5px #00ff88;
+    transform: scale(1);
+  }
+}
+
+.upgrade-fail-shake-glow {
+  animation: failShakeGlow 1.5s ease forwards;
+  box-shadow: 0 0 10px 3px #ff4f4f;
+  transform-origin: center;
+}
+
+@keyframes failShakeGlow {
+  0% {
+    transform: translateX(0) scale(1);
+  }
+  15% {
+    transform: translateX(-6px) scale(1.05);
+  }
+  30% {
+    transform: translateX(6px) scale(1.05);
+  }
+  45% {
+    transform: translateX(-6px) scale(1.05);
+  }
+  60% {
+    transform: translateX(6px) scale(1.05);
+  }
+  75% {
+    transform: translateX(-3px) scale(1.05);
+  }
+  90% {
+    transform: translateX(3px) scale(1.05);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+  }
+}
+
+.upgrade-in-progress {
+  animation: introSuspense 2s ease-in-out 1;
+}
+
+@keyframes introSuspense {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 10px 2px rgba(255, 165, 0, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px 8px rgba(255, 165, 0, 0.8);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px 2px rgba(255, 165, 0, 0.4);
+  }
+}
+
+.upgrade-final-flicker {
+  animation: flickerGlow 1.5s ease-in-out forwards;
+  animation-delay: 2s;
+}
+
+.upgrade-scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 20%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.6), transparent);
+  animation: scanSlide 3s ease-in-out forwards;
+  z-index: 20;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  border-radius: 16px;
+}
+
+.upgrade-blur-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(0px);
+  animation: blurFocus 3s ease-in-out forwards;
+  z-index: 5;
+  pointer-events: none;
+}
+
+@keyframes scanSlide {
+  0% {
+    top: -20%;
+  }
+  65% {
+    top: 65%;
+  }
+  85% {
+    top: 85%;
+  }
+  100% {
+    top: 120%;
+  }
+}
+
+@keyframes blurFocus {
+  0%,
+  60% {
+    backdrop-filter: blur(0px);
+  }
+  65% {
+    backdrop-filter: blur(3px);
+  }
+  85% {
+    backdrop-filter: blur(5px);
+  }
+  100% {
+    backdrop-filter: blur(0px);
+  }
+}
+
+.card-image-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.card-image-wrapper img {
+  display: block;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.upgrade-title {
+  margin-top: 40px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #ffa500; /* дополнительный цвет */
+}
