@@ -7,10 +7,11 @@ import {
   db,
   database,
 } from "./firebase";
-import { ref } from "firebase/database";
 import "./Collection.css";
 import FramedCard from "../utils/FramedCard";
 import CardModal from "./CardModal";
+import EditIcon from "@mui/icons-material/Edit";
+import CloseIcon from "@mui/icons-material/Close";
 
 function Collection({ uid }) {
   const [playerCards, setPlayerCards] = useState([]);
@@ -20,15 +21,11 @@ function Collection({ uid }) {
   const [selectedCard, setSelectedCard] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const MAX_DECK_SIZE = 20;
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const isAddingToDeck = useRef(false);
   const isRemovingFromDeck = useRef(false);
-
-  const holdTimer = useRef(null);
-  const touchStart = useRef({ x: 0, y: 0 });
-
-  const hasMoved = useRef(false); // <-- добавлено
+  const MAX_DECK_SIZE = 20;
 
   useEffect(() => {
     const savedDeck = localStorage.getItem("collection_activeDeck");
@@ -48,30 +45,6 @@ function Collection({ uid }) {
       () => setNotifications((prev) => prev.filter((n) => n.id !== id)),
       4000
     );
-  };
-
-  const renderCardStats = (card) => {
-    const stats = [];
-    const bonus = card.bonus || {};
-
-    if (card.damage !== undefined) {
-      const total = card.damage + (bonus.damage || 0);
-      stats.push(`Урон: ${total}`);
-    }
-    if (card.heal !== undefined) {
-      const total = card.heal + (bonus.heal || 0);
-      stats.push(`Лечение: ${total}`);
-    }
-    if (card.damage_multiplier !== undefined) {
-      const total = (
-        card.damage_multiplier + (bonus.damage_multiplier || 0)
-      ).toFixed(2);
-      stats.push(`Множитель урона: x${total}`);
-    }
-    if (card.remove_multiplier) {
-      stats.push(`Удаляет множитель`);
-    }
-    return stats;
   };
 
   useEffect(() => {
@@ -169,26 +142,6 @@ function Collection({ uid }) {
     }
   };
 
-  const handleSell = async (card) => {
-    const userRef = doc(db, "users", uid);
-    const userSnap = await getDoc(userRef);
-    const userData = userSnap.data();
-
-    const deck_pvp = userData.deck_pvp || [];
-    const deck_raid = userData.deck_raid || [];
-    const inventory = userData.cards || [];
-
-    const updatedDeckPvp = deck_pvp.filter((id) => id !== card.id);
-    const updatedDeckRaid = deck_raid.filter((id) => id !== card.id);
-    const updatedInventory = inventory.filter((id) => id !== card.id);
-
-    await updateDoc(userRef, {
-      deck_pvp: updatedDeckPvp,
-      deck_raid: updatedDeckRaid,
-      cards: updatedInventory,
-    });
-  };
-
   const handleAddToDeck = async (event, card) => {
     event.stopPropagation();
     if (isAddingToDeck.current) return;
@@ -226,7 +179,6 @@ function Collection({ uid }) {
         return;
       }
 
-      // удаляем карту из всех списков (обеспечивает чистоту)
       const userRef = doc(db, "users", uid);
       const userSnap = await getDoc(userRef);
       const userData = userSnap.exists() ? userSnap.data() : {};
@@ -266,46 +218,6 @@ function Collection({ uid }) {
       isRemovingFromDeck.current = false;
     }
   };
-  const handlePointerMove = (event) => {
-    const dx = Math.abs(event.clientX - touchStart.current.x);
-    const dy = Math.abs(event.clientY - touchStart.current.y);
-    const moveThreshold = 10; // в пикселях
-
-    if (dx > moveThreshold || dy > moveThreshold) {
-      hasMoved.current = true;
-      clearTimeout(holdTimer.current); // немедленно отменяем открытие
-    }
-  };
-  // Обработчики удержания — открывают модальное окно на 500мс
-  const handleDeckCardPointerDown = (card, event) => {
-    holdTimer.current = setTimeout(() => {
-      setSelectedCard(card);
-    }, 300);
-  };
-
-  const handleDeckCardPointerUp = (card, event) => {
-    clearTimeout(holdTimer.current);
-    if (selectedCard && selectedCard.id === card.id) return;
-    handleRemoveFromDeck(card);
-  };
-
-  const handleInventoryCardPointerDown = (card, event) => {
-    hasMoved.current = false;
-    touchStart.current = { x: event.clientX, y: event.clientY };
-
-    holdTimer.current = setTimeout(() => {
-      if (!hasMoved.current) {
-        setSelectedCard(card);
-      }
-    }, 300);
-  };
-
-  const handleInventoryCardPointerUp = (card, event) => {
-    clearTimeout(holdTimer.current);
-    if (hasMoved.current) return; // если был скролл — игнорировать
-    if (selectedCard && selectedCard.id === card.id) return;
-    handleAddToDeck({ stopPropagation: () => {} }, card);
-  };
 
   const handleCloseModal = () => setSelectedCard(null);
 
@@ -318,6 +230,7 @@ function Collection({ uid }) {
           </div>
         ))}
       </div>
+
       <div className="tabs-container">
         <div className="tabs">
           <button
@@ -334,26 +247,36 @@ function Collection({ uid }) {
           </button>
         </div>
       </div>
-      <div className="deck-info">
+
+      <button
+        className="edit-floating-button"
+        onClick={() => setIsEditMode((prev) => !prev)}
+      >
+        {isEditMode ? (
+          <CloseIcon style={{ color: "#ffa500" }} />
+        ) : (
+          <EditIcon style={{ color: "#ffa500" }} />
+        )}
+      </button>
+
+      <div className="deck-info highlight-text">
         {getCurrentDeck().length} / {MAX_DECK_SIZE}
       </div>
 
-      {getCurrentDeck().length === 0 ? (
-        <div>Ваша колода пуста. Добавьте карты из инвентаря.</div>
-      ) : (
-        <div className="grid">
-          {getCurrentDeck().map((card, index) => (
-            <div
-              key={`deck-${card.id}-${index}`}
-              onPointerDown={(e) => handleDeckCardPointerDown(card, e)}
-              onPointerUp={(e) => handleDeckCardPointerUp(card, e)}
-              style={{ cursor: "pointer" }}
-            >
-              <FramedCard card={card} showLevel={true} />
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="grid">
+        {getCurrentDeck().map((card, index) => (
+          <div
+            key={`deck-${card.id}-${index}`}
+            onClick={() => {
+              if (isEditMode) handleRemoveFromDeck(card);
+              else setSelectedCard(card);
+            }}
+            style={{ cursor: "pointer" }}
+          >
+            <FramedCard card={card} showLevel={true} />
+          </div>
+        ))}
+      </div>
 
       <h1>Хранилище</h1>
       {isLoading ? (
@@ -373,9 +296,11 @@ function Collection({ uid }) {
           {playerCards.map((card, index) => (
             <div
               key={`inventory-${card.id}-${index}`}
-              onPointerDown={(e) => handleInventoryCardPointerDown(card, e)}
-              onPointerUp={(e) => handleInventoryCardPointerUp(card, e)}
-              onPointerMove={handlePointerMove}
+              onClick={() => {
+                if (isEditMode)
+                  handleAddToDeck({ stopPropagation: () => {} }, card);
+                else setSelectedCard(card);
+              }}
               style={{ cursor: "pointer" }}
             >
               <FramedCard card={card} showLevel={true} />

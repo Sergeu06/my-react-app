@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, set, update } from "firebase/database";
-import { toRoman } from "../utils/toRoman";
 import FramedCard from "../utils/FramedCard";
 
 function CardModal({

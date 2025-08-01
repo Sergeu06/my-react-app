@@ -3,7 +3,7 @@ import "./Profile.css";
 import { useParams, useSearchParams } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db, database, databaseRef } from "./firebase"; // db - Firestore, database - RealtimeDB
-import { get, ref as databaseRefRT } from "firebase/database";
+import { get } from "firebase/database";
 import { toRoman } from "../utils/toRoman";
 import { renderCardStats } from "../utils/renderCardStats";
 

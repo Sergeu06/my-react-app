@@ -39,8 +39,8 @@ function ShopPage({ uid }) {
   const [isHidingBoxInfo, setIsHidingBoxInfo] = useState(false);
   const [boxCardsDetails, setBoxCardsDetails] = useState([]);
   const [loadingBoxCards, setLoadingBoxCards] = useState(false);
-  const [animationCardData, setAnimationCardData] = useState(null);
-  const [animationAmount, setAnimationAmount] = useState(1);
+  const [, setAnimationCardData] = useState(null);
+  const [, setAnimationAmount] = useState(1);
   const boxContentsCache = useRef({});
   const navigate = useNavigate();
 
@@ -405,7 +405,6 @@ function ShopPage({ uid }) {
     other: "Прочие карты",
   };
 
-  const confirmPurchase = () => setIsConfirmingPurchase(true);
   const handleCardClick = (card) => {
     console.log("Clicked card rarity:", card.rarity);
     setSelectedCard(card);

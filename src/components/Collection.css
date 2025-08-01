@@ -30,7 +30,9 @@
 }
 
 .collection-container h1 {
-  color: var(--secondary-bg);
+  color: #ffa500;
+  text-shadow: -2px -2px 0 #333, 2px -2px 0 #333, -2px 2px 0 #333,
+    2px 1px 0 #333;
 }
 
 /* =======================
@@ -656,6 +658,11 @@
     height: 100%;
   }
 }
+@media (max-width: 450px) {
+  .collection-container {
+    padding-bottom: 70px;
+  }
+}
 
 @media (max-width: 450px) {
   .card-frame-wrapper {
@@ -712,4 +719,49 @@
 
 .overlay-content button:hover {
   background: #ffb733;
+}
+
+.deck-info.highlight-text {
+  font-size: 24px;
+  color: var(--accent-color);
+  text-align: center;
+  font-weight: bold;
+  margin: 16px 0;
+}
+
+.deck-info {
+  font-size: 1.6rem;
+  color: #ffa500;
+  font-weight: bold;
+  text-align: center;
+  margin: 1rem 0;
+}
+.edit-icon-button {
+  background-color: transparent;
+  border: 2px solid #ffa500;
+  border-radius: 50%;
+  padding: 0.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.edit-floating-button {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  z-index: 1000;
+  background-color: #1a1a1a;
+  border: 2px solid #ffa500;
+  border-radius: 50%;
+  padding: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.edit-floating-button:hover {
+  background-color: #2a2a2a;
 }

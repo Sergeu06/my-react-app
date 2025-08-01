@@ -488,8 +488,7 @@ function UpgradePage() {
 
       {showCardModal && (
         <div className="card-modal">
-          <div className="card-modal-content">
-            <h2>Выберите карту</h2>
+          <div className="card-modal-content-upgrade">
             <div className="card-list">
               {playerCards.map((card) => (
                 <div
@@ -517,12 +516,6 @@ function UpgradePage() {
                 </div>
               ))}
             </div>
-            <button
-              className="close-button"
-              onClick={() => setShowCardModal(false)}
-            >
-              Закрыть
-            </button>
           </div>
         </div>
       )}
