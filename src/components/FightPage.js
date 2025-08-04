@@ -29,6 +29,7 @@ function FightPage({ uid }) {
   const [showSkillModal, setShowSkillModal] = useState(false);
   const isCancelled = useRef(false);
   const navigate = useNavigate();
+  const [showInfoModal, setShowInfoModal] = useState(null); // null | 'pvp' | 'raid'
 
   const [leaderboard, setLeaderboard] = useState([]);
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
@@ -340,215 +341,257 @@ function FightPage({ uid }) {
     <div>
       <div style={{ position: "relative", zIndex: 10 }}>
         {/* --- Лидерборд в правом верхнем углу --- */}
-        <div style={{ position: "relative", zIndex: 10 }}>
-          {/* --- Лидерборд в правом верхнем углу --- */}
-          <div
-            className="leaderboard-container"
-            onClick={openLeaderboardModal}
-            title="Кликните для просмотра полного списка"
-          >
-            <h4>Лидерборд рейда</h4>
-            {leaderboard.length === 0 && <p>Загрузка...</p>}
-            {leaderboard.map((player, index) => (
-              <div
-                key={player.userId}
-                title={`${player.nickname} — урон: ${player.damage}`}
+        <div
+          className="leaderboard-container"
+          onClick={openLeaderboardModal}
+          title="Кликните для просмотра полного списка"
+          style={{
+            width: 200, // меньше ширина
+            padding: "6px 8px",
+            backgroundColor: "#1a1a1a",
+            borderRadius: 8,
+            fontSize: 14, // уменьшенный шрифт
+            userSelect: "none",
+            cursor: "pointer",
+          }}
+        >
+          <h4 style={{ margin: "0 0 8px 0", fontSize: 14 }}>Лидерборд</h4>
+          {leaderboard.length === 0 && <p>Загрузка...</p>}
+          {leaderboard.map((player, index) => (
+            <div
+              key={player.userId}
+              title={`${player.nickname} — урон: ${player.damage}`}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "2px 0",
+              }}
+            >
+              <span style={{ fontWeight: "bold", width: 18 }}>
+                {index + 1}.
+              </span>
+              <img
+                src={player.avatar}
+                alt={player.nickname}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "4px 0",
-                  cursor: "pointer",
+                  width: 24,
+                  height: 24,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  flexGrow: 1,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  lineHeight: 1,
                 }}
               >
-                <span style={{ fontWeight: "bold", width: 20 }}>
-                  {index + 1}.
-                </span>
-                <img
-                  src={player.avatar}
-                  alt={player.nickname}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                  }}
-                />
-                <span
-                  style={{
-                    flexGrow: 1,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {player.nickname}
-                </span>
-                <span
-                  style={{
-                    fontWeight: "bold",
-                    minWidth: 50,
-                    textAlign: "right",
-                  }}
-                >
-                  {player.damage.toLocaleString()}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* --- Модальное окно полного лидерборда --- */}
-          {showLeaderboardModal && (
-            <div className="modal-overlay" onClick={closeLeaderboardModal}>
-              <div
-                className="modal-content"
-                onClick={(e) => e.stopPropagation()}
-                style={{ maxHeight: "80vh", overflowY: "auto" }}
+                {player.nickname}
+              </span>
+              <span
+                style={{
+                  fontWeight: "bold",
+                  minWidth: 40,
+                  textAlign: "right",
+                  lineHeight: 1,
+                }}
               >
-                <button
-                  className="close-button"
-                  onClick={closeLeaderboardModal}
-                  aria-label="Закрыть"
-                >
-                  &times;
-                </button>
-
-                <h3>Полный лидерборд рейда</h3>
-                {fullLeaderboard.length === 0 && <p>Загрузка...</p>}
-                {fullLeaderboard.map((player, index) => (
-                  <div
-                    key={player.userId}
-                    className="player-row"
-                    title={`${player.nickname} — урон: ${player.damage}`}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      padding: "6px 0",
-                      borderBottom: "1px solid #333",
-                      cursor: "pointer", // добавить курсор-указатель
-                    }}
-                    onClick={() => handleOpenProfile(player.userId)} // добавляем обработчик клика
-                  >
-                    <span style={{ fontWeight: "bold", width: 24 }}>
-                      {index + 1}.
-                    </span>
-                    <img
-                      src={player.avatar}
-                      alt={player.nickname}
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: "50%",
-                        objectFit: "cover",
-                      }}
-                    />
-                    <span
-                      style={{
-                        flexGrow: 1,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {player.nickname}
-                    </span>
-                    <span
-                      style={{
-                        fontWeight: "bold",
-                        minWidth: 60,
-                        textAlign: "right",
-                      }}
-                    >
-                      {player.damage.toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                {player.damage.toLocaleString()}
+              </span>
             </div>
-          )}
+          ))}
         </div>
-
-        {/* 🧠 Блок выбора навыка */}
-        <div className="skill-slot-container">
-          <button
-            className="skill-slot-button"
-            onClick={() => setShowSkillModal(true)}
-          >
-            {activeSkill ? `🎯 ${activeSkill}` : "🌀 Навык не выбран"}
-          </button>
-        </div>
-
-        {showSkillModal && (
-          <div className="modal-overlay">
-            <div className="modal-window">
+        {showInfoModal && (
+          <div className="modal-overlay" onClick={() => setShowInfoModal(null)}>
+            <div
+              className="modal-window"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: 500 }}
+            >
               <button
                 className="close-button"
-                onClick={() => setShowSkillModal(false)}
+                onClick={() => setShowInfoModal(null)}
               >
                 ✕
               </button>
-              <h3>Выберите активный навык</h3>
-              {skillList.length === 0 ? (
-                <p>Нет доступных навыков</p>
-              ) : (
-                <ul className="skill-list">
-                  {skillList.map((skill) => (
-                    <li key={skill}>
-                      <button
-                        className="skill-option-button"
-                        onClick={() => handleEquipSkill(skill)}
-                      >
-                        {skill}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <h3>{showInfoModal === "pvp" ? "PvP режим" : "Режим Рейд"}</h3>
+              <p>
+                {showInfoModal === "pvp"
+                  ? "В режиме PvP вы сражаетесь против других игроков. Для начала матча необходимо минимум 7 карт в колоде PvP. Победа дает награды и повышает ваш рейтинг."
+                  : "В режиме Рейд вы сражаетесь против могущественного босса. Используйте особые стратегии и активные навыки, чтобы нанести как можно больше урона. Требуется минимум 7 карт в колоде Raid."}
+              </p>
             </div>
           </div>
         )}
 
-        {introStage && (
-          <div className="fight-countdown-overlay">
-            {introStage === "player1" && <p>⚔️ {player1Name}</p>}
-            {introStage === "vs" && <p>VS</p>}
-            {introStage === "player2" && <p>🛡️ {player2Name}</p>}
-            {introStage === "countdown" && <p>Fight!</p>}
+        {/* --- Модальное окно полного лидерборда --- */}
+        {showLeaderboardModal && (
+          <div className="modal-overlay" onClick={closeLeaderboardModal}>
+            <div
+              className="modal-content"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxHeight: "80vh", overflowY: "auto" }}
+            >
+              <button
+                className="close-button"
+                onClick={closeLeaderboardModal}
+                aria-label="Закрыть"
+              >
+                &times;
+              </button>
+
+              <h3>Лидерборд рейда</h3>
+              {fullLeaderboard.length === 0 && <p>Загрузка...</p>}
+              {fullLeaderboard.map((player, index) => (
+                <div
+                  key={player.userId}
+                  className="player-row"
+                  title={`${player.nickname} — урон: ${player.damage}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "6px 0",
+                    borderBottom: "1px solid #333",
+                    cursor: "pointer", // добавить курсор-указатель
+                  }}
+                  onClick={() => handleOpenProfile(player.userId)} // добавляем обработчик клика
+                >
+                  <span style={{ fontWeight: "bold", width: 24 }}>
+                    {index + 1}.
+                  </span>
+                  <img
+                    src={player.avatar}
+                    alt={player.nickname}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                    }}
+                  />
+                  <span
+                    style={{
+                      flexGrow: 1,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {player.nickname}
+                  </span>
+                  <span
+                    style={{
+                      fontWeight: "bold",
+                      minWidth: 60,
+                      textAlign: "right",
+                    }}
+                  >
+                    {player.damage.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
+      </div>
 
-        {tip && <div className="fight-tip">{tip}</div>}
-
-        {isSearching && playersInLobby < 2 && (
-          <div className="fight-overlay">
-            <div className="fight-spinner"></div>
-            <p className="fight-time">{formatTime(secondsElapsed)}</p>
-            <button className="fight-btn-cancel" onClick={handleCancelSearch}>
-              Отменить поиск
-            </button>
-          </div>
-        )}
-
-        {playersInLobby === 2 && countdown > 0 && (
-          <div className="fight-countdown-overlay">
-            <p>Игра начнется через {countdown}</p>
-          </div>
-        )}
-
-        <div
-          className={`fight-container ${
-            isSearching || playersInLobby === 2 ? "disabled" : ""
-          }`}
+      {/* 🧠 Блок выбора навыка */}
+      <div className="skill-slot-container">
+        <button
+          className="skill-slot-button"
+          onClick={() => setShowSkillModal(true)}
         >
-          {!isSearching && playersInLobby < 2 && (
-            <>
+          {activeSkill ? `🎯 ${activeSkill}` : "🌀 Навык не выбран"}
+        </button>
+      </div>
+
+      {showSkillModal && (
+        <div className="modal-overlay">
+          <div className="modal-window">
+            <button
+              className="close-button"
+              onClick={() => setShowSkillModal(false)}
+            >
+              ✕
+            </button>
+            <h3>Выберите активный навык</h3>
+            {skillList.length === 0 ? (
+              <p>Нет доступных навыков</p>
+            ) : (
+              <ul className="skill-list">
+                {skillList.map((skill) => (
+                  <li key={skill}>
+                    <button
+                      className="skill-option-button"
+                      onClick={() => handleEquipSkill(skill)}
+                    >
+                      {skill}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      {introStage && (
+        <div className="fight-countdown-overlay">
+          {introStage === "player1" && <p>⚔️ {player1Name}</p>}
+          {introStage === "vs" && <p>VS</p>}
+          {introStage === "player2" && <p>🛡️ {player2Name}</p>}
+          {introStage === "countdown" && <p>Fight!</p>}
+        </div>
+      )}
+
+      {tip && <div className="fight-tip">{tip}</div>}
+
+      {isSearching && playersInLobby < 2 && (
+        <div className="fight-overlay">
+          <div className="fight-spinner"></div>
+          <p className="fight-time">{formatTime(secondsElapsed)}</p>
+          <button className="fight-btn-cancel" onClick={handleCancelSearch}>
+            Отменить поиск
+          </button>
+        </div>
+      )}
+
+      {playersInLobby === 2 && countdown > 0 && (
+        <div className="fight-countdown-overlay">
+          <p>Игра начнется через {countdown}</p>
+        </div>
+      )}
+
+      <div
+        className={`fight-container ${
+          isSearching || playersInLobby === 2 ? "disabled" : ""
+        }`}
+      >
+        {!isSearching && playersInLobby < 2 && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <button
                 className="fight-btn-search"
                 onClick={handleSearchOpponent}
               >
                 Поиск соперника
               </button>
+              <button
+                className="info-button"
+                title="О режиме PvP"
+                onClick={() => setShowInfoModal("pvp")}
+              >
+                i
+              </button>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <button
                 className="fight-btn-raid"
                 onClick={async () => {
@@ -570,9 +613,16 @@ function FightPage({ uid }) {
               >
                 Рейд
               </button>
-            </>
-          )}
-        </div>
+              <button
+                className="info-button"
+                title="О режиме Рейд"
+                onClick={() => setShowInfoModal("raid")}
+              >
+                i
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

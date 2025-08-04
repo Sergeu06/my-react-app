@@ -324,7 +324,7 @@ function App() {
         <div className="safe-container" {...handlers}>
           <div className="background-container" />
           <div className="background-overlay" />
-          <div className="game-version">v0.6.56.11</div>
+          <div className="game-version">v0.7.69.23</div>
 
           <CurrencyBalance />
 

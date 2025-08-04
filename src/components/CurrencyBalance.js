@@ -1,25 +1,57 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useUser } from "./UserContext";
 
 function CurrencyBalance({ forceShow = false }) {
   const { userData } = useUser();
   const location = useLocation();
-
-  if (!userData) return null;
+  const [showHint, setShowHint] = useState(false);
+  const [showHintRecipes, setShowHintRecipes] = useState(false);
+  const hintRef = useRef(null);
+  const hintRecipesRef = useRef(null);
 
   const path = location.pathname.toLowerCase();
-
-  // Страницы, на которых баланс **не должен отображаться**
   const hiddenPaths = ["/raid", "/game", "/profile", "/open-box"];
-
-  if (!forceShow && hiddenPaths.includes(path)) return null;
-
   const showMystery = path === "/upgrade" || forceShow;
+
+  useEffect(() => {
+    if (!showHint) return;
+
+    const hideHint = () => setShowHint(false);
+
+    document.addEventListener("click", hideHint, { once: true });
+    document.addEventListener("touchstart", hideHint, { once: true });
+    document.addEventListener("scroll", hideHint, { once: true });
+
+    return () => {
+      document.removeEventListener("click", hideHint);
+      document.removeEventListener("touchstart", hideHint);
+      document.removeEventListener("scroll", hideHint);
+    };
+  }, [showHint]);
+
+  useEffect(() => {
+    if (!showHintRecipes) return;
+
+    const hideHint = () => setShowHintRecipes(false);
+
+    document.addEventListener("click", hideHint, { once: true });
+    document.addEventListener("touchstart", hideHint, { once: true });
+    document.addEventListener("scroll", hideHint, { once: true });
+
+    return () => {
+      document.removeEventListener("click", hideHint);
+      document.removeEventListener("touchstart", hideHint);
+      document.removeEventListener("scroll", hideHint);
+    };
+  }, [showHintRecipes]);
+
+  if (!userData) return null;
+  if (!forceShow && hiddenPaths.includes(path)) return null;
 
   const balanceStyle = {
     position: "fixed",
-    top: 110,
+    top: 7,
     left: 0,
     backgroundColor: "#282c34",
     color: "white",
@@ -43,19 +75,91 @@ function CurrencyBalance({ forceShow = false }) {
 
   return (
     <>
-      <div style={{ ...balanceStyle, top: 110 }}>
+      {/* Монеты */}
+      <div
+        style={{ ...balanceStyle, top: 110, cursor: "pointer" }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowHint(true);
+        }}
+      >
         <img src="/moneta.png" alt="coin" style={iconStyle} />
         <span>{(userData.balance ?? 0).toFixed(2)}</span>
       </div>
 
+      {/* Подсказка по монетам */}
+      {showHint && (
+        <div
+          ref={hintRef}
+          style={{
+            position: "fixed",
+            top: 105,
+            right: "5%",
+            left: "auto",
+            backgroundColor: "#1e1e1e",
+            color: "#fff",
+            padding: "12px 16px",
+            borderRadius: "8px",
+            border: "1px solid #ffa500",
+            fontSize: "12px",
+            zIndex: 10002,
+            width: "100%",
+            maxWidth: "240px",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+          }}
+        >
+          <strong>Золото:</strong> <br />
+          Получение: участие в сражениях, открытие сундуков, награды за миссии.{" "}
+          <br />
+          Трата: покупка карт, участие в рейдах, прокачка. <br />
+          Нажмите в любом месте, чтобы скрыть.
+        </div>
+      )}
+
+      {/* Secret Recipes */}
       {showMystery && (
-        <div style={{ ...balanceStyle, top: 160 }}>
+        <div
+          style={{ ...balanceStyle, top: 160, cursor: "pointer" }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowHintRecipes(true);
+          }}
+        >
           <img
             src="/Secret Recipes.png"
             alt="Secret Recipes"
             style={iconStyle}
           />
           <span>{userData.SecretRecipes ?? 0}</span>
+        </div>
+      )}
+
+      {/* Подсказка по Secret Recipes */}
+      {showHintRecipes && (
+        <div
+          ref={hintRecipesRef}
+          style={{
+            position: "fixed",
+            top: 155,
+            right: "5%",
+            left: "auto",
+            backgroundColor: "#1e1e1e",
+            color: "#fff",
+            padding: "12px 16px",
+            borderRadius: "8px",
+            border: "1px solid #ffa500",
+            fontSize: "12px",
+            zIndex: 10002,
+            width: "100%",
+            maxWidth: "240px",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+          }}
+        >
+          <strong>Рецеты:</strong> <br />
+          Получение: выполнение уникальных миссий, участие в ивентах, награды за
+          достижения. <br />
+          Трата: специальные улучшения, крафт редких карт. <br />
+          Нажмите в любом месте, чтобы скрыть.
         </div>
       )}
     </>

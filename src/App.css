@@ -53,6 +53,7 @@ body {
   background-repeat: no-repeat;
   z-index: -2;
 }
+
 /* Тёмное затемнение поверх изображения с виньеткой */
 .background-overlay {
   position: fixed;

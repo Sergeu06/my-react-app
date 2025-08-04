@@ -91,7 +91,7 @@
   pointer-events: auto;
   transition: opacity 0.4s ease;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-
+  margin-left: 5%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -322,4 +322,23 @@
   border-radius: 50%;
   margin-right: 12px;
   object-fit: cover;
+}
+
+.info-button {
+  background-color: #333;
+  color: #ffa500;
+  border: none;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.info-button:hover {
+  background-color: #444;
 }

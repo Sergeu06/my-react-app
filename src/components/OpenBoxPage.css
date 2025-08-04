@@ -34,7 +34,7 @@
 }
 
 .lid {
-  top: 90px;
+  top: 96px;
   width: 80%;
   transition: transform 1s ease;
   z-index: 3;
@@ -86,7 +86,7 @@
 
 .result-text {
   text-align: center;
-  margin-top: 20px;
+  margin-top: -30vw;
   color: #ff9f00;
 }
 
@@ -115,4 +115,33 @@
 
 .rarity-legendary {
   background: radial-gradient(circle, #ff9f00 0%, #3f2200 80%);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes heartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.02);
+  }
+  60% {
+    transform: scale(1.04);
+  }
+  80% {
+    transform: scale(1.03);
+  }
+  99% {
+    transform: scale(1);
+  }
+}
+
+.box-container.loading {
+  animation: heartbeat 1.8s ease-in-out infinite;
 }

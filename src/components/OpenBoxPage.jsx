@@ -17,6 +17,7 @@ function OpenBoxPage({ uid }) {
   const [dropChance, setDropChance] = useState(null);
   const [cardVisible, setCardVisible] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const addCardToInventory = async () => {
@@ -158,7 +159,10 @@ function OpenBoxPage({ uid }) {
       const img = new Image();
       img.src = selectedCard.image_url;
       img.onload = () => {
-        setIsReady(true); // Только после загрузки изображения
+        setTimeout(() => {
+          setIsReady(true); // Разрешаем клик
+          setLoading(false); // Убираем флаг загрузки
+        }, 300); // ⏱ Плавный переход, можно настроить
       };
     } catch (err) {
       console.error("Ошибка при открытии коробки:", err);
@@ -195,7 +199,7 @@ function OpenBoxPage({ uid }) {
   return (
     <div className="open-box-page">
       <h2>Открытие коробки</h2>
-      <div className="box-container">
+      <div className={`box-container ${loading ? "loading" : ""}`}>
         {resultCard && (
           <div
             className={`rarity-glow ${

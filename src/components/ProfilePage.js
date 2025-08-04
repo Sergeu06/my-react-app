@@ -215,10 +215,7 @@ const ProfilePage = () => {
       </div>
 
       <div className="profile-info">
-        <h2>
-          {profileData.nickname || "Без имени"}
-          {isOwnProfile && " (вы)"}
-        </h2>
+        <h2>{profileData.nickname || "Без имени"}</h2>
         <p className="uid">
           <span>ID : </span> {idToLoad}
         </p>
@@ -258,70 +255,73 @@ const ProfilePage = () => {
         <div className="showcase-slots">
           {showcase.map((cardId, index) => {
             const card = userCards.find((c) => c.id === cardId) || null;
+
+            if (card) {
+              // Только карта, без пустого слота
+              return (
+                <div
+                  key={index}
+                  className="showcase-slot filled"
+                  onClick={() => {
+                    if (!isOwnProfile) return;
+                    setActiveSlotIndex(index);
+                    setShowCardModal(true);
+                  }}
+                  style={{ cursor: isOwnProfile ? "pointer" : "default" }}
+                >
+                  <FramedCard
+                    card={card}
+                    showLevel={true}
+                    onClick={() => {
+                      if (!isOwnProfile) return;
+                      setActiveSlotIndex(index);
+                      setShowCardModal(true);
+                    }}
+                  />
+
+                  {isOwnProfile && (
+                    <button
+                      className="remove-slot-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeCardFromSlot(index);
+                      }}
+                    >
+                      ×
+                    </button>
+                  )}
+
+                  {/* Отображаем характеристики */}
+                  {(() => {
+                    const stats = renderCardStats(card);
+                    return stats.length > 0 ? (
+                      <div className="card-stat-text">
+                        {stats.map((stat, idx) => (
+                          <div key={idx}>
+                            {stat.label}{" "}
+                            {stat.value !== undefined ? stat.value : ""}
+                          </div>
+                        ))}
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+              );
+            }
+
+            // Пустой слот
             return (
               <div
                 key={index}
-                className="showcase-slot"
+                className="showcase-slot empty"
                 onClick={() => {
                   if (!isOwnProfile) return;
                   setActiveSlotIndex(index);
                   setShowCardModal(true);
                 }}
-                style={{
-                  cursor: isOwnProfile ? "pointer" : "default",
-                  position: "relative",
-                }}
-                title={
-                  card
-                    ? "Кликните, чтобы сменить карту"
-                    : "Кликните, чтобы добавить карту"
-                }
+                title="Кликните, чтобы добавить карту"
               >
-                {card ? (
-                  <>
-                    {/* Используем FramedCard для отображения */}
-                    <FramedCard
-                      card={card}
-                      showLevel={true}
-                      onClick={() => {
-                        if (!isOwnProfile) return;
-                        setActiveSlotIndex(index);
-                        setShowCardModal(true);
-                      }}
-                    />
-
-                    {isOwnProfile && (
-                      <button
-                        className="remove-slot-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeCardFromSlot(index);
-                        }}
-                      >
-                        ×
-                      </button>
-                    )}
-
-                    {(() => {
-                      const stats = renderCardStats(card);
-                      if (stats.length > 0) {
-                        return (
-                          <div className="card-stat-text">
-                            {stats.map((stat, idx) => (
-                              <div key={idx}>
-                                {stat.label}{" "}
-                                {stat.value !== undefined ? stat.value : ""}
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-                  </>
-                ) : (
-                  <div className="empty-slot-placeholder">Пусто</div>
-                )}
+                <div className="empty-slot-placeholder">Пусто</div>
               </div>
             );
           })}

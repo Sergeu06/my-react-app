@@ -49,7 +49,8 @@
   padding: 10px;
   font-size: 4.2vw;
   border-bottom: 1px solid #444;
-  color: #f0f0f0;
+  color: #ffa500;
+  font-weight: bold;
 }
 
 /* Skeleton */
@@ -188,6 +189,7 @@
   margin-top: 30px;
   width: 100%;
   overflow: hidden;
+  color: #ffa500;
 }
 
 .level-reward-scroll-container {
@@ -258,8 +260,9 @@
   flex-wrap: nowrap; /* по умолчанию один ряд */
 }
 .showcase-slot {
+  flex: 0 0 auto;
   width: 120px;
-  height: 160px;
+  aspect-ratio: 3 / 4; /* Это ключевая строка */
   border: 2px dashed #aaa;
   border-radius: 8px;
   position: relative;
@@ -267,24 +270,38 @@
   justify-content: center;
   align-items: center;
   background: #1a1a1a;
+  overflow: hidden;
 }
+
 .showcase-card-image {
   max-width: 100%;
   max-height: 100%;
   border-radius: 6px;
 }
 
+.showcase-slot.empty {
+  border: 2px dashed #555;
+  background-color: #1a1a1a;
+}
+
+.showcase-slot.filled {
+  border: none;
+  background: none;
+}
+
 /* При экранах <= 450px делаем два столбца */
-@media (max-width: 520px) {
+@media (max-width: 540px) {
   .showcase-slots {
-    flex-wrap: wrap; /* разрешаем перенос */
-    justify-content: center; /* центрируем блоки */
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .showcase-slot {
-    width: calc(50% - 6px); /* половина ширины минус половина gap */
-    margin-bottom: 12px; /* вертикальный отступ между рядами */
+    width: calc(40% - 4px);
+    aspect-ratio: 8 / 10;
+    margin-bottom: 8px;
   }
 }
+
 .remove-slot-btn {
   position: absolute;
   top: 2px;
@@ -404,7 +421,7 @@ select option {
 
 .card-stat-text {
   position: absolute;
-  bottom: 4px;
+  bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
