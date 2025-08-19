@@ -487,3 +487,68 @@ h1 {
   font-weight: 600;
   color: #ffa500; /* дополнительный цвет */
 }
+.upgrade-title-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.info-buttonU {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 165, 0, 0.1);
+  border: 1px solid #ffa500;
+  color: #ffa500;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.info-buttonU:hover {
+  background: rgba(255, 165, 0, 0.3);
+}
+
+.info-modalU {
+  position: fixed;
+  top: 15vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 500px;
+  background: #1e1e1e;
+  color: #f0f0f0;
+  border: 2px solid #ffa500;
+  border-radius: 12px;
+  padding: 1.5rem;
+  z-index: 1000;
+  box-shadow: 0 0 30px rgba(255, 165, 0, 0.3);
+}
+
+.info-modalU p {
+  white-space: pre-wrap;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.info-modalU .close-button {
+  margin-top: 1rem;
+  background: #444;
+  color: #ffa500;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.info-modalU .close-button:hover {
+  background: #666;
+}

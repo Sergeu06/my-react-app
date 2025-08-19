@@ -39,7 +39,7 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
   const { userData } = useUser();
   const uid = userData?.uid || null;
 
-  const moneyEarned = Math.floor(totalDamage / 10 + (totalDamage * 0.08) / 2);
+  const moneyEarned = Math.floor(totalDamage * 0.23);
   const extraCurrency = Math.max(0, Math.floor(cardsUsed / 5) - 2);
   const xpGained = moneyEarned + extraCurrency * 10 + 50;
 

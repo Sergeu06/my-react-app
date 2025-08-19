@@ -1,0 +1,14 @@
+.avatar-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.player-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%; /* 👈 круг */
+  object-fit: cover;
+  border: 2px solid #ffa500; /* оранжевая рамка */
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}

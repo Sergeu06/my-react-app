@@ -13,6 +13,7 @@ function UpgradePage() {
   const [upgradeResult, setUpgradeResult] = useState(null);
   const [animating, setAnimating] = useState(false);
   const [animationSuccess, setAnimationSuccess] = useState(null);
+  const [showInfo, setShowInfo] = useState(false);
 
   const [playerCards, setPlayerCards] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
@@ -85,15 +86,102 @@ function UpgradePage() {
     setShowCardModal(false);
   };
 
+  const infoContent = (
+    <div style={{ lineHeight: "1.5", fontSize: "15px" }}>
+      <h3 style={{ marginBottom: "8px", color: "#ffa500" }}>
+        Повышение ранга карты
+      </h3>
+      <p style={{ marginBottom: "16px" }}>
+        <span style={{ color: "#ffa500", fontWeight: "bold" }}>
+          Повышение ранга
+        </span>{" "}
+        — ключ к раскрытию полного потенциала карты.
+      </p>
+
+      <h4 style={{ marginBottom: "8px", color: "#ffa500" }}>
+        Что нужно для улучшения
+      </h4>
+      <ul style={{ marginBottom: "16px", paddingLeft: "20px" }}>
+        <li>
+          <span style={{ color: "#ffa500", fontWeight: "bold" }}>Монеты:</span>{" "}
+          стоимость = уровень × 100
+        </li>
+        <li>
+          <span style={{ color: "#ffa500", fontWeight: "bold" }}>
+            Secret Recipes:
+          </span>{" "}
+          требуются с 2 уровня (уровень - 1)
+        </li>
+      </ul>
+
+      <h4 style={{ marginBottom: "8px", color: "#ffa500" }}>Шанс успеха</h4>
+      <ul style={{ marginBottom: "16px", paddingLeft: "20px" }}>
+        <li>Начинается с высоких значений, но падает с каждым уровнем.</li>
+        <li>Чем выше уровень — тем больше решает удача или стратегия.</li>
+      </ul>
+
+      <h4 style={{ marginBottom: "8px", color: "#ffa500" }}>
+        Неудача — не всегда плохо
+      </h4>
+      <ul style={{ marginBottom: "16px", paddingLeft: "20px" }}>
+        <li>
+          При провале шанс на успех в следующий раз{" "}
+          <span style={{ color: "#ffa500" }}>увеличивается</span>.
+        </li>
+        <li>Терпение и подготовка иногда важнее спешки.</li>
+      </ul>
+
+      <h4 style={{ marginBottom: "8px", color: "#ffa500" }}>Предпросмотр</h4>
+      <ul style={{ marginBottom: "16px", paddingLeft: "20px" }}>
+        <li>
+          Показывает, как изменятся характеристики карты на следующем уровне.
+        </li>
+        <li>
+          Некоторые эффекты растут{" "}
+          <span style={{ color: "#ffa500" }}>неравномерно</span>.
+        </li>
+        <li>
+          Есть характеристики, которые можно усиливать бесконечно, если знать, в
+          какую карту вкладываться.
+        </li>
+      </ul>
+
+      <h4 style={{ marginBottom: "8px", color: "#ffa500" }}>Подсказка</h4>
+      <ul style={{ marginBottom: "16px", paddingLeft: "20px" }}>
+        <li>
+          Не все бонусы заметны сразу. Некоторые начинают работать только при
+          определённом уровне или в связке с другими картами.
+        </li>
+        <li>
+          Иногда стоит оставить карту на текущем уровне, чтобы использовать
+          ресурсы более эффективно.
+        </li>
+      </ul>
+
+      <h4 style={{ marginBottom: "8px", color: "#ffa500" }}>Совет ветеранов</h4>
+      <p>
+        Если вероятность успеха слишком мала, подумайте, готовы ли вы рискнуть.
+        Иногда{" "}
+        <span style={{ color: "#ffa500", fontWeight: "bold" }}>провал</span> —
+        это шаг к большой победе.
+      </p>
+    </div>
+  );
+
   const getBaseSuccessRate = (level) => {
     const lvl = Math.max(1, Number(level));
-    if (lvl === 1) return 0.75;
-    if (lvl === 2) return 0.5;
-    if (lvl === 3) return 0.25;
-    if (lvl === 4) return 0.2;
-    if (lvl === 5) return 0.15;
-
-    const rate = 0.15 - 0.05 * (lvl - 5);
+    if (lvl === 1) return 1;
+    if (lvl === 2) return 0.75;
+    if (lvl === 3) return 0.6;
+    if (lvl === 4) return 0.5;
+    if (lvl === 5) return 0.4;
+    if (lvl === 6) return 0.3;
+    if (lvl === 7) return 0.25;
+    if (lvl === 8) return 0.2;
+    if (lvl === 9) return 0.15;
+    if (lvl === 10) return 0.1;
+    if (lvl === 11) return 0.05;
+    const rate = 0.05 - 0.01 * (lvl - 11);
     return rate > 0.01 ? rate : 0.01;
   };
 
@@ -349,7 +437,7 @@ function UpgradePage() {
 
     return (
       <>
-        <div className="card-name">{preview.name}</div>
+        <div className="card-name">{preview.name}</div>а
         <div className="card-image-wrapper">
           <img src={preview.image_url} alt="preview" />
           {preview.lvl && (
@@ -371,7 +459,12 @@ function UpgradePage() {
           : ""
       }`}
     >
-      <h1 className="upgrade-title">Повышение ранга</h1>
+      <div className="upgrade-title-wrapper">
+        <h1 className="upgrade-title">Повышение ранга</h1>
+        <button className="info-button" onClick={() => setShowInfo(true)}>
+          i
+        </button>
+      </div>
 
       <div
         className="upgrade-panel"
@@ -480,10 +573,46 @@ function UpgradePage() {
       </button>
 
       {upgradeResult === "success" && (
-        <div className="upgrade-result upgrade-success">Успешно!</div>
+        <div className="upgrade-result upgrade-success"></div>
       )}
       {upgradeResult === "fail" && (
-        <div className="upgrade-result upgrade-failure">Провал!</div>
+        <div className="upgrade-result upgrade-failure"></div>
+      )}
+      {showInfo && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowInfo(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "flex-start", // чтобы окно можно было сместить
+            paddingTop: "24vh", // регулируешь смещение вниз/вверх
+            zIndex: 1000,
+          }}
+        >
+          <div
+            className="modal-window"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#2e2e2e",
+              padding: "10px",
+              borderRadius: "8px",
+              maxWidth: "500px",
+              width: "96%", // ширина окна
+              height: "67vh", // 70% высоты экрана
+              overflowY: "auto", // прокрутка при переполнении
+              color: "#fff",
+            }}
+          >
+            <div>{infoContent}</div>
+          </div>
+        </div>
       )}
 
       {showCardModal && (

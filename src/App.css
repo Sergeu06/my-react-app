@@ -42,16 +42,17 @@ body {
 }
 /* Контейнер для фонового изображения */
 .background-container {
-  position: fixed;
+  position: fixed; /* ✅ Фиксировано — не влияет на прокрутку */
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-image: url("/public/photo_2025-07-29_06-44-47.jpg"); /* замените на свой путь */
+  background-image: url("/public/photo_2025-07-29_06-44-47.jpg");
   background-size: cover;
-  background-position: center;
   background-repeat: no-repeat;
+  background-position: center 0px; /* начальное значение */
   z-index: -2;
+  will-change: background-position;
 }
 
 /* Тёмное затемнение поверх изображения с виньеткой */

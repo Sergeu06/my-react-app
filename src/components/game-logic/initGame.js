@@ -1,77 +1,96 @@
-import { doc, getDoc } from 'firebase/firestore';
-import { ref, get, set } from 'firebase/database';
-import { db, database } from '../firebase';
-import getPlayerDeck from './utils/getPlayerDeck';
-import getRandomCards from './utils/getRandomCards';
+// game-logic/initGame.js
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
 
-const START_HAND_SIZE = 2;
+export default async function initGame(uid, opponentUid, lobbyId) {
+  console.log("[InitGame] start", { uid, opponentUid, lobbyId });
 
-const initGame = async (uid, opponentUid, lobbyId) => {
   try {
-    const gameRef = ref(database, `games/${lobbyId}`);
-    const gameSnap = await get(gameRef);
-
-    if (gameSnap.exists()) {
-      // Игра уже началась
-      return gameSnap.val();
-    }
-
-    // Получаем профили
-    const [playerDoc, opponentDoc] = await Promise.all([
-      getDoc(doc(db, 'users', uid)),
-      getDoc(doc(db, 'users', opponentUid)),
+    const [snap1, snap2] = await Promise.all([
+      getDoc(doc(db, "users", uid)),
+      getDoc(doc(db, "users", opponentUid)),
     ]);
 
-    if (!playerDoc.exists() || !opponentDoc.exists()) {
-      throw new Error('Профиль игрока не найден');
-    }
+    const p1 = snap1.exists() ? snap1.data() : {};
+    const p2 = snap2.exists() ? snap2.data() : {};
 
-    const player = playerDoc.data();
-    const opponent = opponentDoc.data();
+    const p1Lvl = Number(p1.stats?.lvl) || 1;
+    const p2Lvl = Number(p2.stats?.lvl) || 1;
 
-    // Получаем колоды
-    const [playerDeckRaw, opponentDeckRaw] = await Promise.all([
-      getPlayerDeck(uid),
-      getPlayerDeck(opponentUid),
-    ]);
+    // XP берём из users/{uid}/stats/xp (если нет — 0)
+    const p1Xp = Number(p1.stats?.xp ?? p1.xp) || 0;
+    const p2Xp = Number(p2.stats?.xp ?? p2.xp) || 0;
 
-    // Добираем карты для руки и остаток колоды
-    const { drawnCards: playerHand, remainingDeck: playerDeck } = getRandomCards(playerDeckRaw, START_HAND_SIZE);
-    const { drawnCards: opponentHand, remainingDeck: opponentDeck } = getRandomCards(opponentDeckRaw, START_HAND_SIZE);
+    const calcMaxHp = (lvl) => Math.round(100 + 15 * lvl);
 
-    const initialGameState = {
-      state: 'playing',
-      turn: 1,
+    const player = {
+      nickname: p1.nickname || "Игрок 1",
+      avatar_url: p1.avatar_url || null, // 👈 вот это
+      lvl: p1Lvl,
+      xp: p1Xp,
+      hp: calcMaxHp(p1Lvl),
+      maxHp: calcMaxHp(p1Lvl),
+      hand: [],
+      deck: [],
+      recipes: 3,
+    };
+
+    const opponent = {
+      nickname: p2.nickname || "Игрок 2",
+      avatar_url: p2.avatar_url || null, // 👈 вот это
+      lvl: p2Lvl,
+      xp: p2Xp,
+      hp: calcMaxHp(p2Lvl),
+      maxHp: calcMaxHp(p2Lvl),
+      hand: new Array(4).fill("hidden"), // например 4 карты
+      deck: [],
+      recipes: 3,
+    };
+
+    console.log("[InitGame] loaded profiles", {
+      player: {
+        uid,
+        lvl: player.lvl,
+        xp: player.xp,
+        hp: player.hp,
+        maxHp: player.maxHp,
+      },
+      opponent: {
+        uid: opponentUid,
+        lvl: opponent.lvl,
+        xp: opponent.xp,
+        hp: opponent.hp,
+        maxHp: opponent.maxHp,
+      },
+    });
+
+    return { players: { [uid]: player, [opponentUid]: opponent } };
+  } catch (e) {
+    console.error("[InitGame] failed, fallback to defaults", e);
+    const fallback = (lvl = 1) => Math.round(100 * (1.3 * lvl));
+    return {
       players: {
         [uid]: {
-          uid,
-          nickname: player.nickname || 'Игрок 1',
-          hp: 100,
-          hand: playerHand,
-          deck: playerDeck,
-          graveyard: [],
-          recipes: 5, 
+          nickname: "Игрок 1",
+          lvl: 1,
+          xp: 0,
+          hp: fallback(1),
+          maxHp: fallback(1),
+          hand: [],
+          deck: [],
+          recipes: 3,
         },
         [opponentUid]: {
-          uid: opponentUid,
-          nickname: opponent.nickname || 'Игрок 2',
-          hp: 100,
-          hand: opponentHand,
-          deck: opponentDeck,
-          graveyard: [],
-          recipes: 5, 
+          nickname: "Игрок 2",
+          lvl: 1,
+          xp: 0,
+          hp: fallback(1),
+          maxHp: fallback(1),
+          hand: [],
+          deck: [],
+          recipes: 3,
         },
       },
     };
-    
-
-    await set(gameRef, initialGameState);
-
-    return initialGameState;
-  } catch (error) {
-    console.error('Ошибка инициализации боя:', error);
-    return null;
   }
-};
-
-export default initGame;
+}

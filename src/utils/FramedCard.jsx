@@ -43,6 +43,7 @@ function getGlowColor(card) {
 
 function FramedCard({
   card,
+  rarityAccessLevel = {},
   onClick,
   quantityBadge = null,
   showQuantityBadge = false,
@@ -68,14 +69,17 @@ function FramedCard({
       <img src={frameSrc} alt="Рамка" className="card-border-frame" />
       <div
         className={`framed-container ${
-          card.quantity <= 0 ? "inactive-card" : ""
+          card.quantity <= 0 || card.locked ? "inactive-card" : ""
         } ${!showName ? "no-name" : ""}`}
         style={{ "--card-glow-color": color }}
+        title={
+          card.locked
+            ? `Доступно с уровня ${rarityAccessLevel[normalizedRarity] || 1}`
+            : ""
+        }
       >
         {showQuantityBadge &&
           (quantityBadge || <div className="card-quantity-badge" />)}
-
-        {/* 👇 Отображение уровня — только если передан showLevel */}
 
         {showName && <div className="card-name">{card.name}</div>}
         <img src={card.image_url} alt={card.name} className="card-image" />

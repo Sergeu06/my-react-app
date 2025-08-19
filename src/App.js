@@ -31,7 +31,7 @@ import OpenBoxPage from "./components/OpenBoxPage";
 import Collection from "./components/CollectionPage";
 import Profile from "./components/ProfilePage";
 import FightPage from "./components/FightPage";
-import Game from "./components/GamePage";
+import Game from "./components/game/GamePage";
 import UpgradePage from "./components/UpgradePage";
 import Raid from "./components/raid-boss/RaidPage";
 import { UserProvider } from "./components/UserContext";
@@ -117,6 +117,8 @@ function App() {
   const startParam = searchParams.get("start");
   const [uid, setUid] = useState(startParam || "dev-user");
   const [direction, setDirection] = useState(0);
+  const backgroundRef = useRef(null);
+  const [firstTimerStarted, setFirstTimerStarted] = useState(false);
 
   const [, setTelegramUser] = useState(null);
   const [isVerified, setIsVerified] = useState(false);
@@ -179,6 +181,21 @@ function App() {
     trackTouch: true,
     preventScrollOnSwipe: true,
   });
+
+  useEffect(() => {
+    const background = backgroundRef.current;
+
+    const handleScroll = () => {
+      if (background) {
+        const scrollTop = window.scrollY;
+        const speedFactor = -0.4;
+        background.style.backgroundPositionY = `${scrollTop * speedFactor}px`;
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     const isDev = window.location.hostname === "localhost";
@@ -322,9 +339,9 @@ function App() {
     <UserProvider>
       <div>
         <div className="safe-container" {...handlers}>
-          <div className="background-container" />
+          <div className="background-container" ref={backgroundRef} />
           <div className="background-overlay" />
-          <div className="game-version">v0.7.69.23</div>
+          <div className="game-version">v0.7.70.25</div>
 
           <CurrencyBalance />
 

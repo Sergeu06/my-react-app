@@ -42,8 +42,15 @@ function ShopPage({ uid }) {
   const [, setAnimationCardData] = useState(null);
   const [, setAnimationAmount] = useState(1);
   const boxContentsCache = useRef({});
-  const navigate = useNavigate();
+  const [lockedTooltip, setLockedTooltip] = useState(null);
 
+  const navigate = useNavigate();
+  const rarityAccessLevel = {
+    обычная: 1,
+    редкая: 3,
+    эпическая: 5,
+    легендарная: 7,
+  };
   useEffect(() => {
     if (showBoxInfo) {
       // Показать с небольшой задержкой (для анимации)
@@ -121,7 +128,12 @@ function ShopPage({ uid }) {
       setTooltipPosition({ x: touch.clientX, y: touch.clientY });
     }, 500);
   };
-
+  const handleLockedCardClick = (card) => {
+    setLockedTooltip(
+      `Карта "${card.name}" доступна с уровня ${card.requiredLevel}`
+    );
+    setTimeout(() => setLockedTooltip(null), 3500);
+  };
   const handleTouchEnd = () => {
     clearTimeout(holdTimer.current);
     setTooltipCard(null);
@@ -245,24 +257,34 @@ function ShopPage({ uid }) {
         if (cardIds.includes(doc.id)) cardsMap[doc.id] = doc.data();
       });
 
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+      const userLevel = userSnap.exists() ? userSnap.data().stats.lvl || 1 : 1;
+
       const cardsData = cardIds.map((cardId) => {
         const card = cardsMap[cardId] || {};
-        const shop = shopCardsMap[cardId];
+        const shopItem = shopCardsMap[cardId] || {};
+        const rarity = (card.rarity || "обычная").toLowerCase();
+        const requiredLevel = rarityAccessLevel[rarity] || 1;
+        const locked = userLevel < requiredLevel;
+
         return {
           card_id: cardId,
           name: card.name || "Без имени",
           image_url: card.image_url || "",
           description: card.description || "",
-          price: shop.price,
-          quantity: shop.quantity,
-          total_quantity: shop.total_quantity,
+          price: shopItem.price,
+          quantity: shopItem.quantity,
+          total_quantity: shopItem.total_quantity,
           priority: card.priority,
           damage: card.damage,
           damage_multiplier: card.damage_multiplier,
           remove_multiplier: card.remove_multiplier,
           damage_over_time: card.damage_over_time || [],
           heal: card.heal,
-          rarity: (card.rarity || "обычная").toLowerCase(),
+          requiredLevel,
+          rarity,
+          locked,
         };
       });
 
@@ -298,6 +320,10 @@ function ShopPage({ uid }) {
   const handleBuyCard = async () => {
     if (!selectedCard || purchaseAmount <= 0 || selectedCard.quantity <= 0) {
       setError("Недопустимые параметры покупки.");
+      return;
+    }
+    if (selectedCard.locked) {
+      setError("Карта недоступна для вашего уровня.");
       return;
     }
 
@@ -530,12 +556,27 @@ function ShopPage({ uid }) {
                         key={card.card_id}
                         card={card}
                         showQuantityBadge={true}
+                        rarityAccessLevel={rarityAccessLevel}
                         glowColor={getGlowColor(card)}
-                        onClick={() => handleCardClick(card)}
+                        onClick={() =>
+                          card.locked
+                            ? handleLockedCardClick(card)
+                            : handleCardClick(card)
+                        }
                         quantityBadge={
                           <div className="card-quantity-badge">
-                            {card.quantity}/{card.total_quantity}
+                            {`${card.quantity}/${card.total_quantity}`}
                           </div>
+                        }
+                        className={`${card.locked ? "locked-card" : ""} ${
+                          card.quantity <= 0 ? "locked-card" : ""
+                        }`}
+                        title={
+                          card.locked
+                            ? `Доступно с уровня ${
+                                rarityAccessLevel[card.rarity] || 1
+                              }`
+                            : ""
                         }
                         onTouchStart={(e) => handleTouchStart(card, e)}
                         onTouchEnd={handleTouchEnd}
@@ -634,7 +675,11 @@ function ShopPage({ uid }) {
 
                   <button
                     className="buy-btn"
-                    disabled={selectedCard.quantity <= 0 || purchaseAmount <= 0}
+                    disabled={
+                      selectedCard.locked ||
+                      selectedCard.quantity <= 0 ||
+                      purchaseAmount <= 0
+                    }
                     onClick={handlePurchaseClick}
                   >
                     {isConfirmingPurchase ? (
@@ -749,7 +794,7 @@ function ShopPage({ uid }) {
             </div>
           </div>
         )}
-
+        {lockedTooltip && <div className="locked-tooltip">{lockedTooltip}</div>}
         <CardTooltip card={tooltipCard} position={tooltipPosition} />
       </div>
     </div>

@@ -145,3 +145,10 @@
 .box-container.loading {
   animation: heartbeat 1.8s ease-in-out infinite;
 }
+/* финальные состояния у тебя уже заданы классами .open / .visible.
+   этот класс просто убирает плавность, чтобы «доскакать» мгновенно */
+.lid.no-anim,
+.card-reveal.no-anim {
+  transition: none !important;
+  animation: none !important;
+}

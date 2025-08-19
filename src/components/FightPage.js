@@ -8,7 +8,7 @@ import {
   set as rtdbSet,
 } from "firebase/database";
 import { db, database } from "./firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 
 import { useNavigate } from "react-router-dom";
@@ -24,9 +24,8 @@ function FightPage({ uid }) {
   const [tip, setTip] = useState(null);
   const [player1Name, setPlayer1Name] = useState("");
   const [player2Name, setPlayer2Name] = useState("");
-  const [activeSkill, setActiveSkill] = useState("");
-  const [skillList, setSkillList] = useState([]);
-  const [showSkillModal, setShowSkillModal] = useState(false);
+  const [, setActiveSkill] = useState("");
+  const [, setSkillList] = useState([]);
   const isCancelled = useRef(false);
   const navigate = useNavigate();
   const [showInfoModal, setShowInfoModal] = useState(null); // null | 'pvp' | 'raid'
@@ -110,16 +109,6 @@ function FightPage({ uid }) {
 
   const closeLeaderboardModal = () => {
     setShowLeaderboardModal(false);
-  };
-
-  const handleEquipSkill = async (skill) => {
-    try {
-      await updateDoc(doc(db, "users", uid), { active_skill_i: skill });
-      setActiveSkill(skill);
-      setShowSkillModal(false);
-    } catch (err) {
-      console.error("Ошибка при установке активного навыка:", err);
-    }
   };
 
   const handleOpenProfile = (profileUserId) => {
@@ -413,17 +402,11 @@ function FightPage({ uid }) {
               onClick={(e) => e.stopPropagation()}
               style={{ maxWidth: 500 }}
             >
-              <button
-                className="close-button"
-                onClick={() => setShowInfoModal(null)}
-              >
-                ✕
-              </button>
               <h3>{showInfoModal === "pvp" ? "PvP режим" : "Режим Рейд"}</h3>
               <p>
                 {showInfoModal === "pvp"
                   ? "В режиме PvP вы сражаетесь против других игроков. Для начала матча необходимо минимум 7 карт в колоде PvP. Победа дает награды и повышает ваш рейтинг."
-                  : "В режиме Рейд вы сражаетесь против могущественного босса. Используйте особые стратегии и активные навыки, чтобы нанести как можно больше урона. Требуется минимум 7 карт в колоде Raid."}
+                  : "В режиме Рейд вы сражаетесь против могущественных боссов. Используйте особые стратегии, чтобы нанести как можно больше урона. Требуется минимум 7 карт в колоде Raid. "}
               </p>
             </div>
           </div>
@@ -501,52 +484,12 @@ function FightPage({ uid }) {
         )}
       </div>
 
-      {/* 🧠 Блок выбора навыка */}
-      <div className="skill-slot-container">
-        <button
-          className="skill-slot-button"
-          onClick={() => setShowSkillModal(true)}
-        >
-          {activeSkill ? `🎯 ${activeSkill}` : "🌀 Навык не выбран"}
-        </button>
-      </div>
-
-      {showSkillModal && (
-        <div className="modal-overlay">
-          <div className="modal-window">
-            <button
-              className="close-button"
-              onClick={() => setShowSkillModal(false)}
-            >
-              ✕
-            </button>
-            <h3>Выберите активный навык</h3>
-            {skillList.length === 0 ? (
-              <p>Нет доступных навыков</p>
-            ) : (
-              <ul className="skill-list">
-                {skillList.map((skill) => (
-                  <li key={skill}>
-                    <button
-                      className="skill-option-button"
-                      onClick={() => handleEquipSkill(skill)}
-                    >
-                      {skill}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      )}
-
       {introStage && (
         <div className="fight-countdown-overlay">
           {introStage === "player1" && <p>⚔️ {player1Name}</p>}
-          {introStage === "vs" && <p>VS</p>}
+          {introStage === "vs" && <p>против</p>}
           {introStage === "player2" && <p>🛡️ {player2Name}</p>}
-          {introStage === "countdown" && <p>Fight!</p>}
+          {introStage === "countdown" && <p>1 Раунд!</p>}
         </div>
       )}
 
@@ -580,7 +523,7 @@ function FightPage({ uid }) {
                 className="fight-btn-search"
                 onClick={handleSearchOpponent}
               >
-                Поиск соперника
+                Дуэль
               </button>
               <button
                 className="info-button"

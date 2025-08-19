@@ -1,14 +1,20 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { db, database, retryRequest, update } from "./firebase";
 import { ref, get, remove } from "firebase/database";
-import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  arrayUnion,
+  runTransaction,
+} from "firebase/firestore";
 
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import IconButton from "@mui/material/IconButton";
 
 import FramedCard from "../utils/FramedCard";
-import MarketModal from "./MarketModal"; // Импорт модального окна
+import MarketModal from "./MarketModal";
 
 function useQuery() {
   return new URLSearchParams(window.location.search);
@@ -227,7 +233,14 @@ function Market({ setError }) {
         return;
       }
 
-      if (cardData.owner === currentUid) {
+      if (cardData.sell === false) {
+        setError("Карта больше недоступна.");
+        return;
+      }
+
+      const sellerUid = cardData.owner;
+
+      if (sellerUid === currentUid) {
         await handleRemoveFromMarket();
         return;
       }
@@ -237,22 +250,29 @@ function Market({ setError }) {
       const buyerData = buyerDoc.exists() ? buyerDoc.data() : {};
 
       if (buyerData.balance >= selectedCard.price) {
+        // 1. Списываем у покупателя
         await updateDoc(buyerRef, {
           balance: buyerData.balance - selectedCard.price,
           cards: arrayUnion(selectedCard.key),
         });
 
+        // 2. Выплата продавцу
         const payout = Math.floor(selectedCard.price * 0.92);
+        if (sellerUid && sellerUid !== currentUid) {
+          const sellerRef = doc(db, "users", sellerUid);
 
-        if (selectedCard.sellerUid) {
-          const sellerRef = doc(db, "users", selectedCard.sellerUid);
-          const sellerDoc = await getDoc(sellerRef);
-          const sellerData = sellerDoc.exists() ? sellerDoc.data() : {};
-          await updateDoc(sellerRef, {
-            balance: (sellerData.balance || 0) + payout,
+          await runTransaction(db, async (transaction) => {
+            const sellerSnap = await transaction.get(sellerRef);
+            if (!sellerSnap.exists()) return;
+
+            const currentBalance = sellerSnap.data().balance || 0;
+            transaction.update(sellerRef, {
+              balance: currentBalance + payout,
+            });
           });
         }
 
+        // 3. Обновляем карточку и убираем с рынка
         await retryRequest(() =>
           update(ref(database, `cards/${selectedCard.key}`), {
             owner: currentUid,
@@ -262,6 +282,7 @@ function Market({ setError }) {
 
         await remove(ref(database, `market/${selectedCard.key}`));
 
+        // 4. Обновляем UI
         const updatedFullList = allCardsFull.filter(
           (card) => card.key !== selectedCard.key
         );
@@ -344,7 +365,6 @@ function Market({ setError }) {
         </button>
       </div>
 
-      {/* Используем компонент модалки */}
       <MarketModal
         card={selectedCard}
         onClose={closePurchaseModal}

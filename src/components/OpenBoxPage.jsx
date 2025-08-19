@@ -1,7 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { db, database } from "./firebase";
-
 import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { set, ref as databaseRef } from "firebase/database";
 import "./OpenBoxPage.css";
@@ -18,11 +17,24 @@ function OpenBoxPage({ uid }) {
   const [cardVisible, setCardVisible] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [skipAnim, setSkipAnim] = useState(false); // ⬅ для мгновенного завершения
+
+  // refs для актуального состояния в одном обработчике кликов
+  const clickStepRef = useRef(clickStep);
+  const isReadyRef = useRef(isReady);
+  const animEndedRef = useRef(false); // закончилась ли анимация
+  const animRunningRef = useRef(false); // идёт ли анимация
+
+  useEffect(() => {
+    clickStepRef.current = clickStep;
+  }, [clickStep]);
+  useEffect(() => {
+    isReadyRef.current = isReady;
+  }, [isReady]);
 
   useEffect(() => {
     const addCardToInventory = async () => {
       if (!resultCard || !uid) return;
-
       try {
         const userRef = doc(db, "users", uid);
         const userSnap = await getDoc(userRef);
@@ -38,8 +50,6 @@ function OpenBoxPage({ uid }) {
           throw new Error("Оригинальная карта не найдена");
 
         const cardData = originalCardSnap.data();
-
-        // Создаем новую карту в Realtime Database
         const newId = crypto.randomUUID();
 
         await set(databaseRef(database, `cards/${newId}`), {
@@ -53,19 +63,11 @@ function OpenBoxPage({ uid }) {
           increase: cardData.increase ?? 1,
         });
 
-        // Добавляем ID карты в массив пользователя
-        await updateDoc(userRef, {
-          cards: arrayUnion(newId),
-        });
-
-        console.log(
-          `✅ Карта "${cardData.name}" добавлена в инвентарь пользователя.`
-        );
+        await updateDoc(userRef, { cards: arrayUnion(newId) });
       } catch (err) {
         console.error("[Лутбокс] Ошибка добавления карты в инвентарь:", err);
       }
     };
-
     addCardToInventory();
   }, [resultCard, uid]);
 
@@ -86,16 +88,13 @@ function OpenBoxPage({ uid }) {
       for (const cardId of cardIds) {
         const cardSnap = await getDoc(doc(db, "cards", cardId));
         const cardData = cardSnap.data();
-        if (cardData) {
-          cardsData.push({ id: cardId, ...cardData });
-        }
+        if (cardData) cardsData.push({ id: cardId, ...cardData });
       }
 
       const rarities = ["Обычная", "Редкая", "Эпическая", "Легендарная"];
       const cardsByRarity = {};
-      for (const rarity of rarities) {
-        cardsByRarity[rarity] = cardsData.filter((c) => c.rarity === rarity);
-      }
+      for (const r of rarities)
+        cardsByRarity[r] = cardsData.filter((c) => c.rarity === r);
 
       const rarityChances = {
         Обычная: boxData.Обычная || 0,
@@ -104,65 +103,39 @@ function OpenBoxPage({ uid }) {
         Легендарная: boxData.Легендарная || 0,
       };
 
-      const cardChances = {};
-      for (const rarity of rarities) {
-        const pool = cardsByRarity[rarity] || [];
-        const perCardChance =
-          pool.length > 0 ? rarityChances[rarity] / pool.length : 0;
-
-        for (const card of pool) {
-          cardChances[card.id] = perCardChance;
-        }
-      }
-
-      // 🎯 Логи
-      console.log("🎯 Все шансы на выпадение по картам:");
-      for (const card of cardsData) {
-        const chance = cardChances[card.id] ?? 0;
-        console.log(
-          `- ${card.name} (${card.rarity}): ${chance.toFixed(2)}% (ID: ${
-            card.id
-          })`
-        );
-      }
-
       const totalWeight = Object.values(rarityChances).reduce(
         (a, b) => a + b,
         0
       );
-      const rand = Math.random() * totalWeight;
+      let rand = Math.random() * totalWeight;
+      let selectedRarity =
+        rarities.find((r) => (rand -= rarityChances[r]) <= 0) || rarities[0];
 
-      let selectedRarity = null;
-      let cumulative = 0;
-      for (const rarity of rarities) {
-        cumulative += rarityChances[rarity];
-        if (rand <= cumulative) {
-          selectedRarity = rarity;
-          break;
-        }
-      }
-
-      const selectedPool = cardsByRarity[selectedRarity] || [];
-      if (selectedPool.length === 0) {
+      const pool = cardsByRarity[selectedRarity] || [];
+      if (pool.length === 0) {
         setResultCard(null);
         setIsOpening(false);
         setClickStep(2);
         return;
       }
 
-      const selectedCard =
-        selectedPool[Math.floor(Math.random() * selectedPool.length)];
+      const selectedCard = pool[Math.floor(Math.random() * pool.length)];
       setResultCard(selectedCard);
-      setDropChance(cardChances[selectedCard.id]?.toFixed(2));
 
-      // 🎯 Предзагрузка изображения
+      const perCardChance =
+        pool.length > 0
+          ? (rarityChances[selectedRarity] / pool.length).toFixed(2)
+          : "0";
+      setDropChance(perCardChance);
+
+      // предзагрузка
       const img = new Image();
       img.src = selectedCard.image_url;
       img.onload = () => {
         setTimeout(() => {
-          setIsReady(true); // Разрешаем клик
-          setLoading(false); // Убираем флаг загрузки
-        }, 300); // ⏱ Плавный переход, можно настроить
+          setIsReady(true);
+          setLoading(false);
+        }, 300);
       };
     } catch (err) {
       console.error("Ошибка при открытии коробки:", err);
@@ -177,24 +150,62 @@ function OpenBoxPage({ uid }) {
     openBox();
   }, [boxId, navigate, uid, openBox]);
 
-  useEffect(() => {
-    const handleClick = () => {
-      if (!isReady) return; // ⛔ Нельзя кликать до загрузки
+  // конец анимации (ловим transition/animation end)
+  const handleAnimEnd = useCallback(() => {
+    if (animEndedRef.current || clickStepRef.current !== 1) return;
+    animEndedRef.current = true;
+    animRunningRef.current = false;
+    setClickStep(2);
+  }, []);
 
-      if (clickStep === 0) {
-        setClickStep(1);
-        setIsOpening(false); // ⬅ крышка начинает анимацию
-        setCardVisible(true); // ⬅ карта появляется параллельно
-      } else if (clickStep === 1) {
+  // глобальный клик — один обработчик, всегда с актуальным состоянием из ref
+  const handleDocClick = useCallback(() => {
+    if (!isReadyRef.current) return;
+
+    const step = clickStepRef.current;
+
+    if (step === 0) {
+      // первый клик — старт анимации
+      setSkipAnim(false);
+      animEndedRef.current = false;
+      animRunningRef.current = true;
+
+      setClickStep(1);
+      setIsOpening(false); // добавит класс .open у крышки
+      setCardVisible(true); // покажет карту
+
+      // дальше ждём handleAnimEnd
+      return;
+    }
+
+    if (step === 1) {
+      if (!animEndedRef.current && animRunningRef.current) {
+        setSkipAnim(true); // отключаем плавность
+        animEndedRef.current = true;
+        animRunningRef.current = false;
+
+        // Переводим в финальное состояние в следующем кадре
+        requestAnimationFrame(() => {
+          setIsOpening(false); // крышка полностью открыта (убрана)
+          setCardVisible(true); // карта полностью показана
+        });
+
         setClickStep(2);
-      } else if (clickStep === 2) {
-        navigate(`/shop?start=${uid}`);
+        return;
       }
-    };
+      navigate(`/shop?start=${uid}`);
+      return;
+    }
 
-    document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
-  }, [clickStep, navigate, uid, isReady]);
+    // step >= 2 — переходим в магазин
+    navigate(`/shop?start=${uid}`);
+  }, [navigate, uid]);
+
+  // навешиваем/снимаем обработчик один раз
+  useEffect(() => {
+    document.addEventListener("click", handleDocClick);
+    return () => document.removeEventListener("click", handleDocClick);
+  }, [handleDocClick]);
 
   return (
     <div className="open-box-page">
@@ -217,7 +228,14 @@ function OpenBoxPage({ uid }) {
         )}
 
         <img src="/images/plate.png" className="plate" alt="plate" />
-        <div className={`card-reveal ${cardVisible ? "visible" : ""}`}>
+
+        <div
+          className={`card-reveal ${cardVisible ? "visible" : ""} ${
+            skipAnim ? "no-anim" : ""
+          }`}
+          onTransitionEnd={handleAnimEnd}
+          onAnimationEnd={handleAnimEnd}
+        >
           {resultCard && (
             <img
               src={resultCard.image_url}
@@ -229,8 +247,12 @@ function OpenBoxPage({ uid }) {
 
         <img
           src="/images/lid.png"
-          className={`lid ${!isOpening ? "open" : ""}`}
+          className={`lid ${!isOpening ? "open" : ""} ${
+            skipAnim ? "no-anim" : ""
+          }`}
           alt="lid"
+          onTransitionEnd={handleAnimEnd}
+          onAnimationEnd={handleAnimEnd}
         />
       </div>
 
