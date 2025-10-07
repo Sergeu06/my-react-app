@@ -11,4 +11,63 @@
   object-fit: cover;
   border: 2px solid #ffa500; /* оранжевая рамка */
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+
+  position: relative; /* 👈 теперь damage-number будет отталкиваться от аватарки */
+}
+
+.priority-label {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #ffa500;
+  margin-left: 6px; /* 👈 добавляем отступ справа от HP */
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hp-bar-container {
+  display: flex; /* горизонтальное расположение */
+  align-items: center; /* выравнивание по центру по вертикали */
+  gap: 6px; /* расстояние между HP и "П" */
+  position: relative;
+  width: auto; /* чтобы буква не накладывалась */
+}
+
+/* Общие стили тултипа */
+.priority-tooltip {
+  position: absolute;
+  top: 50%;
+  left: 100%; /* справа от буквы */
+  transform: translateY(-50%) translateX(8px); /* вертикально по центру, небольшой отступ справа */
+  background: rgba(46, 46, 46, 0.95);
+  color: #fff;
+  font-size: 0.8em;
+  padding: 8px 12px;
+  border-radius: 8px;
+  width: 220px;
+  text-align: left;
+  animation: fadeIn 0.2s ease-out;
+  line-height: 1.4em;
+  z-index: 20000;
+}
+
+/* Убираем горизонтальные правки */
+.tooltip-above,
+.tooltip-below {
+  top: 50%; /* только вертикальное центрирование */
+  left: 100%;
+  transform: translateY(-50%) translateX(8px);
+  z-index: 20000;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(8px);
+  }
 }

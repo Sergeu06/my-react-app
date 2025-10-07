@@ -8,10 +8,9 @@ import {
   database,
 } from "./firebase";
 import "./Collection.css";
+import EditFloatingButton from "./EditFloatingButton";
 import FramedCard from "../utils/FramedCard";
 import CardModal from "./CardModal";
-import EditIcon from "@mui/icons-material/Edit";
-import CloseIcon from "@mui/icons-material/Close";
 
 function Collection({ uid }) {
   const [playerCards, setPlayerCards] = useState([]);
@@ -25,13 +24,20 @@ function Collection({ uid }) {
 
   const isAddingToDeck = useRef(false);
   const isRemovingFromDeck = useRef(false);
+  const [showDeckHint, setShowDeckHint] = useState(false);
+  const deckRef = useRef(null);
+
+  const MIN_PVP_DECK_SIZE = 10;
+  const MIN_RAID_DECK_SIZE = 7;
   const MAX_DECK_SIZE = 20;
+
+  const getMinDeckSize = () =>
+    activeDeck === 1 ? MIN_PVP_DECK_SIZE : MIN_RAID_DECK_SIZE;
 
   useEffect(() => {
     const savedDeck = localStorage.getItem("collection_activeDeck");
-    if (savedDeck === "1" || savedDeck === "2") {
+    if (savedDeck === "1" || savedDeck === "2")
       setActiveDeck(Number(savedDeck));
-    }
   }, []);
 
   useEffect(() => {
@@ -46,6 +52,21 @@ function Collection({ uid }) {
       4000
     );
   };
+
+  useEffect(() => {
+    if (!showDeckHint) return;
+    const hideHint = () => setShowDeckHint(false);
+
+    document.addEventListener("click", hideHint, { once: true });
+    document.addEventListener("touchstart", hideHint, { once: true });
+    document.addEventListener("scroll", hideHint, { once: true });
+
+    return () => {
+      document.removeEventListener("click", hideHint);
+      document.removeEventListener("touchstart", hideHint);
+      document.removeEventListener("scroll", hideHint);
+    };
+  }, [showDeckHint]);
 
   useEffect(() => {
     const fetchPlayerData = async () => {
@@ -221,8 +242,9 @@ function Collection({ uid }) {
 
   const handleCloseModal = () => setSelectedCard(null);
 
-  return (
-    <div className="collection-container">
+  // --- Вынесем весь контент Collection в отдельный компонент ---
+  const CollectionContent = () => (
+    <>
       <div className="notification-container">
         {notifications.map((note) => (
           <div key={note.id} className={`notification ${note.type}`}>
@@ -248,20 +270,51 @@ function Collection({ uid }) {
         </div>
       </div>
 
-      <button
-        className="edit-floating-button"
-        onClick={() => setIsEditMode((prev) => !prev)}
-      >
-        {isEditMode ? (
-          <CloseIcon style={{ color: "#ffa500" }} />
-        ) : (
-          <EditIcon style={{ color: "#ffa500" }} />
-        )}
-      </button>
-
       <div className="deck-info highlight-text">
-        {getCurrentDeck().length} / {MAX_DECK_SIZE}
+        <span
+          ref={deckRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (getCurrentDeck().length < getMinDeckSize())
+              setShowDeckHint(true);
+          }}
+          style={{
+            color:
+              getCurrentDeck().length < getMinDeckSize() ? "red" : "inherit",
+            fontWeight: "bold",
+            cursor:
+              getCurrentDeck().length < getMinDeckSize()
+                ? "pointer"
+                : "default",
+          }}
+        >
+          {getCurrentDeck().length}
+        </span>
+        / {MAX_DECK_SIZE}
       </div>
+
+      {showDeckHint && (
+        <div
+          style={{
+            position: "fixed",
+            top: 150,
+            right: "5%",
+            backgroundColor: "#1e1e1e",
+            color: "#fff",
+            padding: "12px 16px",
+            borderRadius: "8px",
+            border: "1px solid #ffa500",
+            fontSize: "12px",
+            zIndex: 10002,
+            maxWidth: "260px",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+          }}
+        >
+          ⚠️ Для начала {activeDeck === 1 ? "PvP" : "Raid"} матча требуется
+          минимум <strong>{getMinDeckSize()}</strong> карт. <br />У вас сейчас:{" "}
+          <strong>{getCurrentDeck().length}</strong>.
+        </div>
+      )}
 
       <div className="grid">
         {getCurrentDeck().map((card, index) => (
@@ -327,6 +380,21 @@ function Collection({ uid }) {
           database={database}
         />
       )}
+    </>
+  );
+
+  return (
+    <div className="collection-container">
+      {/* Контент анимируемой страницы */}
+      <div className="page-stack">
+        <CollectionContent />
+      </div>
+
+      {/* Кнопка вынесена наружу, фиксирована на экране */}
+      <EditFloatingButton
+        isEditMode={isEditMode}
+        onToggle={() => setIsEditMode((prev) => !prev)}
+      />
     </div>
   );
 }

@@ -22,6 +22,7 @@ import InfoIcon from "@mui/icons-material/Info";
 import "./ShopPage.css";
 import { useNavigate } from "react-router-dom";
 import { getGlowColor } from "../utils/FramedCard";
+import { remove } from "firebase/database";
 
 function ShopPage({ uid }) {
   const [activeTab, setActiveTab] = useState("shop");
@@ -51,6 +52,24 @@ function ShopPage({ uid }) {
     эпическая: 5,
     легендарная: 7,
   };
+  // Блокировка скролла при открытии оверлея
+  useEffect(() => {
+    if (selectedCard) {
+      const scrollY = window.scrollY;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+      document.body.style.overflow = "hidden";
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.overflow = "";
+      if (scrollY) window.scrollTo(0, parseInt(scrollY || "0") * -1);
+    }
+  }, [selectedCard]);
+
   useEffect(() => {
     if (showBoxInfo) {
       // Показать с небольшой задержкой (для анимации)
@@ -302,10 +321,28 @@ function ShopPage({ uid }) {
       damage: [],
       heal: [],
       damage_multiplier: [],
+      damage_over_time: [],
+      remove_multiplier: [],
       other: [],
     };
 
     for (const card of cards) {
+      // 1️⃣ — карты поэтапного урона
+      if (
+        Array.isArray(card.damage_over_time) &&
+        card.damage_over_time.length > 0
+      ) {
+        groups.damage_over_time.push(card);
+        continue;
+      }
+
+      // 2️⃣ — карты снятия эффектов множителя
+      if (card.remove_multiplier === true) {
+        groups.remove_multiplier.push(card);
+        continue;
+      }
+
+      // 3️⃣ — стандартные типы
       const { type } = getMainCharacteristic(card);
       if (type && groups[type]) {
         groups[type].push(card);
@@ -427,15 +464,17 @@ function ShopPage({ uid }) {
   const categoryNames = {
     damage: "Боевые карты (Урон)",
     heal: "Карты лечения",
-    damage_multiplier: "Усилители урона",
+    damage_multiplier: "Карты Усилители урона",
+    damage_over_time: "Карты Поэтапного Урона",
+    remove_multiplier: "Карты снятию эфектов",
     other: "Прочие карты",
   };
 
   const handleCardClick = (card) => {
-    console.log("Clicked card rarity:", card.rarity);
     setSelectedCard(card);
     setShowBoxInfo(false);
     setBoxCardsDetails([]);
+
     if (card.rarity === "lootbox") {
       const rarityChances = {
         Обычная: card["Обычная"] ?? 0,
@@ -444,10 +483,12 @@ function ShopPage({ uid }) {
         Легендарная: card["Легендарная"] ?? 0,
       };
 
-      if (boxContentsCache.current[card.id]) {
-        setBoxCardsDetails(boxContentsCache.current[card.id]);
+      // Используем кеш сразу
+      const cached = boxContentsCache.current[card.card_id];
+      if (cached) {
+        setBoxCardsDetails(cached);
       } else {
-        fetchBoxCardsDetails(card.id, rarityChances);
+        fetchBoxCardsDetails(card.card_id, rarityChances);
       }
     }
   };

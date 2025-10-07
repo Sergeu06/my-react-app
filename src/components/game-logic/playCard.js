@@ -1,20 +1,19 @@
 // Заглушка розыгрыша карты
+export default function playCardLogic({
+  hand,
+  playedCards,
+  recipes,
+  cardToPlay,
+}) {
+  const cost = cardToPlay.cost ?? cardToPlay.value ?? 0;
 
-export default function playCardLogic({ hand, playedCards, recipes, cardToPlay }) {
-    // Проверим, хватает ли ресурсов
-    if (recipes < (cardToPlay.cost || 0)) {
-      throw new Error("Недостаточно ресурсов!");
-    }
-  
-    // Убираем карту из руки
-    const newHand = hand.filter((c) => c.id !== cardToPlay.id);
-  
-    // Добавляем карту в список разыгранных
-    const newPlayed = [...playedCards, cardToPlay];
-  
-    // Списываем стоимость
-    const newRecipes = recipes - (cardToPlay.cost || 0);
-  
-    return { hand: newHand, playedCards: newPlayed, recipes: newRecipes };
+  if (recipes < cost) {
+    throw new Error("Недостаточно ресурсов!");
   }
-  
+
+  const newHand = hand.filter((c) => c.id !== cardToPlay.id);
+  const newPlayed = [...playedCards, cardToPlay];
+  const newRecipes = recipes - cost;
+
+  return { hand: newHand, playedCards: newPlayed, recipes: newRecipes };
+}

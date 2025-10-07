@@ -57,9 +57,13 @@
 }
 
 .card-corner.cost {
+  position: absolute;
   color: #00ff00;
-  top: -12px;
-  left: -12px;
+  top: -4px;
+  left: -5px;
+  font-weight: 700;
+  font-size: 0.8em; /* относительно размера родителя */
+  padding: 0.4vh 1.2vw;
 }
 
 .card-corner.damage,

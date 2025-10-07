@@ -10,14 +10,14 @@ import {
 import { db, database } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
-
 import { useNavigate } from "react-router-dom";
-import "./FightPage.css"; // <- импорт стилей
+import "./FightPage.css";
 
-function FightPage({ uid }) {
-  const [isSearching, setIsSearching] = useState(false);
-  const [secondsElapsed, setSecondsElapsed] = useState(0);
-  const [lobbyId, setLobbyId] = useState(null);
+function FightPage({ uid, searchState, setSearchState }) {
+  const { isSearching, secondsElapsed, lobbyId } = searchState;
+  const [localSecondsElapsed, setLocalSecondsElapsed] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+
   const [countdown, setCountdown] = useState(null);
   const [playersInLobby, setPlayersInLobby] = useState(0);
   const [introStage, setIntroStage] = useState(null);
@@ -28,97 +28,132 @@ function FightPage({ uid }) {
   const [, setSkillList] = useState([]);
   const isCancelled = useRef(false);
   const navigate = useNavigate();
-  const [showInfoModal, setShowInfoModal] = useState(null); // null | 'pvp' | 'raid'
-
+  const [showInfoModal, setShowInfoModal] = useState(null);
+  // --- состояние для двух лидербордов ---
+  const [raidLeaderboard, setRaidLeaderboard] = useState([]);
+  const [pvpLeaderboard, setPvpLeaderboard] = useState([]);
+  const [activeBoard, setActiveBoard] = useState("raid"); // raid | pvp
   const [leaderboard, setLeaderboard] = useState([]);
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
   const [fullLeaderboard, setFullLeaderboard] = useState([]);
-
+  const [modalBoardType, setModalBoardType] = useState("raid");
+  // --- загрузка лидерборда PvP (топ-3 по RI) ---
   useEffect(() => {
-    const fetchSkills = async () => {
-      const userDoc = await getDoc(doc(db, "users", uid));
-      const data = userDoc.data();
-      setSkillList(data.active_skill || []);
-      setActiveSkill(data.active_skill_i || "");
-    };
-    if (uid) fetchSkills();
-  }, [uid]);
-
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
+    const fetchPvpLeaderboard = async () => {
       try {
         const usersCollection = collection(db, "users");
-        // Запрос: получить топ 3 по урону в рейде, урон может быть вложенным,
-        // но orderBy с вложенными полями поддерживается (например "stats.total_damage_raid").
         const leaderboardQuery = query(
           usersCollection,
-          orderBy("stats.total_damage_raid", "desc"),
+          orderBy("stats.RI", "desc"),
           limit(3)
         );
-
         const querySnapshot = await getDocs(leaderboardQuery);
         const topPlayers = [];
-
         querySnapshot.forEach((docSnap) => {
           const data = docSnap.data();
           topPlayers.push({
             userId: docSnap.id,
             nickname: data.nickname || "Игрок",
             avatar: data.avatar_url || "/default-avatar.png",
-            damage: data.stats?.total_damage_raid || 0,
+            value: data.stats?.RI || 0,
           });
         });
-
-        setLeaderboard(topPlayers);
+        setPvpLeaderboard(topPlayers);
       } catch (error) {
-        console.error("Ошибка загрузки лидерборда из Firestore:", error);
+        console.error("Ошибка загрузки лидерборда PvP:", error);
       }
     };
-
-    fetchLeaderboard();
+    fetchPvpLeaderboard();
   }, []);
-
-  const openLeaderboardModal = async () => {
+  // --- загрузка лидерборда рейда (топ-3) ---
+  useEffect(() => {
+    const fetchRaidLeaderboard = async () => {
+      try {
+        const usersCollection = collection(db, "users");
+        const leaderboardQuery = query(
+          usersCollection,
+          orderBy("stats.total_damage_raid", "desc"),
+          limit(3)
+        );
+        const querySnapshot = await getDocs(leaderboardQuery);
+        const topPlayers = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          topPlayers.push({
+            userId: docSnap.id,
+            nickname: data.nickname || "Игрок",
+            avatar: data.avatar_url || "/default-avatar.png",
+            value: data.stats?.total_damage_raid || 0,
+          });
+        });
+        setRaidLeaderboard(topPlayers);
+      } catch (error) {
+        console.error("Ошибка загрузки лидерборда рейда:", error);
+      }
+    };
+    fetchRaidLeaderboard();
+  }, []);
+  // --- автопереключение каждые 6 секунд ---
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveBoard((prev) => (prev === "raid" ? "pvp" : "raid"));
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
+  // --- загрузка полного лидерборда по типу ---
+  const openLeaderboardModal = async (type = "raid") => {
+    setModalBoardType(type);
     setShowLeaderboardModal(true);
     try {
       const usersCollection = collection(db, "users");
-      const leaderboardQuery = query(
-        usersCollection,
-        orderBy("stats.total_damage_raid", "desc")
-        // Можно поставить лимит, если нужно, или убрать, чтобы получить всех
-      );
-
+      const leaderboardQuery =
+        type === "raid"
+          ? query(usersCollection, orderBy("stats.total_damage_raid", "desc"))
+          : query(usersCollection, orderBy("stats.RI", "desc"));
       const querySnapshot = await getDocs(leaderboardQuery);
       const playersArray = [];
-
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
         playersArray.push({
           userId: docSnap.id,
           nickname: data.nickname || "Игрок",
           avatar: data.avatar_url || "/default-avatar.png",
-          damage: data.stats?.total_damage_raid || 0,
+          value:
+            type === "raid"
+              ? data.stats?.total_damage_raid || 0
+              : data.stats?.RI || 0,
         });
       });
-
       setFullLeaderboard(playersArray);
     } catch (error) {
-      console.error("Ошибка загрузки полного лидерборда из Firestore:", error);
+      console.error("Ошибка загрузки полного лидерборда:", error);
     }
   };
 
-  const closeLeaderboardModal = () => {
-    setShowLeaderboardModal(false);
-  };
-
+  const closeLeaderboardModal = () => setShowLeaderboardModal(false);
   const handleOpenProfile = (profileUserId) => {
     setShowLeaderboardModal(false);
     navigate(`/profile/${profileUserId}?start=${uid}`);
   };
 
+  // при старте поиска сбрасываем таймер
+  useEffect(() => {
+    if (!isSearching || !searchState.startTimestamp) {
+      setElapsed(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const diff = Math.floor((Date.now() - searchState.startTimestamp) / 1000);
+      setElapsed(diff);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isSearching, searchState.startTimestamp]);
+
+  // --- подсказки
   useEffect(() => {
     if (!isSearching) return setTip(null);
-
     const tips = [
       "💡 Совет: усиливайте карты в коллекции, чтобы увеличить их характеристики.",
       "🎯 Совет: проверьте свою колоду перед боем — сбалансируйте атаку и защиту.",
@@ -133,33 +168,23 @@ function FightPage({ uid }) {
       "👥 Подсказка: общайтесь с другими игроками — обмен опытом поможет быстрее освоиться в игре.",
     ];
     let tipTimeout;
-
     const showTip = () => {
       const randomTip = tips[Math.floor(Math.random() * tips.length)];
       setTip(randomTip);
-      tipTimeout = setTimeout(showTip, Math.floor(Math.random() * 5000) + 5000);
+      tipTimeout = setTimeout(showTip, Math.random() * 5000 + 5000);
     };
     showTip();
-
     return () => clearTimeout(tipTimeout);
   }, [isSearching]);
 
-  useEffect(() => {
-    if (!isSearching) return setSecondsElapsed(0);
-    const interval = setInterval(
-      () => setSecondsElapsed((prev) => prev + 1),
-      1000
-    );
-    return () => clearInterval(interval);
-  }, [isSearching]);
-
+  // --- старт поиска
   const handleSearchOpponent = async () => {
     if (!uid) return console.error("UID не передан");
     try {
       const userDoc = await getDoc(doc(db, "users", uid));
       const deck = userDoc.data()?.deck_pvp || [];
-      if (deck.length < 7) {
-        alert("Минимум 7 карты!");
+      if (deck.length < 10) {
+        alert("Минимум 10 карт!");
         return;
       }
     } catch (err) {
@@ -168,8 +193,6 @@ function FightPage({ uid }) {
     }
 
     isCancelled.current = false;
-    setIsSearching(true);
-    setSecondsElapsed(0);
 
     const lobbyRef = ref(database, "lobbies");
     const snapshot = await get(lobbyRef);
@@ -189,7 +212,6 @@ function FightPage({ uid }) {
           players: updatedPlayers,
         });
         joinedLobbyId = id;
-        console.log("Присоединился к лобби:", id);
         break;
       }
     }
@@ -202,50 +224,66 @@ function FightPage({ uid }) {
         status: "waiting",
         countdown: null,
       });
-      console.log("Создано новое лобби:", joinedLobbyId);
     }
-
-    setLobbyId(joinedLobbyId);
+    setSearchState({
+      isSearching: true,
+      searchStartPath: `/fight?start=${uid}`,
+      startTimestamp: Date.now(), // 👈 фиксированная точка отсчёта
+      lobbyId: joinedLobbyId,
+    });
   };
 
+  // --- отмена поиска
   const handleCancelSearch = async () => {
     isCancelled.current = true;
-    setIsSearching(false);
-    setSecondsElapsed(0);
-
-    if (!lobbyId) return;
+    if (!lobbyId) {
+      setSearchState({
+        isSearching: false,
+        searchStartPath: null,
+        secondsElapsed: 0,
+        lobbyId: null,
+      });
+      return;
+    }
 
     const lobbyRef = ref(database, `lobbies/${lobbyId}`);
     const snapshot = await get(lobbyRef);
     const lobby = snapshot.val();
 
-    if (!lobby) return;
-
-    if (lobby.players?.length === 1 && lobby.players[0] === uid) {
-      await rtdbSet(lobbyRef, null);
-      console.log("Удалено лобби:", lobbyId);
-    } else {
-      const updatedPlayers = lobby.players.filter((p) => p !== uid);
-      await update(lobbyRef, { players: updatedPlayers });
-      console.log("Вышел из лобби:", lobbyId);
+    if (lobby) {
+      if (lobby.players?.length === 1 && lobby.players[0] === uid) {
+        await rtdbSet(lobbyRef, null);
+      } else {
+        const updatedPlayers = lobby.players.filter((p) => p !== uid);
+        await update(lobbyRef, { players: updatedPlayers });
+      }
     }
 
-    setLobbyId(null);
+    setSearchState({
+      isSearching: false,
+      searchStartPath: null,
+      secondsElapsed: 0,
+      lobbyId: null,
+    });
+
     setPlayersInLobby(0);
     setCountdown(null);
     setIntroStage(null);
   };
 
+  // --- подписка на изменения в лобби
   useEffect(() => {
     if (!lobbyId) return;
-
     const lobbyRef = ref(database, `lobbies/${lobbyId}`);
     const unsubscribe = onValue(lobbyRef, async (snapshot) => {
       const lobby = snapshot.val();
       if (!lobby) {
-        console.log("Лобби удалено сервером.");
-        setLobbyId(null);
-        setIsSearching(false);
+        setSearchState({
+          isSearching: false,
+          searchStartPath: null,
+          secondsElapsed: 0,
+          lobbyId: null,
+        });
         setPlayersInLobby(0);
         setCountdown(null);
         setIntroStage(null);
@@ -254,20 +292,14 @@ function FightPage({ uid }) {
 
       const playersCount = lobby.players?.length || 0;
       setPlayersInLobby(playersCount);
-      if (typeof lobby.countdown === "number") {
-        setCountdown(lobby.countdown);
-      }
-
-      console.log("Текущее лобби:", lobby);
+      if (typeof lobby.countdown === "number") setCountdown(lobby.countdown);
 
       if (
         playersCount === 2 &&
         lobby.status === "waiting" &&
         lobby.players[0] === uid
       ) {
-        console.log("Я хост, запускаю countdown...");
         await update(lobbyRef, { status: "Play", countdown: 3 });
-
         const interval = setInterval(async () => {
           const snap = await get(lobbyRef);
           const curr = snap.val();
@@ -275,12 +307,10 @@ function FightPage({ uid }) {
             clearInterval(interval);
             return;
           }
-
           if (curr.countdown > 0) {
             await update(lobbyRef, { countdown: curr.countdown - 1 });
           } else {
             clearInterval(interval);
-            console.log("Countdown завершен.");
           }
         }, 1000);
       }
@@ -290,8 +320,6 @@ function FightPage({ uid }) {
         lobby.status === "Play" &&
         lobby.countdown === 0
       ) {
-        console.log("Начинаем бой!");
-
         const [uid1, uid2] = lobby.players;
         try {
           const doc1 = await getDoc(doc(db, "users", uid1));
@@ -316,85 +344,92 @@ function FightPage({ uid }) {
         }
       }
     });
-
     return () => unsubscribe();
-  }, [lobbyId, uid, navigate]);
+  }, [lobbyId, uid, navigate, setSearchState]);
 
   const formatTime = (totalSeconds) => {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
-
   return (
     <div>
       <div style={{ position: "relative", zIndex: 10 }}>
         {/* --- Лидерборд в правом верхнем углу --- */}
         <div
           className="leaderboard-container"
-          onClick={openLeaderboardModal}
+          onClick={() => openLeaderboardModal(activeBoard)}
           title="Кликните для просмотра полного списка"
           style={{
-            width: 200, // меньше ширина
+            width: 200,
             padding: "6px 8px",
             backgroundColor: "#1a1a1a",
             borderRadius: 8,
-            fontSize: 14, // уменьшенный шрифт
+            fontSize: 14,
             userSelect: "none",
             cursor: "pointer",
           }}
         >
-          <h4 style={{ margin: "0 0 8px 0", fontSize: 14 }}>Лидерборд</h4>
-          {leaderboard.length === 0 && <p>Загрузка...</p>}
-          {leaderboard.map((player, index) => (
-            <div
-              key={player.userId}
-              title={`${player.nickname} — урон: ${player.damage}`}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "2px 0",
-              }}
-            >
-              <span style={{ fontWeight: "bold", width: 18 }}>
-                {index + 1}.
-              </span>
-              <img
-                src={player.avatar}
-                alt={player.nickname}
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  flexShrink: 0,
-                }}
-              />
-              <span
-                style={{
-                  flexGrow: 1,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  lineHeight: 1,
-                }}
-              >
-                {player.nickname}
-              </span>
-              <span
-                style={{
-                  fontWeight: "bold",
-                  minWidth: 40,
-                  textAlign: "right",
-                  lineHeight: 1,
-                }}
-              >
-                {player.damage.toLocaleString()}
-              </span>
-            </div>
-          ))}
+          <h4 style={{ margin: "0 0 8px 0", fontSize: 14 }}>
+            {activeBoard === "raid" ? "Лидерборд рейда" : "Лидерборд PvP"}
+          </h4>
+
+          {/* 👇 ключ заставит React пересоздать div при смене activeBoard */}
+          <div key={activeBoard} className="leaderboard-switch">
+            {(activeBoard === "raid" ? raidLeaderboard : pvpLeaderboard)
+              .length === 0 && <p>Загрузка...</p>}
+            {(activeBoard === "raid" ? raidLeaderboard : pvpLeaderboard).map(
+              (player, index) => (
+                <div
+                  key={player.userId}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "2px 0",
+                  }}
+                >
+                  <span style={{ fontWeight: "bold", width: 18 }}>
+                    {index + 1}.
+                  </span>
+                  <img
+                    src={player.avatar}
+                    alt={player.nickname}
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      flexGrow: 1,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {player.nickname}
+                  </span>
+                  <span
+                    style={{
+                      fontWeight: "bold",
+                      minWidth: 40,
+                      textAlign: "right",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {player.value.toLocaleString()}
+                  </span>
+                </div>
+              )
+            )}
+          </div>
         </div>
+
         {showInfoModal && (
           <div className="modal-overlay" onClick={() => setShowInfoModal(null)}>
             <div
@@ -405,7 +440,7 @@ function FightPage({ uid }) {
               <h3>{showInfoModal === "pvp" ? "PvP режим" : "Режим Рейд"}</h3>
               <p>
                 {showInfoModal === "pvp"
-                  ? "В режиме PvP вы сражаетесь против других игроков. Для начала матча необходимо минимум 7 карт в колоде PvP. Победа дает награды и повышает ваш рейтинг."
+                  ? "В режиме PvP вы сражаетесь против других игроков. Для начала матча необходимо минимум 10 карт в колоде PvP. Победа дает награды и повышает ваш рейтинг."
                   : "В режиме Рейд вы сражаетесь против могущественных боссов. Используйте особые стратегии, чтобы нанести как можно больше урона. Требуется минимум 7 карт в колоде Raid. "}
               </p>
             </div>
@@ -428,22 +463,29 @@ function FightPage({ uid }) {
                 &times;
               </button>
 
-              <h3>Лидерборд рейда</h3>
+              <h3>
+                {modalBoardType === "raid"
+                  ? "Лидерборд рейда"
+                  : "Лидерборд Дуэли"}
+              </h3>
+
               {fullLeaderboard.length === 0 && <p>Загрузка...</p>}
               {fullLeaderboard.map((player, index) => (
                 <div
                   key={player.userId}
                   className="player-row"
-                  title={`${player.nickname} — урон: ${player.damage}`}
+                  title={`${player.nickname} — ${
+                    modalBoardType === "raid" ? "урон" : "RI"
+                  }: ${player.value}`}
                   style={{
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
                     padding: "6px 0",
                     borderBottom: "1px solid #333",
-                    cursor: "pointer", // добавить курсор-указатель
+                    cursor: "pointer",
                   }}
-                  onClick={() => handleOpenProfile(player.userId)} // добавляем обработчик клика
+                  onClick={() => handleOpenProfile(player.userId)}
                 >
                   <span style={{ fontWeight: "bold", width: 24 }}>
                     {index + 1}.
@@ -475,7 +517,7 @@ function FightPage({ uid }) {
                       textAlign: "right",
                     }}
                   >
-                    {player.damage.toLocaleString()}
+                    {player.value.toLocaleString()}
                   </span>
                 </div>
               ))}
@@ -498,7 +540,7 @@ function FightPage({ uid }) {
       {isSearching && playersInLobby < 2 && (
         <div className="fight-overlay">
           <div className="fight-spinner"></div>
-          <p className="fight-time">{formatTime(secondsElapsed)}</p>
+          <p className="fight-time">{formatTime(elapsed)}</p>
           <button className="fight-btn-cancel" onClick={handleCancelSearch}>
             Отменить поиск
           </button>
@@ -541,7 +583,7 @@ function FightPage({ uid }) {
                   try {
                     const userDoc = await getDoc(doc(db, "users", uid));
                     const raidDeck = userDoc.data()?.deck_raid || [];
-                    if (raidDeck.length < 3) {
+                    if (raidDeck.length < 7) {
                       alert(
                         "Для участия в рейде необходимо минимум 7 карт в колоде raid!"
                       );

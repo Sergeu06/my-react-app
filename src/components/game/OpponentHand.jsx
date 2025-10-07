@@ -2,11 +2,11 @@
 import React from "react";
 import "./game.css";
 
-function OpponentHand({ count }) {
-  const backImage = "/images/CARDB.jpg"; // путь к рубашке
+function OpponentHand({ count, style }) {
+  const backImage = "/CARDB.jpg";
 
   return (
-    <div className="opponent-hand">
+    <div className="opponent-hand" style={style}>
       {Array.from({ length: count }).map((_, idx) => (
         <img
           key={idx}

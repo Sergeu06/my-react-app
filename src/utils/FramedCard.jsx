@@ -48,14 +48,16 @@ function FramedCard({
   quantityBadge = null,
   showQuantityBadge = false,
   showLevel = false,
+  showPriority = false, // 👈 Новый флаг
   glowColor = null,
-  showName = true, // 👈 Новый флаг
+  showName = true,
 }) {
   const normalizedRarity = normalizeRarity(card.rarity);
   const frameSrc =
     rarityFrameMap[normalizedRarity] || rarityFrameMap["обычная"];
 
   const color = glowColor || getGlowColor(card);
+
   return (
     <div
       className="card-frame-wrapper"
@@ -64,6 +66,10 @@ function FramedCard({
     >
       {showLevel && card.lvl && (
         <div className="card-level-overlay">{toRoman(card.lvl)}</div>
+      )}
+
+      {showPriority && card.priority && (
+        <div className="card-priority-overlay">{card.priority}</div>
       )}
 
       <img src={frameSrc} alt="Рамка" className="card-border-frame" />

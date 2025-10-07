@@ -158,7 +158,7 @@ function UpgradePage() {
         </li>
       </ul>
 
-      <h4 style={{ marginBottom: "8px", color: "#ffa500" }}>Совет ветеранов</h4>
+      <h4 style={{ marginBottom: "8px", color: "#ffa500" }}>Совет</h4>
       <p>
         Если вероятность успеха слишком мала, подумайте, готовы ли вы рискнуть.
         Иногда{" "}
@@ -616,8 +616,29 @@ function UpgradePage() {
       )}
 
       {showCardModal && (
-        <div className="card-modal">
-          <div className="card-modal-content-upgrade">
+        <div
+          className="modal-overlay"
+          onClick={() => setShowCardModal(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            className="card-modal-content-upgrade"
+            onClick={(e) => e.stopPropagation()} // предотвращаем закрытие при клике по самому окну
+            style={{
+              maxHeight: "80vh",
+            }}
+          >
             <div className="card-list">
               {playerCards.map((card) => (
                 <div

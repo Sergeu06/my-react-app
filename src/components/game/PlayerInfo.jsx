@@ -40,6 +40,7 @@ function PlayerInfo({
           className="player-avatar"
           onError={() => setAvatarUrl(fallbackSvg)}
           draggable={false}
+          data-position={position}
         />
       </div>
     </div>

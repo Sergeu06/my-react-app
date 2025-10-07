@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Navigate } from "react-router-dom";
+import { ref, onValue } from "firebase/database";
+import { database } from "./components/firebase";
 import {
   Routes,
   Route,
@@ -20,6 +22,7 @@ import { db } from "./components/firebase"; // твой инициализиро
 import { DndProvider } from "react-dnd";
 import { TouchBackend } from "react-dnd-touch-backend";
 import { useSwipeable } from "react-swipeable";
+import NavTimer from "./utils/NavTimer"; // путь к вашему файлу
 
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -34,6 +37,8 @@ import FightPage from "./components/FightPage";
 import Game from "./components/game/GamePage";
 import UpgradePage from "./components/UpgradePage";
 import Raid from "./components/raid-boss/RaidPage";
+import ResultPage from "./components/ResultPage";
+
 import { UserProvider } from "./components/UserContext";
 
 const BOT_TOKEN = "6990185927:AAG8cCLlwX-z8ZcwYGN_oUOfGC2vONls87Q";
@@ -81,15 +86,51 @@ async function createOrUpdateUserProfile(user) {
 }
 
 const pageVariants = {
-  initial: (direction) => ({ opacity: 0, x: direction > 0 ? 50 : -50 }),
-  in: { opacity: 1, x: 0 },
-  out: (direction) => ({ opacity: 0, x: direction > 0 ? -50 : 50 }),
+  initial: (direction) => {
+    const dir = direction || 1;
+    return {
+      x: dir > 0 ? "100%" : "-100%",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      position: "absolute",
+    };
+  },
+  in: {
+    x: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    position: "absolute",
+    transition: {
+      type: "tween",
+      ease: "easeInOut",
+      duration: 0.4,
+    },
+  },
+  out: (direction) => {
+    const dir = direction || 1;
+    return {
+      x: dir > 0 ? "-100%" : "100%",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      position: "absolute",
+      transition: {
+        type: "tween",
+        ease: "easeInOut",
+        duration: 0.4,
+      },
+    };
+  },
 };
 
+// (необязательно) общий переход по умолчанию — фолбэк
 const pageTransition = {
-  type: "tween",
-  ease: "easeInOut",
-  duration: 0.4,
+  default: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
 };
 
 function collectDeviceInfo() {
@@ -118,12 +159,16 @@ function App() {
   const [uid, setUid] = useState(startParam || "dev-user");
   const [direction, setDirection] = useState(0);
   const backgroundRef = useRef(null);
-  const [firstTimerStarted, setFirstTimerStarted] = useState(false);
 
   const [, setTelegramUser] = useState(null);
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState(null);
-
+  const [searchState, setSearchState] = useState({
+    isSearching: false,
+    searchStartPath: null,
+    secondsElapsed: 0,
+    lobbyId: null,
+  });
   const [tabIndex, setTabIndex] = useState(() => {
     const path = location.pathname.toLowerCase();
     if (path.includes("/shop")) return 0;
@@ -144,43 +189,145 @@ function App() {
     `/upgrade?start=${uid}`,
     `/profile?start=${uid}`,
   ];
-  const AnimatedPageWrapper = ({ children, direction }) => (
-    <motion.div
-      custom={direction}
-      initial="initial"
-      animate="in"
-      exit="out"
-      variants={pageVariants}
-      transition={pageTransition}
-      style={{ height: "100%" }}
-    >
-      {children}
-    </motion.div>
-  );
+  // базовый slide-анимации
+  const pageVariantsDefault = {
+    initial: (direction) => ({
+      x: direction > 0 ? "100%" : "-100%",
+      opacity: 0,
+      position: "absolute",
+    }),
+    in: {
+      x: 0,
+      opacity: 1,
+      position: "absolute",
+      transition: { duration: 0.4, ease: "easeInOut" },
+    },
+    out: (direction) => ({
+      x: direction > 0 ? "-100%" : "100%",
+      opacity: 0,
+      position: "absolute",
+      transition: { duration: 0.4, ease: "easeInOut" },
+    }),
+  };
 
-  const updateTab = (newIndex) => {
-    const prevIndex = prevTabIndexRef.current;
-    const newDirection = newIndex > prevIndex ? 1 : -1;
+  // спец fade-анимации для game ↔ result
+  const pageVariantsGameResult = {
+    initial: { opacity: 0 },
+    in: {
+      opacity: 1,
+      transition: { duration: 0.6, ease: "easeInOut" },
+    },
+    out: {
+      opacity: 0,
+      transition: { duration: 0.4, ease: "easeInOut" },
+    },
+  };
+
+  const AnimatedPageWrapper = ({ children, direction }) => {
+    const location = useLocation();
+    const isGameOrResult =
+      location.pathname.startsWith("/game") ||
+      location.pathname.startsWith("/result");
+
+    return (
+      <motion.div
+        custom={direction}
+        initial="initial"
+        animate="in"
+        exit="out"
+        variants={isGameOrResult ? pageVariantsGameResult : pageVariantsDefault}
+        className="animated-page"
+        style={{
+          position: "relative",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflowY: "auto", // ← вернул прокрутку везде
+          background: isGameOrResult ? "black" : "transparent",
+        }}
+      >
+        {children}
+      </motion.div>
+    );
+  };
+
+  const updateTab = (newIndex, dir = null) => {
+    const newDirection = dir !== null ? dir : newIndex > tabIndex ? 1 : -1;
+
     setDirection(newDirection);
     setTabIndex(newIndex);
-    prevTabIndexRef.current = newIndex;
     navigate(tabRoutes[newIndex]);
   };
 
+  // обновляем prevTabIndexRef только после смены tabIndex
+  useEffect(() => {
+    prevTabIndexRef.current = tabIndex;
+  }, [tabIndex]);
+
   const handlers = useSwipeable({
-    onSwipedLeft: () => {
-      if (!path.includes("/raid") && tabIndex < tabRoutes.length - 1) {
-        updateTab(tabIndex + 1);
+    onSwipedLeft: (eventData) => {
+      if (eventData.event.target.closest(".level-reward-scroll-container"))
+        return;
+
+      if (
+        !path.includes("/raid") &&
+        !path.includes("/game") &&
+        tabIndex < tabRoutes.length - 1
+      ) {
+        updateTab(tabIndex + 1, 1); // 👉 вправо
       }
     },
-    onSwipedRight: () => {
-      if (!path.includes("/raid") && tabIndex > 0) {
-        updateTab(tabIndex - 1);
+    onSwipedRight: (eventData) => {
+      if (eventData.event.target.closest(".level-reward-scroll-container"))
+        return;
+
+      if (!path.includes("/raid") && !path.includes("/game") && tabIndex > 0) {
+        updateTab(tabIndex - 1, -1); // 👈 влево
       }
     },
     trackTouch: true,
     preventScrollOnSwipe: true,
   });
+
+  // вспомогательная функция форматирования
+  const formatNavTime = (startTimestamp) => {
+    if (!startTimestamp) return "0:00";
+    const diff = Math.floor((Date.now() - startTimestamp) / 1000);
+    const m = Math.floor(diff / 60);
+    const s = String(diff % 60).padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
+  useEffect(() => {
+    if (!searchState.lobbyId || !uid) return;
+
+    const lobbyRef = ref(database, `lobbies/${searchState.lobbyId}`);
+    const unsubscribe = onValue(lobbyRef, (snapshot) => {
+      const lobby = snapshot.val();
+      if (!lobby) return;
+
+      const players = lobby.players || [];
+      if (
+        players.length === 2 &&
+        lobby.status === "waiting" &&
+        players.includes(uid)
+      ) {
+        const currentPath = location.pathname.toLowerCase();
+        if (!currentPath.includes("/fight")) {
+          navigate(searchState.searchStartPath || `/fight?start=${uid}`);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [
+    searchState.lobbyId,
+    uid,
+    location.pathname,
+    navigate,
+    searchState.searchStartPath,
+  ]);
 
   useEffect(() => {
     const background = backgroundRef.current;
@@ -341,7 +488,7 @@ function App() {
         <div className="safe-container" {...handlers}>
           <div className="background-container" ref={backgroundRef} />
           <div className="background-overlay" />
-          <div className="game-version">v0.7.70.25</div>
+          <div className="game-version">v0.9.78.56</div>
 
           <CurrencyBalance />
 
@@ -380,12 +527,31 @@ function App() {
                   value={1}
                 />
                 <BottomNavigationAction
-                  label="Арена"
-                  icon={<SportsEsportsIcon />}
+                  label={
+                    searchState.isSearching ? (
+                      <>
+                        Арена (
+                        <NavTimer startTimestamp={searchState.startTimestamp} />
+                        )
+                      </>
+                    ) : (
+                      "Арена"
+                    )
+                  }
+                  icon={
+                    <SportsEsportsIcon
+                      color={searchState.isSearching ? "warning" : "inherit"}
+                    />
+                  }
                   component={Link}
-                  to={`/fight?start=${uid}`}
+                  to={
+                    searchState.isSearching
+                      ? searchState.searchStartPath
+                      : `/fight?start=${uid}`
+                  }
                   value={2}
                 />
+
                 <BottomNavigationAction
                   label="Эволюция"
                   icon={<UpgradeIcon />}
@@ -408,13 +574,30 @@ function App() {
             <AnimatePresence mode="wait" initial={false}>
               <Routes location={location} key={location.pathname}>
                 <Route
+                  path="/fight"
+                  element={
+                    <AnimatedPageWrapper direction={direction}>
+                      <FightPage
+                        uid={uid}
+                        searchState={searchState}
+                        setSearchState={setSearchState}
+                      />
+                    </AnimatedPageWrapper>
+                  }
+                />
+
+                <Route
                   path="/"
                   element={<Navigate to={`/fight?start=${uid}`} replace />}
                 />
+
                 <Route
                   path="/shop"
                   element={
-                    <AnimatedPageWrapper direction={direction}>
+                    <AnimatedPageWrapper
+                      direction={direction}
+                      allowScroll={true}
+                    >
                       <Shop uid={uid} />
                     </AnimatedPageWrapper>
                   }
@@ -422,7 +605,10 @@ function App() {
                 <Route
                   path="/collection"
                   element={
-                    <AnimatedPageWrapper direction={direction}>
+                    <AnimatedPageWrapper
+                      direction={direction}
+                      allowScroll={true}
+                    >
                       <Collection uid={uid} />
                     </AnimatedPageWrapper>
                   }
@@ -430,16 +616,11 @@ function App() {
                 <Route
                   path="/profile"
                   element={
-                    <AnimatedPageWrapper direction={direction}>
+                    <AnimatedPageWrapper
+                      direction={direction}
+                      allowScroll={true}
+                    >
                       <Profile uid={uid} />
-                    </AnimatedPageWrapper>
-                  }
-                />
-                <Route
-                  path="/fight"
-                  element={
-                    <AnimatedPageWrapper direction={direction}>
-                      <FightPage uid={uid} />
                     </AnimatedPageWrapper>
                   }
                 />
@@ -470,7 +651,10 @@ function App() {
                 <Route
                   path="/profile/:userId"
                   element={
-                    <AnimatedPageWrapper direction={direction}>
+                    <AnimatedPageWrapper
+                      direction={direction}
+                      allowScroll={true}
+                    >
                       <Profile />
                     </AnimatedPageWrapper>
                   }
@@ -480,6 +664,14 @@ function App() {
                   element={
                     <AnimatedPageWrapper direction={direction}>
                       <OpenBoxPage uid={uid} />
+                    </AnimatedPageWrapper>
+                  }
+                />
+                <Route
+                  path="/result"
+                  element={
+                    <AnimatedPageWrapper direction={direction}>
+                      <ResultPage uid={uid} />
                     </AnimatedPageWrapper>
                   }
                 />

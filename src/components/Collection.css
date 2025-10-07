@@ -364,6 +364,44 @@
 /* =======================
    Изображение карты внутри фрейма
 ======================= */
+.card-priority-overlay {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: #fff; /* основной цвет цифры */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 120;
+  pointer-events: none;
+  text-shadow: 0 0 3px #000, 1px 1px 2px #000; /* 👈 контрастная обводка */
+
+  background: radial-gradient(circle at 30% 30%, #ffa500, #cc7000);
+  box-shadow: 0 0 8px rgba(255, 165, 0, 0.8),
+    inset 0 0 4px rgba(255, 255, 255, 0.6);
+
+  overflow: hidden;
+}
+
+.card-priority-overlay::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  width: 60%;
+  height: 30%;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  transform: rotate(-20deg);
+  filter: blur(2px);
+}
+
 .card-image {
   width: 180%;
   height: auto;
@@ -747,14 +785,16 @@
   justify-content: center;
 }
 .edit-floating-button {
-  position: fixed;
+  position: fixed !important;
   bottom: 80px;
   right: 20px;
   z-index: 1000;
   background-color: #1a1a1a;
   border: 2px solid #ffa500;
   border-radius: 50%;
-  padding: 0.8rem;
+  width: 56px; /* фиксируем ширину */
+  height: 56px; /* фиксируем высоту */
+  box-sizing: border-box;
   cursor: pointer;
   display: flex;
   align-items: center;

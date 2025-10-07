@@ -1,7 +1,7 @@
 // game-logic/initGame.js
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
-
+import { db, database } from "../firebase";
+import { setEnergy } from "./energyManager";
 export default async function initGame(uid, opponentUid, lobbyId) {
   console.log("[InitGame] start", { uid, opponentUid, lobbyId });
 
@@ -21,7 +21,7 @@ export default async function initGame(uid, opponentUid, lobbyId) {
     const p1Xp = Number(p1.stats?.xp ?? p1.xp) || 0;
     const p2Xp = Number(p2.stats?.xp ?? p2.xp) || 0;
 
-    const calcMaxHp = (lvl) => Math.round(100 + 15 * lvl);
+    const calcMaxHp = (lvl) => Math.round(50 + 5 * lvl);
 
     const player = {
       nickname: p1.nickname || "Игрок 1",
@@ -64,10 +64,17 @@ export default async function initGame(uid, opponentUid, lobbyId) {
       },
     });
 
+    await Promise.all([
+      setEnergy(database, lobbyId, uid, 3),
+      setEnergy(database, lobbyId, opponentUid, 3),
+    ]);
+
+    return { players: { [uid]: player, [opponentUid]: opponent } };
     return { players: { [uid]: player, [opponentUid]: opponent } };
   } catch (e) {
     console.error("[InitGame] failed, fallback to defaults", e);
     const fallback = (lvl = 1) => Math.round(100 * (1.3 * lvl));
+
     return {
       players: {
         [uid]: {

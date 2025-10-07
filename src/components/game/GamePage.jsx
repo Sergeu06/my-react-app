@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { ref, get, onValue, off, set } from "firebase/database";
 import { db } from "../firebase"; // Firestore
 import { doc, getDoc } from "firebase/firestore"; // для getDoc и doc
 import { database } from "../firebase";
-
+import { motion, AnimatePresence } from "framer-motion";
+import { addEnergy, spendEnergy } from "../game-logic/energyManager";
 import initGame from "../game-logic/initGame";
-import playCardLogic from "../game-logic/playCard";
 import endTurn from "../game-logic/endTurn";
 import drawCards from "../game-logic/drawCards";
 
@@ -15,21 +15,36 @@ import PlayerInfo from "./PlayerInfo";
 import TurnControls from "./TurnControls";
 import PlayedCards from "./PlayedCards";
 import OpponentHand from "./OpponentHand";
+import { strikeSequence } from "./strikeAnimations";
+
 // 👇 добавляем
 import FramedCard from "../../utils/FramedCard";
 import { renderCardStats } from "../../utils/renderCardStats";
-
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import useResolvingPhase from "../game-logic/useResolvingPhase";
+
+// --- ДОБАВИТЬ ИМПОРТ ---
+import {
+  applyDamagePvP,
+  applyDotPvP,
+  applyDamageMultiplierPvP,
+  processDotEffectsPvP,
+} from "../game-logic/cardEffectsPvP";
+
 import "./game.css";
+import "./animations.css";
 import "./playerhand.css";
 function GamePage() {
   const [searchParams] = useSearchParams();
   const uid = searchParams.get("start");
   const lobbyId = searchParams.get("lobby");
   const timerInterval = useRef(null);
+  const [canUndo, setCanUndo] = useState(false);
 
   const [isHost, setIsHost] = useState(false);
   const [firstTimerStarted, setFirstTimerStarted] = useState(false);
+  const [opponentPlayed, setOpponentPlayed] = useState([]);
+  const [showRound, setShowRound] = useState(false);
 
   const [gameData, setGameData] = useState(null);
   const [hand, setHand] = useState([]);
@@ -37,21 +52,255 @@ function GamePage() {
   const [playedCards, setPlayedCards] = useState([]);
   const [recipes, setRecipes] = useState(0);
   const [selectedCardId, setSelectedCardId] = useState(null);
-
+  const [round, setRound] = useState(1);
+  const [showDamageFlash, setShowDamageFlash] = useState(false);
+  const [damageNumbers, setDamageNumbers] = useState([]);
   const [turnEnded, setTurnEnded] = useState(false);
   const [opponentTurnEnded, setOpponentTurnEnded] = useState(false);
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
+  const [priorityUid, setPriorityUid] = useState(null);
+  const [handVisible, setHandVisible] = useState(true);
+  const navigate = useNavigate();
 
   const [timer, setTimer] = useState(30);
   const [autoEndTriggered, setAutoEndTriggered] = useState(false);
 
+  const [processedCardIds, setProcessedCardIds] = useState(new Set());
+  const [resolving, setResolving] = useState(false);
+
+  const [effectsByUid, setEffectsByUid] = useState({});
+  // --- функция старта таймера ---
+  const startNewTurnTimer = async (duration = 30) => {
+    if (!isHost) return; // только хост пишет
+    if (!lobbyId) return;
+
+    const timerRef = ref(database, `lobbies/${lobbyId}/turnTimerStart`);
+    await set(timerRef, { start: Date.now(), duration });
+    console.log(
+      `[Таймер] хост установил новый таймер хода с длительностью ${duration}`
+    );
+  };
+
+  useResolvingPhase({
+    uid,
+    lobbyId,
+    isHost,
+    turnEnded,
+    opponentTurnEnded,
+    playedCards,
+    opponentPlayed,
+    priorityUid,
+    effectsByUid,
+    setEffectsByUid,
+    setProcessedCardIds,
+    processedCardIds,
+    setResolving,
+    setWaitingForOpponent,
+    setTurnEnded,
+    setOpponentTurnEnded,
+    setAutoEndTriggered,
+    setPlayedCards,
+    setOpponentPlayed,
+    hand,
+    setHand,
+    deck,
+    setDeck,
+    gameData,
+    startNewTurnTimer,
+    database,
+    setShowRound,
+    setShowDamageFlash,
+    setHandVisible,
+    navigate,
+    setCanUndo,
+  });
+
+  // Подписка на завершение игры
+  useEffect(() => {
+    if (!lobbyId) return;
+
+    const statusRef = ref(database, `lobbies/${lobbyId}/status`);
+    const unsub = onValue(statusRef, (snap) => {
+      const val = snap.val();
+      console.log("[GamePage] статус лобби:", val);
+      if (val === "end") {
+        // подгружаем данные победителя/проигравшего
+        get(ref(database, `lobbies/${lobbyId}`)).then((snap) => {
+          if (snap.exists()) {
+            const lobby = snap.val();
+            const { winner, loser } = lobby;
+            navigate(
+              `/result?lobby=${lobbyId}&winner=${winner}&loser=${loser}&start=${uid}`
+            );
+          }
+        });
+      }
+    });
+
+    return () => off(statusRef);
+  }, [lobbyId, navigate]);
+
+  useEffect(() => {
+    if (!lobbyId || !uid) return;
+    const energyRef = ref(database, `lobbies/${lobbyId}/energy/${uid}`);
+    const unsub = onValue(energyRef, (snap) => {
+      const val = snap.val();
+      if (val !== null) setRecipes(val); // синхронизация локального отображения
+    });
+    return () => off(energyRef);
+  }, [lobbyId, uid]);
+  useEffect(() => {
+    if (!lobbyId || !uid || !gameData?.opponentUid) return;
+
+    const playerHpRef = ref(database, `lobbies/${lobbyId}/hp/${uid}`);
+    const opponentHpRef = ref(
+      database,
+      `lobbies/${lobbyId}/hp/${gameData.opponentUid}`
+    );
+
+    const unsubPlayer = onValue(playerHpRef, (snap) => {
+      const hp = snap.val();
+      if (hp !== null) {
+        setGameData((prev) => ({
+          ...prev,
+          player: { ...prev.player, hp },
+        }));
+      }
+    });
+
+    const unsubOpponent = onValue(opponentHpRef, (snap) => {
+      const hp = snap.val();
+      if (hp !== null) {
+        setGameData((prev) => ({
+          ...prev,
+          opponent: { ...prev.opponent, hp },
+        }));
+      }
+    });
+
+    return () => {
+      off(playerHpRef);
+      off(opponentHpRef);
+    };
+  }, [lobbyId, uid, gameData?.opponentUid]);
+
+  useEffect(() => {
+    if (!lobbyId || !uid || !gameData?.opponentUid) return;
+
+    const playerMaxHpRef = ref(database, `lobbies/${lobbyId}/maxHp/${uid}`);
+    const opponentMaxHpRef = ref(
+      database,
+      `lobbies/${lobbyId}/maxHp/${gameData.opponentUid}`
+    );
+
+    const unsubPlayerMax = onValue(playerMaxHpRef, (snap) => {
+      const maxHp = snap.val();
+      if (maxHp !== null) {
+        setGameData((prev) => ({
+          ...prev,
+          player: { ...prev.player, maxHp },
+        }));
+      }
+    });
+
+    const unsubOpponentMax = onValue(opponentMaxHpRef, (snap) => {
+      const maxHp = snap.val();
+      if (maxHp !== null) {
+        setGameData((prev) => ({
+          ...prev,
+          opponent: { ...prev.opponent, maxHp },
+        }));
+      }
+    });
+
+    return () => {
+      unsubPlayerMax();
+      unsubOpponentMax();
+    };
+  }, [lobbyId, uid, gameData?.opponentUid]);
+
+  useEffect(() => {
+    if (!lobbyId || !uid || !gameData?.opponentUid) return;
+
+    const uids = [uid, gameData.opponentUid];
+
+    const dotRefs = [];
+    const multRefs = [];
+
+    uids.forEach((who) => {
+      const dotRef = ref(database, `lobbies/${lobbyId}/effects/${who}/dot`);
+      const multRef = ref(
+        database,
+        `lobbies/${lobbyId}/effects/${who}/multiplier`
+      );
+
+      dotRefs.push(dotRef);
+      multRefs.push(multRef);
+
+      onValue(dotRef, (snap) => {
+        const dot = snap.val() || [];
+        setEffectsByUid((prev) => ({
+          ...prev,
+          [who]: { ...(prev[who] || {}), dot },
+        }));
+      });
+
+      onValue(multRef, (snap) => {
+        const mult = snap.val() ?? null;
+        setEffectsByUid((prev) => ({
+          ...prev,
+          [who]: { ...(prev[who] || {}), mult },
+        }));
+      });
+    });
+
+    return () => {
+      dotRefs.forEach((r) => off(r));
+      multRefs.forEach((r) => off(r));
+    };
+  }, [lobbyId, uid, gameData?.opponentUid]);
+
+  useEffect(() => {
+    if (!lobbyId) return;
+
+    const priorityRef = ref(database, `lobbies/${lobbyId}/priority`);
+    const unsub = onValue(priorityRef, (snap) => {
+      const val = snap.val();
+      console.log("[DEBUG] priority from RTDB:", val); // <- добавь это
+      setPriorityUid(val);
+    });
+
+    return () => off(priorityRef);
+  }, [lobbyId]);
+  useEffect(() => {
+    if (!lobbyId) return;
+
+    const roundRef = ref(database, `lobbies/${lobbyId}/round`);
+    const unsub = onValue(roundRef, (snap) => {
+      const val = snap.val();
+      if (val) setRound(val);
+    });
+
+    return () => off(roundRef);
+  }, [lobbyId]);
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      // если клик был по кнопке "Разыграть" – игнорируем
+      if (e.target.closest(".playcardbutton")) return;
+      // иначе снимаем выделение
+      setSelectedCardId(null);
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
   useEffect(() => {
     async function fetchDeckAndHand() {
       try {
         // берём документ пользователя
         const userDoc = await getDoc(doc(db, "users", uid));
         if (!userDoc.exists()) {
-          console.warn(`[GamePage] User ${uid} not found`);
+          console.warn(`[GamePage] Пользователь ${uid} не найден`);
           return;
         }
 
@@ -71,7 +320,7 @@ function GamePage() {
         const cardPromises = shuffled.map(async (cardId) => {
           const snapshot = await get(ref(database, `cards/${cardId}`));
           if (!snapshot.exists()) {
-            console.warn(`[GamePage] card ${cardId} not found in RTDB`);
+            console.warn(`[GamePage] карта ${cardId} не найдена в RTDB`);
             return null;
           }
           return { id: cardId, ...snapshot.val() };
@@ -79,7 +328,7 @@ function GamePage() {
 
         const cards = (await Promise.all(cardPromises)).filter(Boolean);
 
-        console.log("[GamePage] loaded cards:", cards);
+        console.log("[GamePage] загруженные карты:", cards);
 
         setHand(cards.slice(0, 4));
         setDeck(cards.slice(4));
@@ -94,22 +343,19 @@ function GamePage() {
   // загрузка данных лобби и определение хоста
   useEffect(() => {
     if (!uid || !lobbyId) return;
-    console.log("[GamePage] loadGame()", { uid, lobbyId });
+    console.log("[GamePage] загрузка игры()", { uid, lobbyId });
 
     const loadGame = async () => {
       try {
         const lobbySnap = await get(ref(database, `lobbies/${lobbyId}`));
         const lobbyData = lobbySnap.val();
-        console.log("[GamePage] lobby data:", lobbyData);
         if (!lobbyData?.players) return;
 
         // определяем хоста
         if (lobbyData.players[0] === uid) {
           setIsHost(true);
-          console.log("[GamePage] You are HOST");
         } else {
           setIsHost(false);
-          console.log("[GamePage] You are GUEST");
         }
 
         const opponentUid = lobbyData.players.find((p) => p !== uid);
@@ -118,39 +364,87 @@ function GamePage() {
         const playerData = game.players[uid];
         const opponentData = game.players[opponentUid];
 
+        // ✅ вот сюда вставляем запись HP в RTDB
+        await Promise.all([
+          set(ref(database, `lobbies/${lobbyId}/hp/${uid}`), playerData.hp),
+          set(
+            ref(database, `lobbies/${lobbyId}/maxHp/${uid}`),
+            playerData.maxHp
+          ),
+          set(
+            ref(database, `lobbies/${lobbyId}/hp/${opponentUid}`),
+            opponentData.hp
+          ),
+          set(
+            ref(database, `lobbies/${lobbyId}/maxHp/${opponentUid}`),
+            opponentData.maxHp
+          ),
+        ]);
+
         setGameData({
           player: playerData,
           opponent: opponentData,
           opponentUid,
         });
-        setHand(playerData.hand);
-        setDeck(playerData.deck);
+        if (isHost) {
+          await startFirstRound();
+        }
+        await set(
+          ref(database, `lobbies/${lobbyId}/recipes/${uid}`),
+          playerData.recipes || 0
+        );
         setRecipes(playerData.recipes || 0);
+        console.log(
+          `%c[GamePage] Хост: ${lobbyData.players[0]}, Гость: ${lobbyData.players[1]}`,
+          "color: deepskyblue; font-weight: bold"
+        );
       } catch (e) {
-        console.error("[GamePage] loadGame error:", e);
+        console.error("[GamePage] ошибка при загрузке игры:", e);
       }
     };
 
     loadGame();
   }, [uid, lobbyId]);
+  // подписка на завершение хода соперника
+  useEffect(() => {
+    if (!lobbyId || !gameData?.opponentUid) return;
+
+    const oppTurnRef = ref(
+      database,
+      `lobbies/${lobbyId}/turns/${gameData.opponentUid}`
+    );
+
+    const unsub = onValue(oppTurnRef, (snap) => {
+      const val = snap.val();
+      console.log("[GamePage] ход соперника завершён:", val);
+      setOpponentTurnEnded(!!val); // true, если соперник завершил
+    });
+
+    return () => off(oppTurnRef);
+  }, [lobbyId, gameData?.opponentUid]);
 
   // подписка на завершение хода соперника
   useEffect(() => {
     if (!lobbyId || !gameData?.opponentUid) return;
 
-    const opponentTurnRef = ref(
+    const oppPlayedRef = ref(
       database,
-      `lobbies/${lobbyId}/turns/${gameData.opponentUid}`
+      `lobbies/${lobbyId}/playedCards/${gameData.opponentUid}`
     );
-    const listener = onValue(opponentTurnRef, (snapshot) => {
-      const val = snapshot.val();
-      console.log("[GamePage] opponent turn state changed:", val);
-      setOpponentTurnEnded(val === true);
+    const unsub = onValue(oppPlayedRef, (snap) => {
+      const val = snap.val();
+      if (!val) {
+        console.log("[GamePage] сыгранные карты соперника очищены");
+
+        setOpponentPlayed([]); // 👈 сбрасываем руку соперника
+      } else {
+        const cards = Object.values(val);
+        console.log("[GamePage] сыгранные карты соперника:", cards);
+        setOpponentPlayed(cards);
+      }
     });
 
-    return () => {
-      off(opponentTurnRef, "value", listener);
-    };
+    return () => off(oppPlayedRef);
   }, [lobbyId, gameData?.opponentUid]);
 
   // синхронизированный таймер
@@ -163,7 +457,7 @@ function GamePage() {
       if (!val) return;
 
       const { start, duration } = val;
-      console.log("[Timer] received start:", val);
+      console.log("[Таймер] получен старт таймера:", val);
 
       if (timerInterval.current) clearInterval(timerInterval.current);
 
@@ -174,7 +468,9 @@ function GamePage() {
           clearInterval(timerInterval.current);
           setTimer(0);
           if (!turnEnded) {
-            console.log("[Timer] auto end turn (time up)");
+            console.log(
+              "[Таймер] автоматическое завершение хода (время вышло)"
+            );
             handleEndTurn();
           }
         } else {
@@ -189,17 +485,26 @@ function GamePage() {
     };
   }, [lobbyId, turnEnded]);
 
-  // --- функция старта таймера ---
-  const startNewTurnTimer = async (duration = 30) => {
-    if (!isHost) return; // только хост пишет
+  useEffect(() => {
     if (!lobbyId) return;
 
-    const timerRef = ref(database, `lobbies/${lobbyId}/turnTimerStart`);
-    await set(timerRef, { start: Date.now(), duration });
-    console.log(
-      `[Timer] host set new turnTimerStart with duration ${duration}`
-    );
-  };
+    const doneRef = ref(database, `lobbies/${lobbyId}/resolvingDone`);
+    const unsub = onValue(doneRef, (snap) => {
+      if (snap.exists()) {
+        console.log("[GamePage] resolvingDone received, reset flags only");
+        setResolving(false);
+        setWaitingForOpponent(false);
+        setTurnEnded(false);
+        setOpponentTurnEnded(false);
+        setAutoEndTriggered(false);
+        setProcessedCardIds(new Set());
+        // ❌ убираем drawCards и очистку колоды/руки
+        // Это уже обрабатывается в resolving phase (хостом)
+      }
+    });
+
+    return () => off(doneRef);
+  }, [lobbyId]);
 
   // --- запуск первого таймера при заходе ---
   useEffect(() => {
@@ -209,71 +514,81 @@ function GamePage() {
     startNewTurnTimer(40);
     setFirstTimerStarted(true);
   }, [uid, lobbyId, isHost, firstTimerStarted]);
-  // оба закончили — начинаем новый раунд
+  // 👇 ставим где-то после всех useState, до return
   useEffect(() => {
-    if (turnEnded && opponentTurnEnded) {
-      console.log("[GamePage] both turns ended -> resolving phase");
+    console.log(
+      `[Hand Debug] Текущее количество карт в руке: ${hand.length}, в колоде: ${deck.length}`
+    );
+    console.log(
+      "[Hand Debug] Состав руки:",
+      hand.map((c) => c.id)
+    );
+  }, [hand, deck]);
 
-      // 3-секундная пауза для анимаций
-      setWaitingForOpponent(true); // временно показываем «разыгровка»
-
-      setTimeout(() => {
-        console.log("[GamePage] resolving finished -> next round");
-
-        const { newHand, newDeck } = drawCards(hand, deck);
-        setHand(newHand);
-        setDeck(newDeck);
-
-        setTurnEnded(false);
-        setOpponentTurnEnded(false);
-        setWaitingForOpponent(false);
-        setAutoEndTriggered(false);
-
-        // очистка статусов в RTDB
-        if (uid && gameData?.opponentUid && lobbyId) {
-          const p1Ref = ref(database, `lobbies/${lobbyId}/turns/${uid}`);
-          const p2Ref = ref(
-            database,
-            `lobbies/${lobbyId}/turns/${gameData.opponentUid}`
-          );
-          set(p1Ref, null);
-          set(p2Ref, null);
-          console.log("[GamePage] cleared turn statuses");
-        }
-
-        // новый таймер
-        startNewTurnTimer();
-      }, 3000);
-    }
-  }, [turnEnded, opponentTurnEnded, hand, deck]);
-
-  const handlePlayCard = () => {
+  const handlePlayCard = async () => {
     const cardToPlay = hand.find((c) => c.id === selectedCardId);
     if (!cardToPlay) return;
-    try {
-      const {
-        hand: newHand,
-        playedCards: newPlayed,
-        recipes: newRecipes,
-      } = playCardLogic({ hand, playedCards, recipes, cardToPlay });
-      setHand(newHand);
-      setPlayedCards(newPlayed);
-      setRecipes(newRecipes);
-      setSelectedCardId(null);
-    } catch (err) {
-      console.warn("[GamePage] play card failed:", err);
-      alert(err.message);
+
+    const cost = cardToPlay.cost ?? cardToPlay.value ?? 0;
+
+    // Попытка списания энергии через energyManager
+    const spent = await spendEnergy(database, lobbyId, uid, cost);
+    if (!spent) {
+      alert("Недостаточно энергии!");
+      return;
     }
+
+    // Убираем карту из руки и добавляем в сыгранные
+    setHand((prev) => prev.filter((c) => c.id !== cardToPlay.id));
+    const cardWithTs = { ...cardToPlay, ts: Date.now() };
+    setPlayedCards((prev) => [...prev, cardWithTs]);
+
+    // RTDB сыгранные карты
+    const playedRef = ref(
+      database,
+      `lobbies/${lobbyId}/playedCards/${uid}/${cardToPlay.id}`
+    );
+    await set(playedRef, cardWithTs);
+
+    setSelectedCardId(null);
+
+    console.log(`[GamePage][Energy] Карта сыграна: ${cardToPlay.id}, -${cost}`);
+  };
+  const startFirstRound = async () => {
+    if (!isHost || !lobbyId) return;
+
+    const roundRef = ref(database, `lobbies/${lobbyId}/round`);
+    const priorityRef = ref(database, `lobbies/${lobbyId}/priority`);
+
+    await set(roundRef, 1);
+    await set(priorityRef, gameData?.player ? uid : gameData?.opponentUid); // 👈 первый ход у хоста
+    await startNewTurnTimer(40);
+    setFirstTimerStarted(true);
   };
 
-  const handleUndoCard = (card) => {
+  const handleUndoCard = async (card) => {
+    // Возвращаем карту в руку
     setHand((prev) => [...prev, card]);
     setPlayedCards((prev) => prev.filter((c) => c.id !== card.id));
-    setRecipes((prev) => prev + (card.cost || 0));
+
+    const cost = card.cost ?? card.value ?? 0;
+
+    // Восстановление энергии через energyManager
+    await addEnergy(database, lobbyId, uid, cost);
+
+    // Убираем карту из RTDB сыгранных
+    const playedRef = ref(
+      database,
+      `lobbies/${lobbyId}/playedCards/${uid}/${card.id}`
+    );
+    await set(playedRef, null);
+
+    console.log(`[GamePage][Energy] Карта отменена: ${card.id}, +${cost}`);
   };
 
   const handleEndTurn = async () => {
-    console.log("[GamePage] end turn clicked");
+    console.log("[GamePage] нажата кнопка 'Завершить ход'");
+
     try {
       await endTurn(uid, lobbyId);
       setTurnEnded(true);
@@ -281,7 +596,7 @@ function GamePage() {
         setWaitingForOpponent(true);
       }
     } catch (e) {
-      console.error("[GamePage] end turn error:", e);
+      console.error("[GamePage] ошибка при завершении хода:", e);
     }
   };
 
@@ -292,10 +607,20 @@ function GamePage() {
       <TurnControls
         timer={timer}
         turnEnded={turnEnded}
+        opponentTurnEnded={opponentTurnEnded}
         onEndTurn={handleEndTurn}
       />
 
-      <OpponentHand count={gameData.opponent.deck.length || 0} />
+      <OpponentHand
+        count={gameData.opponent.hand.length}
+        style={{
+          position: "absolute",
+          top: "6%",
+          left: "50%",
+          transform: "translateX(-50%)",
+        }}
+      />
+
       <PlayerInfo
         avatarUrl={gameData.opponent.avatar_url}
         nickname={gameData.opponent.nickname}
@@ -307,6 +632,7 @@ function GamePage() {
         maxHp={gameData.opponent.maxHp}
         position="top"
         style={{ position: "absolute", top: "1%", left: "3%" }}
+        hasPriority={priorityUid === gameData.opponentUid} // 👈
       />
       <PlayerInfo
         avatarUrl={gameData.player.avatar_url}
@@ -319,16 +645,89 @@ function GamePage() {
         maxHp={gameData.player.maxHp}
         position="bottom"
         style={{ position: "absolute", bottom: "18vh", left: "3%" }}
+        hasPriority={priorityUid === uid} // 👈
       />
-      <PlayedCards cards={playedCards} onUndo={handleUndoCard} />
-      {waitingForOpponent && (
+
+      {waitingForOpponent && !resolving && (
         <div className="waiting-message">Ждём соперника...</div>
       )}
+
+      <AnimatePresence>
+        {damageNumbers.map((d) => (
+          <motion.div
+            key={d.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: -40 }}
+            exit={{ opacity: 0, y: -60 }}
+            transition={{ duration: 1 }}
+            className="damage-number"
+            style={{
+              position: "absolute",
+              left: d.target === "opponent" ? "60%" : "20%",
+              top: d.target === "opponent" ? "15%" : "70%",
+              fontSize: "2rem",
+              fontWeight: "bold",
+              color: "red",
+              pointerEvents: "none",
+            }}
+          >
+            -{d.amount}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      <div className="board-center">
+        {/* Верхняя половина — соперник */}
+        <div className="board-half opponent">
+          <PlayedCards
+            cards={opponentPlayed}
+            side="opponent"
+            bothTurnsEnded={turnEnded && opponentTurnEnded}
+          />{" "}
+        </div>
+
+        {/* Нижняя половина — игрок */}
+        <div className="board-half player">
+          <PlayedCards
+            cards={playedCards}
+            side="player"
+            onUndo={handleUndoCard}
+            turnEnded={turnEnded}
+            bothTurnsEnded={turnEnded && opponentTurnEnded}
+          />
+        </div>
+        {/* Анимированный индикатор раунда */}
+        <AnimatePresence>
+          {showRound && (
+            <motion.div
+              className="round-indicator"
+              key={round}
+              initial={{ opacity: 0, scale: 0, x: "-50%", y: "-50%" }}
+              animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
+              exit={{ opacity: 0, scale: 0, x: "-50%", y: "-50%" }}
+              transition={{
+                duration: 0.4,
+                scale: { type: "spring", bounce: 0.3, damping: 5 },
+              }}
+            >
+              Раунд {round}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
       <div className="recipes-container">
         <AutoAwesomeIcon fontSize="small" style={{ marginRight: 6 }} />
         {recipes}
       </div>
-      <div className="player-bottom-bar">
+      {showDamageFlash && (
+        <div
+          key={Date.now()} // важен ключ, чтобы React пересоздал элемент
+          className="damage-flash"
+        />
+      )}
+
+      <div className={`player-bottom-bar ${handVisible ? "" : "hidden"}`}>
         <div
           className="player-hand-platform"
           onClick={() => setSelectedCardId(null)}
@@ -349,7 +748,12 @@ function GamePage() {
                     setSelectedCardId(isSelected ? null : card.id);
                   }}
                 >
-                  <FramedCard card={card} showLevel={true} showName={false} />
+                  <FramedCard
+                    card={card}
+                    showLevel={true}
+                    showName={false}
+                    showPriority={true}
+                  />
 
                   {card.value !== undefined && (
                     <div className="card-corner cost">{card.value}</div>
@@ -370,16 +774,14 @@ function GamePage() {
                   ))}
 
                   {/* 👇 кнопка теперь рендерится только у выбранной карты */}
-                  {isSelected && (
+                  {!turnEnded && isSelected && (
                     <button
                       className="playcardbutton"
                       onClick={(e) => {
                         e.stopPropagation();
-                        console.log(
-                          "[UI] Кнопка 'Разыграть' нажата (заглушка)"
-                        );
-                        // здесь позже вызовем handlePlayCard()
+                        handlePlayCard();
                       }}
+                      disabled={recipes < (card.cost ?? card.value ?? 0)} // 👈 условие
                     >
                       Разыграть
                     </button>

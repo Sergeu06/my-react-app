@@ -5,7 +5,6 @@
   padding: 5vh 5vw;
   color: #f0f0f0;
   min-height: 100vh;
-  animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .profile-avatar img {
@@ -358,9 +357,8 @@ select option {
 .card-modal-content {
   background: #2e2e2e;
   border-radius: 16px;
-  height: 40%;
   padding: 1.5rem 2rem; /* чуть больше паддингов для ощущения простора */
-  width: 95vw; /* увеличить ширину до 95% экрана */
+  width: 80vw; /* увеличить ширину до 95% экрана */
   max-width: 1200px; /* ограничить максимальную ширину для больших экранов */
   max-height: 95vh; /* чуть больше высоты */
   overflow-y: auto;
@@ -394,7 +392,6 @@ select option {
   color: #f0f0f0;
   border: 1px solid #2e2e2e; /* Непрозрачный контур */
   border-radius: 16px;
-  max-height: 250px; /* Ограничение максимальной высоты картинки */
   padding: 1rem;
   width: 180px;
   aspect-ratio: 3 / 4;

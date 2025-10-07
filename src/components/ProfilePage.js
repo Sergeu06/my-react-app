@@ -328,22 +328,20 @@ const ProfilePage = () => {
         </div>
 
         {/* Модальное окно выбора карты */}
+        {/* Модальное окно выбора карты */}
         {showCardModal && (
-          <div className="card-modal">
+          <div
+            className="card-modal"
+            onClick={() => {
+              setShowCardModal(false);
+              setSelectedCard(null);
+            }}
+          >
             <div
               className="card-modal-content"
               style={{ display: "flex", gap: "20px" }}
+              onClick={(e) => e.stopPropagation()} // предотвращаем закрытие при клике внутри
             >
-              <button
-                className="close-button"
-                onClick={() => {
-                  setShowCardModal(false);
-                  setSelectedCard(null);
-                }}
-              >
-                ✕
-              </button>
-
               {/* Список карт */}
               <div
                 className="card-list"
@@ -396,8 +394,6 @@ const ProfilePage = () => {
                   </div>
                 ))}
               </div>
-
-              {/* Убрана панель с подробной информацией и кнопкой выбора карты */}
             </div>
           </div>
         )}
@@ -414,6 +410,8 @@ const ProfilePage = () => {
         </div>
         <div className="stat">Победы: {profileData.stats?.wins ?? 0}</div>
         <div className="stat">Поражения: {profileData.stats?.losses ?? 0}</div>
+        <div className="stat">РИ: {profileData.stats?.RI ?? 1000}</div>
+
         <div className="stat">
           Рейдов сыграно: {profileData.stats?.raid_count ?? 0}
         </div>

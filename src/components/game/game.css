@@ -1,5 +1,6 @@
 .game-container {
   position: relative;
+
   height: 100vh;
   background: linear-gradient(to top, #1a1a1a, #2e2e2e);
   color: white;
@@ -35,35 +36,38 @@
   color: #fff;
 }
 
-/* HP адаптивный */
 .hp-bar {
-  flex: 1;
-  max-width: 60%;
-  height: 20px;
+  width: 35vw; /* фиксированная ширина */
+  height: 20px; /* высота вертикального бара */
   background-color: #444;
   border: 1px solid #777;
   border-radius: 10px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column-reverse; /* чтобы HP уменьшался сверху вниз */
   position: relative;
 }
 
 .hp-fill {
-  height: 100%;
+  width: 100%;
+  height: 100%; /* управляется через inline-style height в JSX */
   background-color: #e53935;
-  transition: width 0.4s ease;
+  transition: height 0.4s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: bold;
   font-size: 12px;
-  z-index: 1000;
 }
 
 .hp-text {
   z-index: 1;
+  transform: rotate(180deg); /* чтобы числа шли "правильно" */
+  font-size: 12px;
+  text-align: center;
+  color: white;
 }
-
 .game-card {
   position: relative; /* для абсолютного позиционирования кнопки */
   background-color: #333;
@@ -99,11 +103,12 @@
 }
 
 .hp-bar-container {
+  position: relative;
+  align-items: center;
+  gap: 4px;
   position: absolute;
-  left: 20px;
-  width: 50%;
-  max-width: 250px;
-  z-index: 1000;
+  left: 20px; /* можно подправить */
+  z-index: 22000;
 }
 
 .nickname.center {
@@ -125,7 +130,7 @@
   position: fixed; /* фиксируем относительно экрана */
   right: 20px;
   bottom: 18vh;
-  background-color: #ffa500;
+  background-color: #00ff00;
   color: #1a1a1a;
   font-weight: bold;
   font-size: 16px;
@@ -133,10 +138,10 @@
   border-radius: 8px;
   display: flex;
   align-items: center;
-  box-shadow: 0 0 8px rgba(255, 165, 0, 0.6);
+  box-shadow: 0 0 8px #00ff0099;
   user-select: none;
   cursor: default;
-  z-index: 10000; /* чтобы быть поверх */
+  z-index: 1000; /* чтобы быть поверх */
 }
 .end-turn-button {
   position: absolute;
@@ -179,7 +184,11 @@
   box-shadow: 0 0 10px #ffa500;
 }
 .undo-card-button {
-  margin-top: 6px;
+  position: absolute; /* кнопка поверх */
+  bottom: -28px; /* смещаем ниже карты */
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 0; /* убираем старый отступ */
   padding: 4px 10px;
   font-size: 12px;
   cursor: pointer;
@@ -188,6 +197,7 @@
   border-radius: 4px;
   color: white;
   transition: background-color 0.2s ease;
+  z-index: 10; /* чтобы быть поверх карты */
 }
 
 .undo-card-button:hover {
@@ -200,7 +210,11 @@
   border-radius: 4px;
   margin-bottom: 6px;
 }
-
+.playcardbutton:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 .xp-row {
   margin-top: 4px;
   text-align: center;
@@ -209,11 +223,11 @@
 }
 
 .waiting-message {
-  color: #ffa500; /* оранжевый текст */
-  border: 2px solid rgba(255, 165, 0, 0.5); /* полупрозрачная рамка */
+  color: greenyellow; /* оранжевый текст */
+  border: 2px solid rgba(173, 255, 47, 0.5); /* полупрозрачная рамка */
   padding: 10px 20px;
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.4); /* слегка затемнённый фон */
+  background: rgba(0, 0, 0, 0.8); /* слегка затемнённый фон */
   font-size: 1.2rem;
   font-weight: bold;
   text-align: center;
@@ -241,4 +255,71 @@
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
   background-color: #222;
   object-fit: cover;
+}
+.round-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #ffa500;
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 2.2em;
+  pointer-events: none;
+  z-index: 1000;
+  text-align: center;
+}
+
+/* красные края экрана */
+.damage-flash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 9999;
+  animation: flashRed 0.6s ease-out;
+}
+@keyframes flashRed {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+/* цифра урона */
+.damage-number {
+  position: absolute;
+  bottom: 100%; /* 👈 над аватаркой */
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.8em;
+  font-weight: bold;
+  color: #ff3b3b;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  z-index: 3000;
+  animation: floatUp 0.8s ease-out forwards;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -40px);
+    opacity: 0;
+  }
+}
+.damage-number {
+  text-shadow: 0 0 6px black;
+  z-index: 3000;
 }
