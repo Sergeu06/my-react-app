@@ -8,9 +8,10 @@ function PlayedCards({
   cards,
   onUndo,
   side = "player",
-  turnEnded = false,
   bothTurnsEnded = false,
-  currentRound = 1, // 👈 добавляем текущий раунд
+  roundPhase,
+  turnEnded = false,
+  resolving = false, // ← НОВОЕ
 }) {
   const backImage = "/CARDB.jpg";
 
@@ -21,20 +22,18 @@ function PlayedCards({
         const offset = idx - middleIndex;
         const tilt = offset < 0 ? "10deg" : offset > 0 ? "-10deg" : "0deg";
 
-        // Проверяем, активен ли DoT-эффект
         const hasActiveDoT =
           Array.isArray(card.damage_over_time_queue) &&
           card.damage_over_time_queue.some((d) => d.turnsLeft > 0);
 
-        // Класс визуальной активности DoT
         const dotClass = hasActiveDoT ? "dot-active" : "";
 
-        // Проверяем, можно ли отменять (только если карта выложена в текущем раунде)
-        const canUndoThisRound =
-          onUndo &&
-          !turnEnded &&
-          card.playedInRound === currentRound && // ← строго проверяем раунд
-          !hasActiveDoT; // ← и запрещаем отмену для DoT-карт
+        // 🔒 Отмена доступна ТОЛЬКО до завершения хода
+        const canUndo =
+          side === "player" &&
+          typeof onUndo === "function" &&
+          roundPhase === "play" &&
+          card.locked !== true;
 
         return (
           <div
@@ -48,19 +47,13 @@ function PlayedCards({
               <>
                 <FramedCard
                   card={card}
-                  showLevel={true}
+                  showLevel
                   showName={false}
-                  showPriority={true}
+                  showPriority
                 />
 
                 {card.value !== undefined && (
-                  <div
-                    className={`card-corner cost ${
-                      card.energyCost > (card.currentEnergy ?? 0)
-                        ? "not-enough"
-                        : ""
-                    }`}
-                  >
+                  <div className="card-corner cost">
                     {card.energyCost ?? card.value}
                   </div>
                 )}
@@ -75,12 +68,11 @@ function PlayedCards({
                       fontSize: "1em",
                     }}
                   >
-                    {stat.value !== null ? stat.value : "×"}
+                    {stat.value ?? "×"}
                   </div>
                 ))}
 
-                {/* 👇 Отменить можно только в том же раунде, где выложена карта */}
-                {canUndoThisRound && (
+                {canUndo && (
                   <button
                     className="undo-card-button"
                     onClick={() => onUndo(card)}
@@ -88,31 +80,6 @@ function PlayedCards({
                     Отменить
                   </button>
                 )}
-              </>
-            ) : bothTurnsEnded ? (
-              <>
-                <FramedCard
-                  card={card}
-                  showLevel={true}
-                  showName={false}
-                  showPriority={true}
-                />
-                {card.value !== undefined && (
-                  <div className="card-corner cost">{card.value}</div>
-                )}
-                {renderCardStats(card).map((stat, index) => (
-                  <div
-                    key={stat.label + index}
-                    className={`card-corner ${stat.type}`}
-                    style={{
-                      bottom: `${-12 + index * 22}px`,
-                      left: -12,
-                      fontSize: "1em",
-                    }}
-                  >
-                    {stat.value !== null ? stat.value : "×"}
-                  </div>
-                ))}
               </>
             ) : (
               <img

@@ -65,6 +65,9 @@ function MarketModal({
           <strong>Редкость:</strong> {cardDetails?.rarity || "—"}
         </div>
         <div>
+          <strong>Шаг прокачки:</strong> {cardDetails?.increase || "—"}
+        </div>
+        <div>
           <strong>Уровень:</strong> {cardDetails?.lvl ?? "—"}
         </div>
 

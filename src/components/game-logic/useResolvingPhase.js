@@ -33,7 +33,7 @@ export default function useResolvingPhase(params) {
     setEffectsByUid,
     setProcessedCardIds,
     processedCardIds,
-    setResolving,
+    setRoundPhase,
     setWaitingForOpponent,
     setTurnEnded,
     setOpponentTurnEnded,
@@ -56,51 +56,15 @@ export default function useResolvingPhase(params) {
 
   // Отслеживаем HP игрока локально (чтобы показать флеш)
   const playerHpRef = useRef(gameData?.player?.hp ?? 100);
-  // === Логика для отображения кнопки "Отмена" ===
-  useEffect(() => {
-    if (!lobbyId || !uid || !database) return;
-
-    const playerPath = ref(database, `lobbies/${lobbyId}/playedCards/${uid}`);
-    const roundPath = ref(database, `lobbies/${lobbyId}/round`);
-
-    const updateUndoVisibility = async () => {
-      const [snapCards, snapRound] = await Promise.all([
-        get(playerPath),
-        get(roundPath),
-      ]);
-
-      const cards = snapCards.val() || {};
-      const currentRound = snapRound.val() || 0;
-
-      // Проверяем, есть ли хотя бы одна карта, сыгранная в этом раунде
-      const hasPlayedThisRound = Object.values(cards).some(
-        (card) => card?.playedInRound === currentRound
-      );
-
-      // Сохраняем флаг для UI (можно использовать params.setCanUndo)
-      if (params.setCanUndo) {
-        params.setCanUndo(hasPlayedThisRound);
-      }
-    };
-
-    // Проверка при каждом изменении round или карт игрока
-    const unsubCards = onValue(playerPath, updateUndoVisibility);
-    const unsubRound = onValue(roundPath, updateUndoVisibility);
-
-    return () => {
-      unsubCards();
-      unsubRound();
-    };
-  }, [lobbyId, uid, database]);
 
   useEffect(() => {
     if (!(turnEnded && opponentTurnEnded)) return;
 
-    setWaitingForOpponent(false);
-    setResolving(true);
-    if (params.setHandVisible) params.setHandVisible(false);
-
     (async () => {
+      setWaitingForOpponent(false);
+      setRoundPhase("resolving");
+
+      if (params.setHandVisible) params.setHandVisible(false);
       // Синхронизация локальных playedCards/opponentPlayed с RTDB
       try {
         const playerPath = `lobbies/${lobbyId}/playedCards/${uid}`;
@@ -113,54 +77,6 @@ export default function useResolvingPhase(params) {
 
         const playerData = snapPlayer.val() || {};
         const oppData = snapOpp.val() || {};
-
-        // Если у только что выложенных карт нет playedInRound,
-        // пишем туда текущий round (чтобы Undo был доступен только в этом раунде).
-        // Считаем, что карты без playedInRound — это только что сыгранные в этом раунде.
-        const writes = [];
-
-        for (const [cardId, raw] of Object.entries(playerData)) {
-          if (raw && raw.playedInRound === undefined) {
-            // Безопасно: если round не определён, используем 1
-            const r = typeof round === "number" && round > 0 ? round : 1;
-            writes.push(
-              set(ref(database, `${playerPath}/${cardId}/playedInRound`), r)
-            );
-            // Немедленно обновим локальную структуру, чтобы UI видел поле
-            playerData[cardId] = {
-              ...raw,
-              playedInRound: r,
-            };
-          }
-        }
-
-        for (const [cardId, raw] of Object.entries(oppData)) {
-          if (raw && raw.playedInRound === undefined) {
-            const r = typeof round === "number" && round > 0 ? round : 1;
-            writes.push(
-              set(ref(database, `${oppPath}/${cardId}/playedInRound`), r)
-            );
-            oppData[cardId] = {
-              ...raw,
-              playedInRound: r,
-            };
-          }
-        }
-
-        if (writes.length > 0) {
-          try {
-            await Promise.all(writes);
-            console.log(
-              "[useResolvingPhase] Обновлены playedInRound для новых playedCards",
-              { lobbyId, round }
-            );
-          } catch (err) {
-            console.warn(
-              "[useResolvingPhase] Не удалось записать playedInRound в RTDB",
-              err
-            );
-          }
-        }
 
         const syncedPlayerCards = Object.entries(playerData).map(
           ([id, raw]) => ({ id, ...raw })
@@ -527,12 +443,6 @@ export default function useResolvingPhase(params) {
       if (isHost) await set(ref(database, `lobbies/${lobbyId}/animAck`), null);
       await new Promise((r) => setTimeout(r, 300));
 
-      setTurnEnded(false);
-      setOpponentTurnEnded(false);
-      setWaitingForOpponent(false);
-      setAutoEndTriggered(false);
-      setResolving(false);
-
       if (isHost && uid && gameData?.opponentUid && lobbyId) {
         await set(ref(database, `lobbies/${lobbyId}/turns/${uid}`), null);
         await set(
@@ -564,11 +474,11 @@ export default function useResolvingPhase(params) {
         await set(roundRef, newRound);
         if (setRound) setRound(newRound);
 
-        // В начале раунда: добавляем +2 энергии обоим
+        // В начале раунда: добавляем +4 энергии обоим
         try {
           await addEnergy(database, lobbyId, uid, 4);
           await addEnergy(database, lobbyId, gameData?.opponentUid, 4);
-          console.log("[Energy] Добавлено +2 энергии обоим игрокам");
+          console.log("[Energy] Добавлено +4 энергии обоим игрокам");
         } catch (err) {
           console.warn("[Energy] Ошибка добавления энергии", err);
         }
@@ -679,18 +589,40 @@ export default function useResolvingPhase(params) {
 
       // Сбрасываем dotTurnsLeft для карт, которые возвращаются в колоду,
       // чтобы при повторной игре они снова активировали эффект DOT
-      const resetDot = (card) => {
-        if (Array.isArray(card.damage_over_time)) {
-          card.dotTurnsLeft = card.damage_over_time.length;
+      const resetCardState = (card) => {
+        const c = { ...card };
+
+        // сброс DoT
+        if (Array.isArray(c.damage_over_time)) {
+          c.dotTurnsLeft = c.damage_over_time.length;
         } else {
-          delete card.dotTurnsLeft;
+          delete c.dotTurnsLeft;
         }
-        return card;
+
+        // 🔓 снятие фиксации
+        delete c.locked;
+
+        return c;
       };
 
-      const restoredPlayer = removedPlayer.map(resetDot);
-      const restoredOpponent = removedOpponent.map(resetDot);
+      const restoredPlayer = removedPlayer.map(resetCardState);
+      const restoredOpponent = removedOpponent.map(resetCardState);
       const fullDeck = [...deck, ...restoredPlayer, ...restoredOpponent];
+      // 🔚 САМЫЙ КОНЕЦ useResolvingPhase
+      setRoundPhase("transition");
+
+      // ⏱ даём React стабилизировать состояние
+      await new Promise((r) => setTimeout(r, 0));
+
+      setTurnEnded(false);
+      setOpponentTurnEnded(false);
+
+      // ⬇️ когда новый раунд полностью готов
+      setRoundPhase("play");
+
+      // ⬇️ undo снова возможно, но уже в новом раунде
+      setTurnEnded(false);
+      setOpponentTurnEnded(false);
 
       setPlayedCards(survivingPlayer);
       setOpponentPlayed(survivingOpponent);

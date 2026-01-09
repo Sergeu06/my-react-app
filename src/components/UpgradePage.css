@@ -27,7 +27,7 @@ h1 {
 }
 
 .card-style {
-  background-color: rgba(30, 30, 30, 0.3); /* Прозрачный фон */
+  background-color: rgba(30, 30, 30, 0.8); /* Прозрачный фон */
   color: #f0f0f0;
   border: 1px solid #2e2e2e; /* Непрозрачный контур */
   border-radius: 16px;
@@ -62,7 +62,6 @@ h1 {
 .card-style .card-name {
   color: #ffb347;
   font-weight: bold;
-  font-size: 1rem;
   margin-bottom: 0.3rem;
 }
 
@@ -97,7 +96,7 @@ h1 {
 .upgrade-button {
   margin-top: 1rem;
   padding: 0.75rem 2rem;
-  background-color: rgba(25, 25, 25, 0.3); /* Прозрачный фон */
+  background-color: rgba(25, 25, 25, 0.8); /* Прозрачный фон */
 
   color: #ffa500;
   border: 1px solid #444;
@@ -480,36 +479,40 @@ h1 {
 }
 
 .upgrade-title {
-  margin-top: 40px;
+  margin-top: 10vh;
   margin-bottom: 20px;
   text-align: center;
   font-size: 2rem;
   font-weight: 600;
   color: #ffa500; /* дополнительный цвет */
+  /* Чёрная обводка */
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000,
+    1px 1px 0 #000;
 }
+
 .upgrade-title-wrapper {
   display: flex;
   justify-content: center;
-  align-items: center;
   position: relative;
   width: 100%;
 }
 
 .info-buttonU {
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(255, 165, 0, 0.1);
-  border: 1px solid #ffa500;
+  background-color: #333;
   color: #ffa500;
+  border: none;
   border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  font-weight: bold;
-  font-size: 1rem;
+  width: 26px;
+  height: 26px;
+  font-size: 16px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+
+  margin-top: 11vh; /* добавляет отступ сверху */
+  margin-left: 4vw;
 }
 
 .info-buttonU:hover {

@@ -301,6 +301,8 @@ function ShopPage({ uid }) {
           remove_multiplier: card.remove_multiplier,
           damage_over_time: card.damage_over_time || [],
           heal: card.heal,
+          value: card.value,
+          increase: card.increase,
           requiredLevel,
           rarity,
           locked,
@@ -662,7 +664,19 @@ function ShopPage({ uid }) {
                   </div>
 
                   <div className="card-description">
-                    Приоритет: {selectedCard.priority ?? "—"}
+                    <div>
+                      Энергия:{" "}
+                      {selectedCard.value !== undefined &&
+                      selectedCard.value !== null &&
+                      selectedCard.value !== ""
+                        ? Number(selectedCard.value)
+                        : "—"}
+                    </div>
+
+                    <div>Шаг Прокачки: {selectedCard.increase ?? "—"}</div>
+
+                    <div>Приоритет: {selectedCard.priority ?? "—"}</div>
+
                     {selectedCard.damage &&
                       typeof selectedCard.damage === "number" && (
                         <div>Урон: {selectedCard.damage}</div>

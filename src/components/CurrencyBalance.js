@@ -13,6 +13,8 @@ function CurrencyBalance({ forceShow = false }) {
   const path = location.pathname.toLowerCase();
   const hiddenPaths = ["/raid", "/game", "/profile", "/open-box"];
   const showMystery = path === "/upgrade" || forceShow;
+  const [showHintTickets, setShowHintTickets] = useState(false);
+  const hintTicketsRef = useRef(null);
 
   useEffect(() => {
     if (!showHint) return;
@@ -29,6 +31,21 @@ function CurrencyBalance({ forceShow = false }) {
       document.removeEventListener("scroll", hideHint);
     };
   }, [showHint]);
+  useEffect(() => {
+    if (!showHintTickets) return;
+
+    const hideHint = () => setShowHintTickets(false);
+
+    document.addEventListener("click", hideHint, { once: true });
+    document.addEventListener("touchstart", hideHint, { once: true });
+    document.addEventListener("scroll", hideHint, { once: true });
+
+    return () => {
+      document.removeEventListener("click", hideHint);
+      document.removeEventListener("touchstart", hideHint);
+      document.removeEventListener("scroll", hideHint);
+    };
+  }, [showHintTickets]);
 
   useEffect(() => {
     if (!showHintRecipes) return;
@@ -77,7 +94,7 @@ function CurrencyBalance({ forceShow = false }) {
     <>
       {/* Монеты */}
       <div
-        style={{ ...balanceStyle, top: 110, cursor: "pointer" }}
+        style={{ ...balanceStyle, top: "21vh", cursor: "pointer" }}
         onClick={(e) => {
           e.stopPropagation();
           setShowHint(true);
@@ -93,7 +110,7 @@ function CurrencyBalance({ forceShow = false }) {
           ref={hintRef}
           style={{
             position: "fixed",
-            top: 105,
+            top: "21vh",
             right: "5%",
             left: "auto",
             backgroundColor: "#1e1e1e",
@@ -115,21 +132,58 @@ function CurrencyBalance({ forceShow = false }) {
           Нажмите в любом месте, чтобы скрыть.
         </div>
       )}
+      {/* Билеты (Tickets) */}
+      {path === "/fight" && (
+        <div
+          style={{ ...balanceStyle, top: "26vh", cursor: "pointer" }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowHintTickets(true);
+          }}
+        >
+          <img src="/ticket.png" alt="Tickets" style={iconStyle} />
+          <span>{userData.tickets ?? 0}</span>
+        </div>
+      )}
+
+      {/* Подсказка по Tickets */}
+      {path === "/fight" && showHintTickets && (
+        <div
+          ref={hintTicketsRef}
+          style={{
+            position: "fixed",
+            top: "26vh",
+            right: "5%",
+            left: "auto",
+            backgroundColor: "#1e1e1e",
+            color: "#fff",
+            padding: "12px 16px",
+            borderRadius: "8px",
+            border: "1px solid #ffa500",
+            fontSize: "12px",
+            zIndex: 10002,
+            width: "100%",
+            maxWidth: "240px",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+          }}
+        >
+          <strong>Билеты:</strong> <br />
+          Используются для участия в боях с легендарными монстрани с другими
+          игроками. <br />
+          Нажмите в любом месте, чтобы скрыть.
+        </div>
+      )}
 
       {/* Secret Recipes */}
       {showMystery && (
         <div
-          style={{ ...balanceStyle, top: 160, cursor: "pointer" }}
+          style={{ ...balanceStyle, top: "26vh", cursor: "pointer" }}
           onClick={(e) => {
             e.stopPropagation();
             setShowHintRecipes(true);
           }}
         >
-          <img
-            src="/Secret Recipes.png"
-            alt="Secret Recipes"
-            style={iconStyle}
-          />
+          <img src="/666666.png" alt="Secret Recipes" style={iconStyle} />
           <span>{userData.SecretRecipes ?? 0}</span>
         </div>
       )}
@@ -140,7 +194,7 @@ function CurrencyBalance({ forceShow = false }) {
           ref={hintRecipesRef}
           style={{
             position: "fixed",
-            top: 155,
+            top: "26vh",
             right: "5%",
             left: "auto",
             backgroundColor: "#1e1e1e",

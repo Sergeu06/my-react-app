@@ -44,7 +44,7 @@ function RaidPage() {
   const [deck, setDeck] = useState([]);
   const [selectedCardId, setSelectedCardId] = useState(null);
   const [playingCard, setPlayingCard] = useState(null);
-  const [energy, setEnergy] = useState(100);
+  const [energy, setEnergy] = useState(50);
 
   const [turn, setTurn] = useState(0);
 

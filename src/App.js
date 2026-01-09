@@ -43,6 +43,11 @@ import { UserProvider } from "./components/UserContext";
 
 const BOT_TOKEN = "6990185927:AAG8cCLlwX-z8ZcwYGN_oUOfGC2vONls87Q";
 
+const isMobile =
+  /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent) ||
+  navigator.maxTouchPoints > 1 ||
+  window.innerWidth < 900;
+
 function checkTelegramAuth(initData, botToken) {
   const params = {};
   initData.split("&").forEach((pair) => {
@@ -94,7 +99,7 @@ const pageVariants = {
       left: 0,
       right: 0,
       bottom: 0,
-      position: "absolute",
+      // убрано: position: "absolute"
     };
   },
   in: {
@@ -103,12 +108,12 @@ const pageVariants = {
     left: 0,
     right: 0,
     bottom: 0,
-    position: "absolute",
     transition: {
       type: "tween",
       ease: "easeInOut",
       duration: 0.4,
     },
+    // убрано: position: "absolute"
   },
   out: (direction) => {
     const dir = direction || 1;
@@ -118,12 +123,12 @@ const pageVariants = {
       left: 0,
       right: 0,
       bottom: 0,
-      position: "absolute",
       transition: {
         type: "tween",
         ease: "easeInOut",
         duration: 0.4,
       },
+      // убрано: position: "absolute"
     };
   },
 };
@@ -243,7 +248,7 @@ function App() {
           left: 0,
           right: 0,
           bottom: 0,
-          overflowY: "auto", // ← вернул прокрутку везде
+          overflowY: "visible",
           background: isGameOrResult ? "black" : "transparent",
         }}
       >
@@ -330,18 +335,18 @@ function App() {
   ]);
 
   useEffect(() => {
-    const background = backgroundRef.current;
+    const bg = backgroundRef.current;
+    if (!bg) return;
 
-    const handleScroll = () => {
-      if (background) {
-        const scrollTop = window.scrollY;
-        const speedFactor = -0.4;
-        background.style.backgroundPositionY = `${scrollTop * speedFactor}px`;
-      }
+    const onScroll = () => {
+      const scrollY = window.scrollY;
+      requestAnimationFrame(() => {
+        bg.style.backgroundPositionY = `${scrollY * -0.4}px`;
+      });
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
@@ -370,6 +375,7 @@ function App() {
     try {
       if (webApp?.expand) webApp.expand();
       if (webApp?.requestFullscreen) webApp.requestFullscreen();
+      webApp.disableVerticalSwipes();
       if (webApp?.lockOrientation) webApp.lockOrientation("portrait");
     } catch (e) {
       console.warn("Fullscreen or orientation lock not supported", e);
@@ -455,17 +461,57 @@ function App() {
     else if (path.includes("/profile")) setTabIndex(4);
   }, [location.pathname]);
 
-  if (!window.Telegram || !window.Telegram.WebApp) {
-    console.error("❌ Telegram WebApp API не загружен");
-    setError("Ошибка: Telegram WebApp API недоступен.");
-    return;
-  }
+  useEffect(() => {
+    if (!window.Telegram || !window.Telegram.WebApp) {
+      setError("Ошибка: Telegram WebApp API недоступен.");
+    }
+  }, []);
 
   if (error) {
     return (
       <div style={{ padding: 20, color: "red" }}>
         <h2>Доступ запрещён</h2>
         <p>{error}</p>
+      </div>
+    );
+  }
+  if (!isMobile) {
+    return (
+      <div
+        style={{
+          width: "100vw",
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#1c1c1c",
+          color: "white",
+          textAlign: "center",
+          padding: 20,
+        }}
+      >
+        <h1 style={{ fontSize: 28, marginBottom: 20 }}>
+          ОТКРЫТЬ ПРИЛОЖЕНИЕ МОЖНО С ТЕЛЕФОНА
+        </h1>
+
+        <p style={{ fontSize: 18, marginBottom: 20 }}>
+          Наведите камеру телефона на QR-код
+        </p>
+
+        <img
+          src="/images/QR.png"
+          alt="qr"
+          style={{
+            width: 220,
+            height: 220,
+            background: "white",
+            padding: 10,
+            borderRadius: 12,
+          }}
+        />
+
+        <p style={{ marginTop: 20, opacity: 0.6 }}>Доступ с ПК ограничен</p>
       </div>
     );
   }
@@ -487,8 +533,7 @@ function App() {
       <div>
         <div className="safe-container" {...handlers}>
           <div className="background-container" ref={backgroundRef} />
-          <div className="background-overlay" />
-          <div className="game-version">v0.9.78.56</div>
+          <div className="game-version">v0.9.88.41</div>
 
           <CurrencyBalance />
 
@@ -560,7 +605,7 @@ function App() {
                   value={3}
                 />
                 <BottomNavigationAction
-                  label="Досье"
+                  label="Профиль"
                   icon={<AccountCircleIcon />}
                   component={Link}
                   to={`/profile?start=${uid}`}

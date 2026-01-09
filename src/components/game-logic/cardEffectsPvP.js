@@ -1,7 +1,6 @@
 // game-logic/cardEffectsPvP.js
 import { ref, get, set } from "firebase/database";
 import { database } from "../firebase";
-import { showDamageNumber, popAvatar } from "../game/strikeAnimations";
 
 export function generateId() {
   return Math.random().toString(36).substr(2, 9);
@@ -140,6 +139,11 @@ export async function applyDotPvP(
 ) {
   if (!targetUid || !lobbyId || !card) return null;
   if (!Array.isArray(card.damage_over_time)) return null;
+
+  // 🔒 Фиксируем момент активации DoT (первый тик)
+  if (turnIndex === 0 && card.dotActivated !== true) {
+    card.dotActivated = true;
+  }
 
   const baseDamage = Number(card.damage_over_time[turnIndex]) || 0;
   if (baseDamage <= 0) return null;

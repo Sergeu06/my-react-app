@@ -143,24 +143,92 @@
   cursor: default;
   z-index: 1000; /* чтобы быть поверх */
 }
+
 .end-turn-button {
   position: absolute;
   top: 12px;
   right: 12px;
   z-index: 10;
-  padding: 8px 16px;
-  background-color: #ffa500;
-  color: black;
-  font-weight: bold;
+
+  width: 140px; /* меньше */
+  height: 34px; /* чуть меньше */
+  background: linear-gradient(135deg, #ffa500, #ff9500);
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 12px; /* уменьшенный шрифт */
+  text-align: center;
+  text-transform: uppercase;
+
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  box-shadow: 0 0 10px #00000060;
-  transition: background-color 0.2s;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .end-turn-button:hover {
-  background-color: #ff8c00;
+  background: linear-gradient(135deg, #ffb733, #ffa500);
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.end-turn-button:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* цифра таймера без отдельной анимации */
+.timer-digit {
+  display: inline-block;
+  transition: color 0.2s;
+}
+
+/* пульсация кнопки при таймере 10–40 (легкая) */
+.end-turn-button.pulse {
+  animation: pulseGlow 1s infinite;
+}
+
+/* более сильная пульсация кнопки при критическом таймере 9–0 */
+.end-turn-button.pulse-strong {
+  animation: pulseGlowStrong 0.8s infinite;
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 10px #ffb73388, 0 0 0 #ffa50000;
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 18px #ffb733aa, 0 0 6px #ffa50055;
+    transform: scale(1.04);
+  }
+  100% {
+    box-shadow: 0 0 10px #ffb73388, 0 0 0 #ffa50000;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulseGlowStrong {
+  0% {
+    box-shadow: 0 0 14px #ffb733aa, 0 0 0 #ffa50000;
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 28px #ffb733cc, 0 0 12px #ffa50055;
+    transform: scale(1.08);
+  }
+  100% {
+    box-shadow: 0 0 14px #ffb733aa, 0 0 0 #ffa50000;
+    transform: scale(1);
+  }
 }
 
 .played-cards-section {

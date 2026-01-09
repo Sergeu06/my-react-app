@@ -198,6 +198,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 2;
 }
 
 .modal-content {
@@ -270,7 +271,7 @@
 }
 
 .tabs {
-  margin-top: 50px;
+  margin-top: 10vh;
   display: flex;
   justify-content: center;
   margin-bottom: 20px;
@@ -801,7 +802,6 @@
   overflow: hidden;
   display: flex;
   align-items: center;
-  z-index: 1;
   pointer-events: none;
 }
 
@@ -831,6 +831,10 @@
   margin-bottom: 0.5em;
   border-bottom: 1px solid #444;
   padding-bottom: 0.3em;
+
+  /* Чёрная обводка */
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000,
+    1px 1px 0 #000;
 }
 
 .info-btn {

@@ -31,6 +31,7 @@ body {
   color: #f0f0f0;
   overflow-x: hidden;
 }
+
 .safe-container {
   min-height: var(--tg-viewport-stable-height, 100vh);
   padding-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top));
@@ -47,29 +48,12 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-image: url("/public/photo_2025-07-29_06-44-47.jpg");
-  background-size: cover;
-  background-repeat: no-repeat;
+  background-image: url("/public/озеро3.png");
+  background-size: 100% auto; /* ширина по экрану, высота естественная */
+  background-repeat: repeat-y; /* повтор только по вертикали */
   background-position: center 0px; /* начальное значение */
   z-index: -2;
   will-change: background-position;
-}
-
-/* Тёмное затемнение поверх изображения с виньеткой */
-.background-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(0, 0, 0, 0) 40%,
-    rgba(0, 0, 0, 0.5) 75%,
-    rgba(0, 0, 0, 0.85) 100%
-  );
-  z-index: -1;
-  pointer-events: none;
 }
 
 /* Основа панели */
@@ -159,8 +143,8 @@ body {
 
 /* Контейнер для анимированных страниц */
 .page-stack {
+  position: relative;
   min-height: calc(100vh - 55px); /* вычитаем высоту нижней навигации */
-  overflow: hidden; /* чтобы страницы не выходили за пределы */
   width: 100%;
   z-index: 0;
 }
@@ -168,11 +152,10 @@ body {
 /* Каждая страница — абсолютный слой, заполняет контейнер */
 .animated-page {
   inset: 0; /* top:0; right:0; bottom:0; left:0; */
-  will-change: transform, opacity;
+  will-change: opacity;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   /* лёгкая внутренняя тень для глубины (регулируй при необходимости) */
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
   pointer-events: auto;
   /* если не хочешь закруглять углы — убери border-radius */
   border-radius: 0;
@@ -180,8 +163,37 @@ body {
 }
 
 .safe-container {
-  position: relative;
-  width: 100%;
-  height: 100vh; /* 👈 чтобы всегда занимала экран */
-  overflow: hidden; /* 👈 скрывает то, что уезжает за пределы */
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow: visible;
+}
+/* === WebKit-браузеры (Chrome, Edge, Safari) === */
+*::-webkit-scrollbar {
+  width: 10px; /* толщина скроллбара */
+}
+
+*::-webkit-scrollbar-track {
+  -webkit-box-shadow: 5px 5px 5px -5px rgba(34, 60, 80, 0.2) inset;
+  background-color: #2e2e2e;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #ffa500#ffa500;
+  background-image: -webkit-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.25) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.25) 75%,
+    transparent 75%,
+    transparent
+  );
+  border-radius: 5px; /* скругление углов */
+}
+
+/* === Firefox === */
+* {
+  scrollbar-width: thin; /* тонкий скроллбар */
+  scrollbar-color: #ffa500 #2e2e2e; /* thumb и track */
 }

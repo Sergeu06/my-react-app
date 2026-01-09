@@ -437,7 +437,7 @@ function UpgradePage() {
 
     return (
       <>
-        <div className="card-name">{preview.name}</div>а
+        <div className="card-name">{preview.name}</div>
         <div className="card-image-wrapper">
           <img src={preview.image_url} alt="preview" />
           {preview.lvl && (
@@ -461,7 +461,7 @@ function UpgradePage() {
     >
       <div className="upgrade-title-wrapper">
         <h1 className="upgrade-title">Повышение ранга</h1>
-        <button className="info-button" onClick={() => setShowInfo(true)}>
+        <button className="info-buttonU" onClick={() => setShowInfo(true)}>
           i
         </button>
       </div>
@@ -480,8 +480,16 @@ function UpgradePage() {
             alignItems: "center",
             margin: "0 20px",
             position: "relative",
-            fontSize: "24px",
+            fontSize: "40px", // стала больше
             fontWeight: "bold",
+            color: "#ffa500", // оранжевый цвет стрелки
+            WebkitTextStroke: "1px black", // чёрный контур
+            textShadow: `
+              -1px -1px 0 #000,
+               1px -1px 0 #000,
+              -1px  1px 0 #000,
+               1px  1px 0 #000
+            `, // дополнительный контур на всех браузерах
           }}
         >
           ↑
@@ -492,9 +500,17 @@ function UpgradePage() {
               top: "50%",
               left: "100%",
               transform: "translate(10px, -50%)",
-              fontWeight: "normal",
-              fontSize: "16px",
+              fontWeight: "bold", // изменено с normal на bold
+              fontSize: "28px",
               whiteSpace: "nowrap",
+              color: "#ffa500", // цвет текста
+              WebkitTextStroke: "1px black", // контур для WebKit
+              textShadow: `
+      -1px -1px 0 #000,
+      1px -1px 0 #000,
+      -1px 1px 0 #000,
+      1px 1px 0 #000
+    `, // запасной вариант для других браузеров
             }}
           >
             {selectedCard
@@ -562,7 +578,7 @@ function UpgradePage() {
             <span>+</span>
             <span>{Math.max(0, (selectedCard.lvl || 1) - 1)}</span>
             <img
-              src="Secret Recipes.png"
+              src="666666.png"
               alt="secret"
               style={{ width: 20, height: 20 }}
             />

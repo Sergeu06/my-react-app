@@ -8,28 +8,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { addEnergy, spendEnergy } from "../game-logic/energyManager";
 import initGame from "../game-logic/initGame";
 import endTurn from "../game-logic/endTurn";
-import drawCards from "../game-logic/drawCards";
 
 import HPBar from "./HPBar";
 import PlayerInfo from "./PlayerInfo";
 import TurnControls from "./TurnControls";
 import PlayedCards from "./PlayedCards";
 import OpponentHand from "./OpponentHand";
-import { strikeSequence } from "./strikeAnimations";
 
 // 👇 добавляем
 import FramedCard from "../../utils/FramedCard";
 import { renderCardStats } from "../../utils/renderCardStats";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import useResolvingPhase from "../game-logic/useResolvingPhase";
-
-// --- ДОБАВИТЬ ИМПОРТ ---
-import {
-  applyDamagePvP,
-  applyDotPvP,
-  applyDamageMultiplierPvP,
-  processDotEffectsPvP,
-} from "../game-logic/cardEffectsPvP";
 
 import "./game.css";
 import "./animations.css";
@@ -66,11 +56,11 @@ function GamePage() {
   const [autoEndTriggered, setAutoEndTriggered] = useState(false);
 
   const [processedCardIds, setProcessedCardIds] = useState(new Set());
-  const [resolving, setResolving] = useState(false);
+  const [roundPhase, setRoundPhase] = useState("play");
 
   const [effectsByUid, setEffectsByUid] = useState({});
   // --- функция старта таймера ---
-  const startNewTurnTimer = async (duration = 30) => {
+  const startNewTurnTimer = async (duration = 25) => {
     if (!isHost) return; // только хост пишет
     if (!lobbyId) return;
 
@@ -94,7 +84,7 @@ function GamePage() {
     setEffectsByUid,
     setProcessedCardIds,
     processedCardIds,
-    setResolving,
+    setRoundPhase,
     setWaitingForOpponent,
     setTurnEnded,
     setOpponentTurnEnded,
@@ -492,14 +482,13 @@ function GamePage() {
     const unsub = onValue(doneRef, (snap) => {
       if (snap.exists()) {
         console.log("[GamePage] resolvingDone received, reset flags only");
-        setResolving(false);
+
+        // ⬇️ мы УЖЕ управляем фазами в useResolvingPhase
         setWaitingForOpponent(false);
         setTurnEnded(false);
         setOpponentTurnEnded(false);
         setAutoEndTriggered(false);
         setProcessedCardIds(new Set());
-        // ❌ убираем drawCards и очистку колоды/руки
-        // Это уже обрабатывается в resolving phase (хостом)
       }
     });
 
@@ -511,7 +500,7 @@ function GamePage() {
     if (!uid || !lobbyId || !isHost || firstTimerStarted) return;
 
     console.log("[Timer] first round, set 40 sec timer");
-    startNewTurnTimer(40);
+    startNewTurnTimer(25);
     setFirstTimerStarted(true);
   }, [uid, lobbyId, isHost, firstTimerStarted]);
   // 👇 ставим где-то после всех useState, до return
@@ -540,7 +529,11 @@ function GamePage() {
 
     // Убираем карту из руки и добавляем в сыгранные
     setHand((prev) => prev.filter((c) => c.id !== cardToPlay.id));
-    const cardWithTs = { ...cardToPlay, ts: Date.now() };
+    const cardWithTs = {
+      ...cardToPlay,
+      ts: Date.now(),
+      playedInRound: round, // 👈 КРИТИЧНО
+    };
     setPlayedCards((prev) => [...prev, cardWithTs]);
 
     // RTDB сыгранные карты
@@ -562,13 +555,17 @@ function GamePage() {
 
     await set(roundRef, 1);
     await set(priorityRef, gameData?.player ? uid : gameData?.opponentUid); // 👈 первый ход у хоста
-    await startNewTurnTimer(40);
+    await startNewTurnTimer(25);
     setFirstTimerStarted(true);
   };
 
   const handleUndoCard = async (card) => {
     // Возвращаем карту в руку
-    setHand((prev) => [...prev, card]);
+    const restoredCard = { ...card };
+    delete restoredCard.canUndo;
+    delete restoredCard.playedInRound;
+
+    setHand((prev) => [...prev, restoredCard]);
     setPlayedCards((prev) => prev.filter((c) => c.id !== card.id));
 
     const cost = card.cost ?? card.value ?? 0;
@@ -592,6 +589,13 @@ function GamePage() {
     try {
       await endTurn(uid, lobbyId);
       setTurnEnded(true);
+      setPlayedCards((prev) =>
+        prev.map((c) => ({
+          ...c,
+          locked: true, // 🔒 карта зафиксирована
+        }))
+      );
+
       if (!opponentTurnEnded) {
         setWaitingForOpponent(true);
       }
@@ -609,6 +613,7 @@ function GamePage() {
         turnEnded={turnEnded}
         opponentTurnEnded={opponentTurnEnded}
         onEndTurn={handleEndTurn}
+        roundPhase={roundPhase}
       />
 
       <OpponentHand
@@ -648,7 +653,7 @@ function GamePage() {
         hasPriority={priorityUid === uid} // 👈
       />
 
-      {waitingForOpponent && !resolving && (
+      {waitingForOpponent && roundPhase === "play" && (
         <div className="waiting-message">Ждём соперника...</div>
       )}
 
@@ -694,6 +699,7 @@ function GamePage() {
             onUndo={handleUndoCard}
             turnEnded={turnEnded}
             bothTurnsEnded={turnEnded && opponentTurnEnded}
+            roundPhase={roundPhase}
           />
         </div>
         {/* Анимированный индикатор раунда */}

@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 5vh 5vw;
+  padding: 15vh 5vw 5vh 5vw;
   color: #f0f0f0;
   min-height: 100vh;
 }
@@ -39,9 +39,11 @@
 }
 
 .profile-stats {
-  width: 100%;
-  margin-top: 2vh;
-  padding-bottom: 70px; /* или margin-bottom: 70px; */
+  width: 100vw;
+  margin-top: 1vh;
+  padding-bottom: 70px;
+  /* Полупрозрачный чёрный фон */
+  background: rgba(0, 0, 0, 0.6);
 }
 
 .stat {
@@ -50,6 +52,10 @@
   border-bottom: 1px solid #444;
   color: #ffa500;
   font-weight: bold;
+
+  /* Чёрная обводка */
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000,
+    1px 1px 0 #000;
 }
 
 /* Skeleton */

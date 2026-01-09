@@ -237,7 +237,7 @@
 /* --- Лидерборд в правом верхнем углу --- */
 .leaderboard-container {
   position: fixed;
-  top: 35px;
+  top: 10vh;
   right: 20px;
   background-color: rgba(30, 30, 30, 0.85);
   border-radius: 10px;
@@ -378,4 +378,331 @@
   border-radius: 50%;
   margin: 0 8px 0 4px;
   object-fit: cover;
+}
+/* --- Claim-ромб (уменьшенный и улучшенный) --- */
+.claim-widget_FightPage {
+  position: fixed;
+  top: 36vh;
+  right: 28px;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(145deg, #3d3d3d, #1e1e1e);
+  border-radius: 14px;
+  transform: rotate(45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  cursor: pointer;
+
+  opacity: 1;
+  transform-origin: center;
+  transition: opacity 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+
+  box-shadow: 0 0 10px #ffa50066, 0 0 4px #000 inset, inset 0 0 10px #ffa50033,
+    inset 0 0 3px #ffffff33;
+}
+
+/* исчезновение при открытии оверлея */
+.hidden-claim_FightPage {
+  opacity: 0;
+  transform: rotate(45deg) scale(0.7);
+  pointer-events: none;
+}
+
+/* Hover */
+.claim-widget_FightPage:hover {
+  box-shadow: 0 0 18px #ffa500aa, 0 0 6px #000 inset, inset 0 0 16px #ffa50055,
+    inset 0 0 6px #ffffff44;
+  transform: rotate(45deg) scale(1.06);
+}
+
+/* Монета внутри */
+.claim-widget_FightPage img {
+  width: 25px;
+  height: 25px;
+  transform: rotate(-45deg);
+}
+
+/* Восклицательный знак */
+.claim-alert_FightPage {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffa500;
+  color: #000;
+  font-weight: 900;
+  font-size: 13px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: rotate(-45deg);
+  box-shadow: 0 0 6px #ffb933dd;
+  border: 2px solid #2e2e2e;
+}
+
+/* --------------------------- */
+/*        CLAIM OVERLAY        */
+/* --------------------------- */
+
+.claim-overlay_FightPage {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 500000;
+  animation: fadeIn_FightPage 0.25s ease forwards;
+}
+
+@keyframes fadeIn_FightPage {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* окно */
+.claim-window_FightPage {
+  width: 90%;
+  max-width: 360px;
+  background: linear-gradient(160deg, #2e2e2e, #222, #1a1a1a);
+  border-radius: 20px;
+  padding: 24px;
+  text-align: center;
+
+  box-shadow: 0 0 18px #000, inset 0 0 6px #000000aa, 0 0 14px #ffa50055;
+  border: 2px solid #ffa50022;
+
+  animation: popup_FightPage 0.25s ease forwards;
+  transform-origin: center;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+@keyframes popup_FightPage {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.claim-title_FightPage {
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffa500;
+  margin: 0;
+  padding: 4px 0 6px 0;
+  text-shadow: 0 0 6px #ffa50055;
+  z-index: 3;
+}
+
+/* блок награды */
+.claim-reward_FightPage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 12px 18px;
+  border-radius: 16px;
+
+  background: linear-gradient(145deg, #353535, #1f1f1f);
+  box-shadow: inset 0 0 8px #000, 0 0 10px #ffa50044;
+
+  width: 100%;
+  max-width: 320px;
+  box-sizing: border-box;
+  z-index: 1;
+}
+
+.claim-coin_FightPage {
+  width: 48px;
+  height: 48px;
+  filter: drop-shadow(0 0 8px #ffa500aa);
+  flex-shrink: 0;
+}
+
+.claim-amount_FightPage {
+  font-size: 28px;
+  font-weight: 900;
+  color: #ffa500;
+  text-shadow: 0 0 6px #ffa50088;
+  white-space: nowrap;
+}
+
+/* кнопка */
+.claim-button_FightPage {
+  padding: 12px 36px;
+  border: none;
+  border-radius: 14px;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  background: linear-gradient(140deg, #ffcc66, #ffa500);
+  color: #000;
+
+  box-shadow: 0 0 12px #ffa500aa, inset 0 0 6px #ffffff88;
+  transition: 0.2s ease;
+  z-index: 2;
+}
+
+.claim-button_FightPage:hover {
+  transform: scale(1.06);
+  box-shadow: 0 0 16px #ffb733, inset 0 0 10px #fff;
+}
+
+/* таймер */
+.claim-timer_FightPage {
+  font-size: 20px;
+  font-weight: 600;
+  color: #ccc;
+  z-index: 2;
+}
+
+.claim-timer-value_FightPage {
+  color: #ffa500;
+  font-weight: 800;
+  text-shadow: 0 0 6px #ffa50066;
+}
+/* выборная награда */
+.selectable_FightPage {
+  cursor: pointer;
+  transition: 0.2s ease;
+  opacity: 0.85;
+  border: 2px solid transparent;
+}
+
+.selectable_FightPage:hover {
+  opacity: 1;
+  transform: scale(1.03);
+}
+
+.selected_FightPage {
+  border: 2px solid #ffa500;
+  box-shadow: 0 0 12px #ffa500aa, inset 0 0 8px #000;
+  opacity: 1;
+  transform: scale(1.05);
+}
+.raid-confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 20000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.raid-confirm-modal-card {
+  width: 100%;
+  max-width: 360px;
+  max-height: 90dvh;
+  background: #141414;
+  border: 2px solid #ffa500;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 0 30px rgba(255, 165, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.raid-confirm-modal-boss-image {
+  width: 100%;
+  max-height: 32vh;
+  object-fit: contain;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+.raid-confirm-modal-hp-bar {
+  height: 10px;
+  background: #333;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.raid-confirm-modal-hp-fill {
+  height: 100%;
+  transition: width 0.4s ease;
+  background: linear-gradient(90deg, #ff4d4d, #ffa500);
+}
+
+.raid-confirm-modal-hp-text {
+  font-size: 13px;
+  margin-top: 6px;
+  white-space: nowrap;
+}
+.raid-confirm-modal-ticket {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.raid-confirm-modal-ticket-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.raid-confirm-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.raid-confirm-modal-btn-enter,
+.raid-confirm-modal-btn-cancel {
+  flex: 1;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.raid-confirm-modal-btn-enter {
+  background: linear-gradient(135deg, #ffa500, #ff8c00);
+  border: none;
+  font-weight: bold;
+}
+
+.raid-confirm-modal-btn-cancel {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #fff;
+}
+@media (max-width: 360px) {
+  .raid-confirm-modal-card {
+    padding: 12px;
+  }
+
+  .raid-confirm-modal-btn-enter,
+  .raid-confirm-modal-btn-cancel {
+    font-size: 13px;
+  }
+}
+.raid-confirm-modal-error {
+  margin-top: 8px;
+  margin-bottom: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: #ff4d4d;
+  background: rgba(255, 77, 77, 0.12);
+  border: 1px solid rgba(255, 77, 77, 0.35);
+  border-radius: 8px;
 }

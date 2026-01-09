@@ -6,17 +6,22 @@ import {
   update,
   onValue,
   set as rtdbSet,
-} from "firebase/database";
+  serverTimestamp,
+} from "firebase/database"; // serverTimestamp можно импортировать отсюда
+
+import { addMinutes, differenceInSeconds } from "date-fns";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+
 import { db, database } from "./firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import "./FightPage.css";
 
 function FightPage({ uid, searchState, setSearchState }) {
-  const { isSearching, secondsElapsed, lobbyId } = searchState;
-  const [localSecondsElapsed, setLocalSecondsElapsed] = useState(0);
+  const { isSearching, lobbyId } = searchState;
   const [elapsed, setElapsed] = useState(0);
+  const [raidEnterError, setRaidEnterError] = useState(null);
 
   const [countdown, setCountdown] = useState(null);
   const [playersInLobby, setPlayersInLobby] = useState(0);
@@ -24,19 +29,151 @@ function FightPage({ uid, searchState, setSearchState }) {
   const [tip, setTip] = useState(null);
   const [player1Name, setPlayer1Name] = useState("");
   const [player2Name, setPlayer2Name] = useState("");
-  const [, setActiveSkill] = useState("");
-  const [, setSkillList] = useState([]);
+
   const isCancelled = useRef(false);
   const navigate = useNavigate();
   const [showInfoModal, setShowInfoModal] = useState(null);
+
+  // Raid entry confirmation
+  const [showRaidConfirm, setShowRaidConfirm] = useState(false);
+  const [raidBoss, setRaidBoss] = useState(null); // { name, hp, max_hp, image_url }
+  const [userTickets, setUserTickets] = useState(0);
   // --- состояние для двух лидербордов ---
   const [raidLeaderboard, setRaidLeaderboard] = useState([]);
   const [pvpLeaderboard, setPvpLeaderboard] = useState([]);
   const [activeBoard, setActiveBoard] = useState("raid"); // raid | pvp
-  const [leaderboard, setLeaderboard] = useState([]);
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
   const [fullLeaderboard, setFullLeaderboard] = useState([]);
   const [modalBoardType, setModalBoardType] = useState("raid");
+
+  // --- Claim state ---
+  const [lastClaimAt, setLastClaimAt] = useState(null);
+  const [canClaim, setCanClaim] = useState(false);
+  const [remaining, setRemaining] = useState(0);
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [selectedReward, setSelectedReward] = useState(null);
+  const [claimLoaded, setClaimLoaded] = useState(false);
+  const switchLeaderboard = async () => {
+    const next = modalBoardType === "raid" ? "pvp" : "raid";
+    setModalBoardType(next);
+
+    try {
+      const usersCollection = collection(db, "users");
+      const leaderboardQuery =
+        next === "raid"
+          ? query(usersCollection, orderBy("stats.total_damage_raid", "desc"))
+          : query(usersCollection, orderBy("stats.RI", "desc"));
+
+      const querySnapshot = await getDocs(leaderboardQuery);
+      const playersArray = [];
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        playersArray.push({
+          userId: docSnap.id,
+          nickname: data.nickname || "Игрок",
+          avatar: data.avatar_url || "/default-avatar.png",
+          value:
+            next === "raid"
+              ? data.stats?.total_damage_raid || 0
+              : data.stats?.RI || 0,
+        });
+      });
+
+      setFullLeaderboard(playersArray);
+    } catch (error) {
+      console.error("Ошибка перелистывания лидерборда:", error);
+    }
+  };
+  useEffect(() => {
+    if (showRaidConfirm) {
+      setRaidEnterError(null);
+    }
+  }, [showRaidConfirm]);
+
+  useEffect(() => {
+    if (!uid) return;
+    const userRef = doc(db, "users", uid);
+
+    getDoc(userRef).then((snap) => {
+      if (snap.exists()) {
+        setUserTickets(snap.data().tickets || 0);
+      }
+    });
+  }, [uid]);
+
+  // загрузка времени claim из DB
+  useEffect(() => {
+    if (!uid) return;
+
+    const claimRef = ref(database, `users/${uid}/settings/lastClaimAt`);
+
+    return onValue(claimRef, (snap) => {
+      const val = snap.val();
+
+      if (!val) setLastClaimAt(null);
+      else setLastClaimAt(new Date(val));
+
+      setClaimLoaded(true); // <<< загружено
+    });
+  }, [uid]);
+
+  // таймер
+  useEffect(() => {
+    if (!claimLoaded) return; // Данные ещё не получены — ничего не делаем
+
+    if (!lastClaimAt) {
+      // Уже точно знаем, что lastClaimAt отсутствует в БД
+      setRemaining(0);
+      setCanClaim(true);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const nextTime = addMinutes(lastClaimAt, 30);
+      const diff = differenceInSeconds(nextTime, new Date());
+
+      setRemaining(diff > 0 ? diff : 0);
+
+      // canClaim пересчитываем только если изменилось состояние
+      setCanClaim((prev) => {
+        const nowCanClaim = diff <= 0;
+        return prev !== nowCanClaim ? nowCanClaim : prev;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [lastClaimAt]);
+
+  // обработчик claim
+  const handleClaim = async (type) => {
+    if (!canClaim || !type) return;
+
+    // обновляем таймер
+    await update(ref(database, `users/${uid}/settings`), {
+      lastClaimAt: serverTimestamp(),
+    });
+
+    const userRef = doc(db, "users", uid);
+    const snap = await getDoc(userRef);
+    const data = snap.data() || {};
+
+    let reward = {
+      coins: data.balance || 0,
+      SecretRecipes: data.SecretRecipes || 0,
+      tickets: data.tickets || 0,
+    };
+
+    if (type === "coins") reward.coins += 150;
+    if (type === "SecretRecipes") reward.SecretRecipes += 2;
+    if (type === "tickets") reward.tickets += 2;
+
+    await updateDoc(userRef, {
+      balance: reward.coins,
+      SecretRecipes: reward.SecretRecipes,
+      tickets: reward.tickets,
+    });
+  };
+
   // --- загрузка лидерборда PvP (топ-3 по RI) ---
   useEffect(() => {
     const fetchPvpLeaderboard = async () => {
@@ -65,6 +202,32 @@ function FightPage({ uid, searchState, setSearchState }) {
     };
     fetchPvpLeaderboard();
   }, []);
+  useEffect(() => {
+    if (!showRaidConfirm) return;
+
+    const bossRef = ref(database, "Raid_BOSS");
+
+    get(bossRef).then((snap) => {
+      if (!snap.exists()) {
+        setRaidBoss(null);
+        return;
+      }
+
+      const activeBoss = getActiveRaidBoss(snap.val());
+
+      const normalizedBoss = activeBoss?.finished
+        ? activeBoss
+        : {
+            ...activeBoss,
+            hp: activeBoss.hp ?? 0,
+            max_hp: activeBoss.max_hp ?? activeBoss.maxHp ?? 0,
+            image_url: activeBoss.image_url ?? "/boss-placeholder.png",
+          };
+
+      setRaidBoss(normalizedBoss);
+    });
+  }, [showRaidConfirm]);
+
   // --- загрузка лидерборда рейда (топ-3) ---
   useEffect(() => {
     const fetchRaidLeaderboard = async () => {
@@ -100,6 +263,16 @@ function FightPage({ uid, searchState, setSearchState }) {
     }, 6000);
     return () => clearInterval(interval);
   }, []);
+  const getActiveRaidBoss = (bosses) => {
+    if (!bosses) return null;
+
+    const stages = Object.values(bosses).sort((a, b) => a.stage - b.stage);
+
+    const active = stages.find((b) => b.hp > 0);
+
+    return active || { finished: true };
+  };
+
   // --- загрузка полного лидерборда по типу ---
   const openLeaderboardModal = async (type = "raid") => {
     setModalBoardType(type);
@@ -363,7 +536,6 @@ function FightPage({ uid, searchState, setSearchState }) {
           style={{
             width: 200,
             padding: "6px 8px",
-            backgroundColor: "#1a1a1a",
             borderRadius: 8,
             fontSize: 14,
             userSelect: "none",
@@ -429,6 +601,104 @@ function FightPage({ uid, searchState, setSearchState }) {
             )}
           </div>
         </div>
+        {/* --- Claim widget --- */}
+        <div
+          className={`claim-widget_FightPage ${
+            showClaimModal ? "hidden-claim_FightPage" : ""
+          }`}
+          onClick={() => setShowClaimModal(true)}
+        >
+          <img src="/moneta.png" alt="coin" />
+
+          {claimLoaded && lastClaimAt !== null && canClaim && (
+            <div className="claim-alert_FightPage">!</div>
+          )}
+        </div>
+        {showClaimModal && (
+          <div
+            className="claim-overlay_FightPage"
+            onClick={() => setShowClaimModal(false)}
+          >
+            <div
+              className="claim-window_FightPage"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="claim-title_FightPage">Выберите награду</h3>
+
+              {/* Вариант: 100 монет */}
+              <div
+                className={`claim-reward_FightPage selectable_FightPage ${
+                  selectedReward === "coins" ? "selected_FightPage" : ""
+                }`}
+                onClick={() => setSelectedReward("coins")}
+              >
+                <img
+                  src="/moneta.png"
+                  alt="coins"
+                  className="claim-coin_FightPage"
+                />
+                <span className="claim-amount_FightPage">× 100</span>
+              </div>
+
+              <div className="claim-or_FightPage">ИЛИ</div>
+
+              {/* Вариант: 10 рецептов */}
+              <div
+                className={`claim-reward_FightPage selectable_FightPage ${
+                  selectedReward === "SecretRecipes" ? "selected_FightPage" : ""
+                }`}
+                onClick={() => setSelectedReward("SecretRecipes")}
+              >
+                <img
+                  src="/666666.png"
+                  alt="SecretRecipes"
+                  className="claim-coin_FightPage"
+                />
+                <span className="claim-amount_FightPage">× 10</span>
+              </div>
+
+              <div className="claim-or_FightPage">ИЛИ</div>
+
+              {/* Вариант: 5 билетов */}
+              <div
+                className={`claim-reward_FightPage selectable_FightPage ${
+                  selectedReward === "tickets" ? "selected_FightPage" : ""
+                }`}
+                onClick={() => setSelectedReward("tickets")}
+              >
+                <img
+                  src="/ticket.png"
+                  alt="tickets"
+                  className="claim-coin_FightPage"
+                />
+                <span className="claim-amount_FightPage">× 5</span>
+              </div>
+
+              {canClaim && (
+                <button
+                  disabled={!selectedReward}
+                  className="claim-button_FightPage"
+                  onClick={async () => {
+                    await handleClaim(selectedReward);
+                    setShowClaimModal(false);
+                  }}
+                >
+                  Забрать
+                </button>
+              )}
+
+              {!canClaim && (
+                <div className="claim-timer_FightPage">
+                  Доступно через:{" "}
+                  <span className="claim-timer-value_FightPage">
+                    {Math.floor(remaining / 60)}:
+                    {(remaining % 60).toString().padStart(2, "0")}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {showInfoModal && (
           <div className="modal-overlay" onClick={() => setShowInfoModal(null)}>
@@ -455,19 +725,24 @@ function FightPage({ uid, searchState, setSearchState }) {
               onClick={(e) => e.stopPropagation()}
               style={{ maxHeight: "80vh", overflowY: "auto" }}
             >
-              <button
-                className="close-button"
-                onClick={closeLeaderboardModal}
-                aria-label="Закрыть"
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 8,
+                }}
               >
-                &times;
-              </button>
-
-              <h3>
-                {modalBoardType === "raid"
-                  ? "Лидерборд рейда"
-                  : "Лидерборд Дуэли"}
-              </h3>
+                <h3 style={{ margin: 0 }}>
+                  {modalBoardType === "raid"
+                    ? "Лидерборд Рейда"
+                    : "Лидерборд Дуэли"}
+                </h3>
+                <ArrowForwardIosIcon
+                  onClick={switchLeaderboard}
+                  style={{ cursor: "pointer", fontSize: 26 }}
+                />
+              </div>
 
               {fullLeaderboard.length === 0 && <p>Загрузка...</p>}
               {fullLeaderboard.map((player, index) => (
@@ -582,22 +857,37 @@ function FightPage({ uid, searchState, setSearchState }) {
                 onClick={async () => {
                   try {
                     const userDoc = await getDoc(doc(db, "users", uid));
-                    const raidDeck = userDoc.data()?.deck_raid || [];
+                    const data = userDoc.data();
+                    const raidDeck = data?.deck_raid || [];
+
                     if (raidDeck.length < 7) {
                       alert(
                         "Для участия в рейде необходимо минимум 7 карт в колоде raid!"
                       );
                       return;
                     }
-                    navigate(`/Raid?start=${uid}`);
+
+                    // ❗ НИКАКОЙ проверки билетов здесь
+                    setShowRaidConfirm(true);
+
+                    // 🔹 Заглушка босса (источник подключишь позже)
+                    setRaidBoss({
+                      name: "Загрузка",
+                      hp: "???",
+                      max_hp: "???",
+                      image_url: "/boss-placeholder.png",
+                    });
+
+                    setShowRaidConfirm(true);
                   } catch (error) {
-                    console.error("Ошибка проверки колоды для рейда:", error);
+                    console.error("Ошибка подготовки рейда:", error);
                     alert("Ошибка загрузки данных. Попробуйте позже.");
                   }
                 }}
               >
                 Рейд
               </button>
+
               <button
                 className="info-button"
                 title="О режиме Рейд"
@@ -609,6 +899,107 @@ function FightPage({ uid, searchState, setSearchState }) {
           </>
         )}
       </div>
+      {showRaidConfirm && (
+        <div
+          className="raid-confirm-modal-overlay"
+          onClick={() => setShowRaidConfirm(false)}
+        >
+          <div
+            className="raid-confirm-modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {raidBoss?.finished ? (
+              <>
+                <h3 className="raid-finished-title">Все боссы повержены</h3>
+                <p className="raid-finished-sub">
+                  Ожидайте следующего рейд-сезона
+                </p>
+                <button
+                  className="raid-btn-cancel"
+                  onClick={() => setShowRaidConfirm(false)}
+                >
+                  Закрыть
+                </button>
+              </>
+            ) : (
+              <>
+                <img
+                  src={raidBoss.image_url || "/boss-placeholder.png"}
+                  alt={raidBoss.name}
+                  className="raid-confirm-modal-boss-image"
+                />
+
+                <h3 className="raid-confirm-modal-boss-name">
+                  {raidBoss.name}
+                </h3>
+
+                <div className="raid-confirm-modal-hp-bar">
+                  <div
+                    className="raid-confirm-modal-hp-fill"
+                    style={{
+                      width: `${
+                        raidBoss.max_hp
+                          ? Math.max(2, (raidBoss.hp / raidBoss.max_hp) * 100)
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
+
+                <div className="raid-confirm-modal-hp-text">
+                  {raidBoss.hp?.toLocaleString() ?? "—"} /{" "}
+                  {raidBoss.max_hp?.toLocaleString() ?? "—"} HP
+                </div>
+
+                <p className="raid-confirm-modal-ticket">
+                  Стоимость входа:
+                  <img
+                    src="/ticket.png"
+                    alt="ticket"
+                    className="raid-confirm-modal-ticket-icon"
+                  />
+                  <strong>1 билет</strong>
+                </p>
+
+                <div className="raid-confirm-modal-actions">
+                  <button
+                    className="raid-confirm-modal-btn-cancel"
+                    onClick={() => setShowRaidConfirm(false)}
+                  >
+                    Отмена
+                  </button>
+                  {raidEnterError && (
+                    <div className="raid-confirm-modal-error">
+                      {raidEnterError}
+                    </div>
+                  )}
+
+                  <button
+                    className="raid-confirm-modal-btn-enter"
+                    onClick={async () => {
+                      if (userTickets < 1) {
+                        setRaidEnterError(
+                          "Недостаточно билетов для входа в рейд"
+                        );
+                        return;
+                      }
+
+                      await updateDoc(doc(db, "users", uid), {
+                        tickets: userTickets - 1,
+                      });
+
+                      setShowRaidConfirm(false);
+                      navigate(`/Raid?start=${uid}`);
+                    }}
+                  >
+                    Войти в рейд
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

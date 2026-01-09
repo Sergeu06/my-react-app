@@ -209,6 +209,10 @@ function CardModal({
           <br />
           Float: {card.fleet ?? "—"}
           <br />
+          Энергия: {card.value ?? "—"}
+          <br />
+          Шаг прокачки: {card.increase ?? "—"}
+          <br />
           Приоритет: {card.priority ?? "—"}
           <br />
           {renderCardStats(card).map((line, idx) => (

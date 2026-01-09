@@ -11,9 +11,14 @@ import "./Collection.css";
 import EditFloatingButton from "./EditFloatingButton";
 import FramedCard from "../utils/FramedCard";
 import CardModal from "./CardModal";
+import { Select, MenuItem } from "@mui/material";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import StarIcon from "@mui/icons-material/Star";
+import FlashOnIcon from "@mui/icons-material/FlashOn";
 
 function Collection({ uid }) {
   const [playerCards, setPlayerCards] = useState([]);
+  const [sortCriterion, setSortCriterion] = useState("rarity");
   const [deck1, setDeck1] = useState([]);
   const [deck2, setDeck2] = useState([]);
   const [activeDeck, setActiveDeck] = useState(1);
@@ -134,6 +139,53 @@ function Collection({ uid }) {
 
     fetchPlayerData();
   }, [uid]);
+  const rarityOrder = {
+    обычная: 1,
+    редкая: 2,
+    эпическая: 3,
+    легендарная: 4,
+  };
+
+  const characteristicGroupsOrder = ["damage", "heal", "damage_multiplier"];
+
+  function getMainCharacteristic(card) {
+    const characteristics = [
+      ["damage", card.damage || 0],
+      ["heal", card.heal || 0],
+      ["damage_multiplier", card.damage_multiplier || 0],
+    ];
+
+    const filtered = characteristics.filter(([_, v]) => v > 0);
+    if (!filtered.length) return { type: null, value: 0 };
+
+    filtered.sort((a, b) => b[1] - a[1]);
+    const [type, value] = filtered[0];
+    return { type, value };
+  }
+
+  const sortInventoryCards = (cards) =>
+    [...cards].sort((a, b) => {
+      if (sortCriterion === "rarity") {
+        return (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0);
+      }
+
+      if (sortCriterion === "characteristic") {
+        const aChar = getMainCharacteristic(a);
+        const bChar = getMainCharacteristic(b);
+
+        if (!aChar.type && !bChar.type) return 0;
+        if (!aChar.type) return 1;
+        if (!bChar.type) return -1;
+
+        const orderA = characteristicGroupsOrder.indexOf(aChar.type);
+        const orderB = characteristicGroupsOrder.indexOf(bChar.type);
+
+        if (orderA !== orderB) return orderA - orderB;
+        return bChar.value - aChar.value;
+      }
+
+      return 0;
+    });
 
   const getCurrentDeck = () => (activeDeck === 1 ? deck1 : deck2);
 
@@ -330,6 +382,45 @@ function Collection({ uid }) {
           </div>
         ))}
       </div>
+      <div className="sort-refresh-container">
+        <Select
+          value={sortCriterion}
+          onChange={(e) => setSortCriterion(e.target.value)}
+          className="sort-select"
+          IconComponent={ArrowDropDownIcon}
+          sx={{
+            color: "#ffa500",
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#ffa500",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#ffa500",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#ffa500",
+              boxShadow: "0 0 5px #ffa500",
+            },
+          }}
+          MenuProps={{
+            PaperProps: {
+              sx: {
+                backgroundColor: "#2e2e2e",
+                color: "#ffa500",
+              },
+            },
+          }}
+        >
+          <MenuItem value="rarity">
+            <StarIcon sx={{ color: "#ffa500", mr: 1 }} />
+            Редкость
+          </MenuItem>
+
+          <MenuItem value="characteristic">
+            <FlashOnIcon sx={{ color: "#ffa500", mr: 1 }} />
+            Характеристика
+          </MenuItem>
+        </Select>
+      </div>
 
       <h1>Хранилище</h1>
       {isLoading ? (
@@ -346,7 +437,7 @@ function Collection({ uid }) {
         <div className="empty-inventory">Инвентарь пуст.</div>
       ) : (
         <div className="grid">
-          {playerCards.map((card, index) => (
+          {sortInventoryCards(playerCards).map((card, index) => (
             <div
               key={`inventory-${card.id}-${index}`}
               onClick={() => {
