@@ -24,6 +24,15 @@ import useResolvingPhase from "../game-logic/useResolvingPhase";
 import "./game.css";
 import "./animations.css";
 import "./playerhand.css";
+
+const sortPlayedCards = (cards = []) =>
+  [...cards].sort((a, b) => {
+    const aTs = Number(a.ts ?? 0);
+    const bTs = Number(b.ts ?? 0);
+    if (aTs !== bTs) return aTs - bTs;
+    return String(a.id ?? "").localeCompare(String(b.id ?? ""));
+  });
+
 function GamePage() {
   const [searchParams] = useSearchParams();
   const uid = searchParams.get("start");
@@ -428,7 +437,7 @@ function GamePage() {
 
         setOpponentPlayed([]); // 👈 сбрасываем руку соперника
       } else {
-        const cards = Object.values(val);
+        const cards = sortPlayedCards(Object.values(val));
         console.log("[GamePage] сыгранные карты соперника:", cards);
         setOpponentPlayed(cards);
       }

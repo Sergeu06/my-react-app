@@ -19,6 +19,15 @@ function normalizePriority(value) {
   return isNaN(num) ? 9999 : num;
 }
 
+function sortPlayedCards(cards) {
+  return [...cards].sort((a, b) => {
+    const aTs = Number(a.ts ?? 0);
+    const bTs = Number(b.ts ?? 0);
+    if (aTs !== bTs) return aTs - bTs;
+    return String(a.id ?? "").localeCompare(String(b.id ?? ""));
+  });
+}
+
 export default function useResolvingPhase(params) {
   const {
     uid,
@@ -65,6 +74,9 @@ export default function useResolvingPhase(params) {
       setRoundPhase("resolving");
 
       if (params.setHandVisible) params.setHandVisible(false);
+      let syncedPlayerCards = playedCards || [];
+      let syncedOpponentCards = opponentPlayed || [];
+
       // Синхронизация локальных playedCards/opponentPlayed с RTDB
       try {
         const playerPath = `lobbies/${lobbyId}/playedCards/${uid}`;
@@ -78,11 +90,11 @@ export default function useResolvingPhase(params) {
         const playerData = snapPlayer.val() || {};
         const oppData = snapOpp.val() || {};
 
-        const syncedPlayerCards = Object.entries(playerData).map(
-          ([id, raw]) => ({ id, ...raw })
+        syncedPlayerCards = sortPlayedCards(
+          Object.entries(playerData).map(([id, raw]) => ({ id, ...raw }))
         );
-        const syncedOpponentCards = Object.entries(oppData).map(
-          ([id, raw]) => ({ id, ...raw })
+        syncedOpponentCards = sortPlayedCards(
+          Object.entries(oppData).map(([id, raw]) => ({ id, ...raw }))
         );
 
         setPlayedCards(syncedPlayerCards);
@@ -101,7 +113,10 @@ export default function useResolvingPhase(params) {
 
       await new Promise((res) => setTimeout(res, 600));
 
-      const myCards = (playedCards || []).map((c) => ({
+      const resolvedPlayerCards = sortPlayedCards(syncedPlayerCards);
+      const resolvedOpponentCards = sortPlayedCards(syncedOpponentCards);
+
+      const myCards = resolvedPlayerCards.map((c) => ({
         id: c.id,
         name: c.name,
         owner: uid,
@@ -111,7 +126,7 @@ export default function useResolvingPhase(params) {
         raw: c,
       }));
 
-      const oppCards = (opponentPlayed || []).map((c) => ({
+      const oppCards = resolvedOpponentCards.map((c) => ({
         id: c.id,
         name: c.name,
         owner: gameData?.opponentUid,
@@ -160,6 +175,7 @@ export default function useResolvingPhase(params) {
         // healTarget — цель для лечения (владелец карты)
         const damageTargetUid = card.owner === uid ? gameData.opponentUid : uid;
         const healTargetUid = card.owner;
+        const attackerUid = card.owner;
 
         // Определяем: карта лечит или бьёт
         const isHealCard =
@@ -169,23 +185,20 @@ export default function useResolvingPhase(params) {
           card.raw.damage_multiplier > 0;
 
         // Выбираем effectiveTarget в зависимости от типа карты
-        const effectiveTargetUid = isHealCard ? healTargetUid : damageTargetUid;
+        const attackerEffects = effectsByUid[attackerUid] || { mult: null };
+        const nextMult = isMultiplierCard
+          ? applyDamageMultiplierPvP(attackerEffects.mult, card.raw)
+          : attackerEffects.mult;
 
-        // Эффекты до урона (только множитель) — множитель хранится по цели
-        const current = effectsByUid[effectiveTargetUid] || { mult: null };
-        const nextMult = applyDamageMultiplierPvP(current.mult, card.raw);
-        if (nextMult !== current.mult) {
+        if (isMultiplierCard && nextMult !== attackerEffects.mult) {
           await set(
-            ref(
-              database,
-              `lobbies/${lobbyId}/effects/${effectiveTargetUid}/multiplier`
-            ),
+            ref(database, `lobbies/${lobbyId}/effects/${attackerUid}/multiplier`),
             nextMult
           );
           setEffectsByUid((prev) => ({
             ...prev,
-            [effectiveTargetUid]: {
-              ...(prev[effectiveTargetUid] || {}),
+            [attackerUid]: {
+              ...(prev[attackerUid] || {}),
               mult: nextMult,
             },
           }));
@@ -202,7 +215,10 @@ export default function useResolvingPhase(params) {
 
         // Позиция аватара для показа цифры (top/bottom) — для effectiveTarget
         const targetPos =
-          effectiveTargetUid === gameData?.opponentUid ? "top" : "bottom";
+          (isHealCard ? healTargetUid : damageTargetUid) ===
+          gameData?.opponentUid
+            ? "top"
+            : "bottom";
         const isDotCard = Array.isArray(card.raw.damage_over_time);
         let turnsLeft =
           card.raw.dotTurnsLeft ?? card.raw.damage_over_time?.length ?? 0;
@@ -308,13 +324,13 @@ export default function useResolvingPhase(params) {
 
           const damagePromise = (async () => {
             await new Promise((res) => setTimeout(res, damageDelayMs));
-            const newHp = await applyDotPvP(
-              damageTargetUid,
-              card.raw,
-              tickIndex,
-              lobbyId,
-              nextMult
-            );
+          const newHp = await applyDotPvP(
+            damageTargetUid,
+            card.raw,
+            tickIndex,
+            lobbyId,
+            nextMult
+          );
 
             if (damageTargetUid === uid && typeof newHp === "number") {
               if (newHp < playerHpRef.current) {
@@ -573,17 +589,17 @@ export default function useResolvingPhase(params) {
       }
 
       // Формируем "деки" только из реально сброшенных карт (неактивных DoT и обычных)
-      const survivingPlayer = (playedCards || []).filter(
+      const survivingPlayer = resolvedPlayerCards.filter(
         (c) => Array.isArray(c.damage_over_time) && (c.dotTurnsLeft ?? 0) > 0
       );
-      const survivingOpponent = (opponentPlayed || []).filter(
+      const survivingOpponent = resolvedOpponentCards.filter(
         (c) => Array.isArray(c.damage_over_time) && (c.dotTurnsLeft ?? 0) > 0
       );
 
-      const removedPlayer = (playedCards || []).filter(
+      const removedPlayer = resolvedPlayerCards.filter(
         (c) => !survivingPlayer.includes(c)
       );
-      const removedOpponent = (opponentPlayed || []).filter(
+      const removedOpponent = resolvedOpponentCards.filter(
         (c) => !survivingOpponent.includes(c)
       );
 
