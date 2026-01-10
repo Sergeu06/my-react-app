@@ -664,12 +664,14 @@ function GamePage() {
         position="top"
         style={{ position: "absolute", top: "1%", left: "3%" }}
         hasPriority={priorityUid === gameData.opponentUid} // 👈
+        multiplierLabel={opponentMultiplierLabel}
       />
       <PlayerInfo
         avatarUrl={gameData.player.avatar_url}
         nickname={gameData.player.nickname}
         lvl={gameData.player.lvl}
         position="bottom"
+        multiplierLabel={playerMultiplierLabel}
       />
       <HPBar
         hp={gameData.player.hp}
