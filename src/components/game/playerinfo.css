@@ -2,6 +2,7 @@
   display: flex;
   justify-content: center;
   margin-bottom: 8px;
+  position: relative;
 }
 
 .player-avatar {
@@ -32,6 +33,44 @@
   gap: 6px; /* расстояние между HP и "П" */
   position: relative;
   width: auto; /* чтобы буква не накладывалась */
+}
+
+.hp-multiplier-label {
+  position: absolute;
+  top: -26px;
+  left: 0;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(130, 77, 255, 0.9);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95em;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 8px rgba(88, 40, 175, 0.8);
+  box-shadow: 0 0 12px rgba(130, 77, 255, 0.6);
+  pointer-events: none;
+}
+
+.avatar-multiplier-label {
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(130, 77, 255, 0.9);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95em;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 8px rgba(88, 40, 175, 0.8);
+  box-shadow: 0 0 12px rgba(130, 77, 255, 0.6);
+  pointer-events: none;
+  text-align: center;
+}
+
+.avatar-multiplier-top {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 /* Общие стили тултипа */
