@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import CachedImage from "../utils/CachedImage";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, get as rtdbGet, update as rtdbUpdate } from "firebase/database";
 import { db, database } from "./firebase";
@@ -439,7 +440,7 @@ function UpgradePage() {
       <>
         <div className="card-name">{preview.name}</div>
         <div className="card-image-wrapper">
-          <img src={preview.image_url} alt="preview" />
+          <CachedImage src={preview.image_url} alt="preview" />
           {preview.lvl && (
             <div className="card-level-overlay">{toRoman(preview.lvl)}</div>
           )}
@@ -543,7 +544,7 @@ function UpgradePage() {
             <>
               <div className="card-name">{selectedCard.name}</div>
               <div className="card-image-wrapper">
-                <img src={selectedCard.image_url} alt="selected" />
+                <CachedImage src={selectedCard.image_url} alt="selected" />
                 {selectedCard.lvl && (
                   <div className="card-level-overlay">
                     {toRoman(selectedCard.lvl)}
@@ -663,7 +664,7 @@ function UpgradePage() {
                   onClick={() => handleCardSelect(card)}
                 >
                   <div className="card-name">{card.name}</div>
-                  <img src={card.image_url} alt={card.name} />
+                  <CachedImage src={card.image_url} alt={card.name} />
                   {renderCardDetails(card)}
 
                   {(card.inRaid || card.inPvp) && (

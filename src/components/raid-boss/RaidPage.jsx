@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import CachedImage from "../../utils/CachedImage";
 import { useSearchParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { ref, onValue, get, off, runTransaction } from "firebase/database";
@@ -503,7 +504,7 @@ function RaidPage() {
       </div>
 
       {flyingCard && (
-        <img
+        <CachedImage
           src={flyingCard.image_url}
           alt={flyingCard.name}
           className="playing-card-fly"
