@@ -19,6 +19,15 @@ function normalizePriority(value) {
   return isNaN(num) ? 9999 : num;
 }
 
+function sortPlayedCards(cards) {
+  return [...cards].sort((a, b) => {
+    const aTs = Number(a.ts ?? 0);
+    const bTs = Number(b.ts ?? 0);
+    if (aTs !== bTs) return aTs - bTs;
+    return String(a.id ?? "").localeCompare(String(b.id ?? ""));
+  });
+}
+
 export default function useResolvingPhase(params) {
   const {
     uid,
@@ -65,6 +74,9 @@ export default function useResolvingPhase(params) {
       setRoundPhase("resolving");
 
       if (params.setHandVisible) params.setHandVisible(false);
+      let syncedPlayerCards = playedCards || [];
+      let syncedOpponentCards = opponentPlayed || [];
+
       // Синхронизация локальных playedCards/opponentPlayed с RTDB
       try {
         const playerPath = `lobbies/${lobbyId}/playedCards/${uid}`;
@@ -78,11 +90,11 @@ export default function useResolvingPhase(params) {
         const playerData = snapPlayer.val() || {};
         const oppData = snapOpp.val() || {};
 
-        const syncedPlayerCards = Object.entries(playerData).map(
-          ([id, raw]) => ({ id, ...raw })
+        syncedPlayerCards = sortPlayedCards(
+          Object.entries(playerData).map(([id, raw]) => ({ id, ...raw }))
         );
-        const syncedOpponentCards = Object.entries(oppData).map(
-          ([id, raw]) => ({ id, ...raw })
+        syncedOpponentCards = sortPlayedCards(
+          Object.entries(oppData).map(([id, raw]) => ({ id, ...raw }))
         );
 
         setPlayedCards(syncedPlayerCards);
@@ -92,6 +104,50 @@ export default function useResolvingPhase(params) {
           syncedPlayerCards,
           syncedOpponentCards,
         });
+
+        if (isHost && lobbyId && gameData?.opponentUid) {
+          const revealUpdates = {};
+          const updatedPlayerCards = syncedPlayerCards.map((card) => {
+            const turnsLeft =
+              card.dotTurnsLeft ?? card.damage_over_time?.length ?? 0;
+            if (Array.isArray(card.damage_over_time) && turnsLeft > 0) {
+              if (!card.revealed) {
+                revealUpdates[
+                  `playedCards/${uid}/${card.id}/revealed`
+                ] = true;
+                return { ...card, revealed: true };
+              }
+            }
+            return card;
+          });
+          const updatedOpponentCards = syncedOpponentCards.map((card) => {
+            const turnsLeft =
+              card.dotTurnsLeft ?? card.damage_over_time?.length ?? 0;
+            if (Array.isArray(card.damage_over_time) && turnsLeft > 0) {
+              if (!card.revealed) {
+                revealUpdates[
+                  `playedCards/${gameData.opponentUid}/${card.id}/revealed`
+                ] = true;
+                return { ...card, revealed: true };
+              }
+            }
+            return card;
+          });
+
+          if (updatedPlayerCards !== syncedPlayerCards) {
+            syncedPlayerCards = updatedPlayerCards;
+          }
+          if (updatedOpponentCards !== syncedOpponentCards) {
+            syncedOpponentCards = updatedOpponentCards;
+          }
+
+          if (Object.keys(revealUpdates).length > 0) {
+            await update(ref(database, `lobbies/${lobbyId}`), revealUpdates);
+          }
+
+          setPlayedCards(syncedPlayerCards);
+          setOpponentPlayed(syncedOpponentCards);
+        }
       } catch (err) {
         console.warn(
           "[useResolvingPhase] Не удалось синхронизировать playedCards",
@@ -101,7 +157,10 @@ export default function useResolvingPhase(params) {
 
       await new Promise((res) => setTimeout(res, 600));
 
-      const myCards = (playedCards || []).map((c) => ({
+      const resolvedPlayerCards = sortPlayedCards(syncedPlayerCards);
+      const resolvedOpponentCards = sortPlayedCards(syncedOpponentCards);
+
+      const myCards = resolvedPlayerCards.map((c) => ({
         id: c.id,
         name: c.name,
         owner: uid,
@@ -111,7 +170,7 @@ export default function useResolvingPhase(params) {
         raw: c,
       }));
 
-      const oppCards = (opponentPlayed || []).map((c) => ({
+      const oppCards = resolvedOpponentCards.map((c) => ({
         id: c.id,
         name: c.name,
         owner: gameData?.opponentUid,
@@ -169,23 +228,23 @@ export default function useResolvingPhase(params) {
           card.raw.damage_multiplier > 0;
 
         // Выбираем effectiveTarget в зависимости от типа карты
-        const effectiveTargetUid = isHealCard ? healTargetUid : damageTargetUid;
+        const targetEffects = effectsByUid[damageTargetUid] || { mult: null };
+        const nextMult = isMultiplierCard
+          ? applyDamageMultiplierPvP(targetEffects.mult, card.raw)
+          : targetEffects.mult;
 
-        // Эффекты до урона (только множитель) — множитель хранится по цели
-        const current = effectsByUid[effectiveTargetUid] || { mult: null };
-        const nextMult = applyDamageMultiplierPvP(current.mult, card.raw);
-        if (nextMult !== current.mult) {
+        if (isMultiplierCard && nextMult !== targetEffects.mult) {
           await set(
             ref(
               database,
-              `lobbies/${lobbyId}/effects/${effectiveTargetUid}/multiplier`
+              `lobbies/${lobbyId}/effects/${damageTargetUid}/multiplier`
             ),
             nextMult
           );
           setEffectsByUid((prev) => ({
             ...prev,
-            [effectiveTargetUid]: {
-              ...(prev[effectiveTargetUid] || {}),
+            [damageTargetUid]: {
+              ...(prev[damageTargetUid] || {}),
               mult: nextMult,
             },
           }));
@@ -202,7 +261,10 @@ export default function useResolvingPhase(params) {
 
         // Позиция аватара для показа цифры (top/bottom) — для effectiveTarget
         const targetPos =
-          effectiveTargetUid === gameData?.opponentUid ? "top" : "bottom";
+          (isHealCard ? healTargetUid : damageTargetUid) ===
+          gameData?.opponentUid
+            ? "top"
+            : "bottom";
         const isDotCard = Array.isArray(card.raw.damage_over_time);
         let turnsLeft =
           card.raw.dotTurnsLeft ?? card.raw.damage_over_time?.length ?? 0;
@@ -244,24 +306,24 @@ export default function useResolvingPhase(params) {
           continue; // <-- ключевое: пропускаем урон/лечение
         }
 
-        const strikePromise = strikeSequence(
-          card.ownerLabel === "player" ? "player" : "opponent",
-          card.ownerLabel === "player" ? "top" : "bottom",
-          lobbyId,
-          card.owner,
-          database,
-          card.id,
-          false,
-          null,
-          null,
-          null,
-          0,
-          450,
-          isHealCard,
-          isDotCard && !isFinalDot // последний тик = обычная анимация
-        );
         if (isHealCard) {
           // === Heal logic: лечим владельца карты (healTargetUid) ===
+          const strikePromise = strikeSequence(
+            card.ownerLabel === "player" ? "player" : "opponent",
+            card.ownerLabel === "player" ? "top" : "bottom",
+            lobbyId,
+            card.owner,
+            database,
+            card.id,
+            false,
+            null,
+            null,
+            null,
+            0,
+            450,
+            true,
+            false
+          );
           const healPromise = (async () => {
             await new Promise((res) => setTimeout(res, damageDelayMs));
 
@@ -306,15 +368,35 @@ export default function useResolvingPhase(params) {
           const tickIndex = card.raw.damage_over_time.length - turnsLeft;
           const dotDamage = Number(card.raw.damage_over_time[tickIndex]) || 0;
 
+          const effectiveDotDamage = Math.max(
+            1,
+            Math.round(dotDamage * (nextMult?.multiplier ?? 1))
+          );
+          const strikePromise = strikeSequence(
+            card.ownerLabel === "player" ? "player" : "opponent",
+            card.ownerLabel === "player" ? "top" : "bottom",
+            lobbyId,
+            card.owner,
+            database,
+            card.id,
+            false,
+            null,
+            null,
+            effectiveDotDamage,
+            0,
+            450,
+            false,
+            isDotCard && !isFinalDot
+          );
           const damagePromise = (async () => {
             await new Promise((res) => setTimeout(res, damageDelayMs));
             const newHp = await applyDotPvP(
               damageTargetUid,
               card.raw,
-              tickIndex,
-              lobbyId,
-              nextMult
-            );
+            tickIndex,
+            lobbyId,
+            nextMult
+          );
 
             if (damageTargetUid === uid && typeof newHp === "number") {
               if (newHp < playerHpRef.current) {
@@ -333,23 +415,6 @@ export default function useResolvingPhase(params) {
               });
             }
 
-            try {
-              const avatarEl = document.querySelector(
-                `.player-avatar[data-position="${targetPos}"]`
-              );
-              if (avatarEl && dotDamage > 0) {
-                const effective = Math.max(
-                  1,
-                  Math.round(dotDamage * (nextMult?.multiplier ?? 1))
-                );
-                showDamageNumber(avatarEl, effective);
-              }
-            } catch (err) {
-              console.warn(
-                "[useResolvingPhase] не удалось показать цифру DoT",
-                err
-              );
-            }
           })();
 
           await Promise.all([strikePromise, damagePromise]);
@@ -386,6 +451,22 @@ export default function useResolvingPhase(params) {
             Math.max(1, Math.floor(baseDamage * (nextMult?.multiplier ?? 1))) ||
             0;
 
+          const strikePromise = strikeSequence(
+            card.ownerLabel === "player" ? "player" : "opponent",
+            card.ownerLabel === "player" ? "top" : "bottom",
+            lobbyId,
+            card.owner,
+            database,
+            card.id,
+            false,
+            null,
+            null,
+            damage,
+            0,
+            450,
+            false,
+            false
+          );
           const damagePromise = (async () => {
             await new Promise((res) => setTimeout(res, damageDelayMs));
 
@@ -413,19 +494,6 @@ export default function useResolvingPhase(params) {
               });
             }
 
-            try {
-              const avatarEl = document.querySelector(
-                `.player-avatar[data-position="${targetPos}"]`
-              );
-              if (avatarEl && typeof damage === "number" && damage > 0) {
-                showDamageNumber(avatarEl, damage);
-              }
-            } catch (err) {
-              console.warn(
-                "[useResolvingPhase] не удалось показать цифру урона",
-                err
-              );
-            }
           })();
 
           await Promise.all([strikePromise, damagePromise]);
@@ -573,17 +641,17 @@ export default function useResolvingPhase(params) {
       }
 
       // Формируем "деки" только из реально сброшенных карт (неактивных DoT и обычных)
-      const survivingPlayer = (playedCards || []).filter(
+      const survivingPlayer = resolvedPlayerCards.filter(
         (c) => Array.isArray(c.damage_over_time) && (c.dotTurnsLeft ?? 0) > 0
       );
-      const survivingOpponent = (opponentPlayed || []).filter(
+      const survivingOpponent = resolvedOpponentCards.filter(
         (c) => Array.isArray(c.damage_over_time) && (c.dotTurnsLeft ?? 0) > 0
       );
 
-      const removedPlayer = (playedCards || []).filter(
+      const removedPlayer = resolvedPlayerCards.filter(
         (c) => !survivingPlayer.includes(c)
       );
-      const removedOpponent = (opponentPlayed || []).filter(
+      const removedOpponent = resolvedOpponentCards.filter(
         (c) => !survivingOpponent.includes(c)
       );
 

@@ -24,6 +24,21 @@ import useResolvingPhase from "../game-logic/useResolvingPhase";
 import "./game.css";
 import "./animations.css";
 import "./playerhand.css";
+
+const sortPlayedCards = (cards = []) =>
+  [...cards].sort((a, b) => {
+    const aTs = Number(a.ts ?? 0);
+    const bTs = Number(b.ts ?? 0);
+    if (aTs !== bTs) return aTs - bTs;
+    return String(a.id ?? "").localeCompare(String(b.id ?? ""));
+  });
+
+const formatMultiplierValue = (value) => {
+  if (!isFinite(value)) return null;
+  const rounded = Math.round(value * 100) / 100;
+  return rounded.toFixed(2).replace(/\.?0+$/, "");
+};
+
 function GamePage() {
   const [searchParams] = useSearchParams();
   const uid = searchParams.get("start");
@@ -428,7 +443,7 @@ function GamePage() {
 
         setOpponentPlayed([]); // 👈 сбрасываем руку соперника
       } else {
-        const cards = Object.values(val);
+        const cards = sortPlayedCards(Object.values(val));
         console.log("[GamePage] сыгранные карты соперника:", cards);
         setOpponentPlayed(cards);
       }
@@ -606,6 +621,17 @@ function GamePage() {
 
   if (!gameData) return <div>Загрузка...</div>;
 
+  const buildMultiplierLabel = (effect) => {
+    if (!effect?.multiplier || !effect?.turnsLeft) return null;
+    const formatted = formatMultiplierValue(effect.multiplier);
+    if (!formatted) return null;
+    return `x${formatted}-${effect.turnsLeft}`;
+  };
+  const playerMultiplierLabel = buildMultiplierLabel(effectsByUid[uid]?.mult);
+  const opponentMultiplierLabel = buildMultiplierLabel(
+    effectsByUid[gameData.opponentUid]?.mult
+  );
+
   return (
     <div className="game-container">
       <TurnControls
@@ -638,6 +664,7 @@ function GamePage() {
         position="top"
         style={{ position: "absolute", top: "1%", left: "3%" }}
         hasPriority={priorityUid === gameData.opponentUid} // 👈
+        multiplierLabel={opponentMultiplierLabel}
       />
       <PlayerInfo
         avatarUrl={gameData.player.avatar_url}
@@ -651,6 +678,7 @@ function GamePage() {
         position="bottom"
         style={{ position: "absolute", bottom: "18vh", left: "3%" }}
         hasPriority={priorityUid === uid} // 👈
+        multiplierLabel={playerMultiplierLabel}
       />
 
       {waitingForOpponent && roundPhase === "play" && (
