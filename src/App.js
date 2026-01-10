@@ -348,7 +348,7 @@ function App() {
           background: isGameOrResult ? "black" : "transparent",
         }}
       >
-        {children}
+        <div className="page-shell">{children}</div>
       </motion.div>
     );
   };

@@ -150,6 +150,20 @@ body {
   opacity: 0.7;
 }
 
+.page-shell {
+  flex: 1;
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 16px 16px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page-shell > * {
+  scroll-margin-top: 16px;
+}
+
 .custom-nav
   .MuiBottomNavigationAction-root.Mui-selected
   .MuiBottomNavigationAction-label {
