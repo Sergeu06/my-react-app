@@ -219,6 +219,7 @@ export default function useResolvingPhase(params) {
         // healTarget — цель для лечения (владелец карты)
         const damageTargetUid = card.owner === uid ? gameData.opponentUid : uid;
         const healTargetUid = card.owner;
+        const attackerUid = card.owner;
 
         // Определяем: карта лечит или бьёт
         const isHealCard =

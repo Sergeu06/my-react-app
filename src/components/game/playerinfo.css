@@ -16,6 +16,17 @@
   position: relative; /* 👈 теперь damage-number будет отталкиваться от аватарки */
 }
 
+.multiplier-label {
+  position: absolute;
+  bottom: -18px;
+  right: -6px;
+  color: #a855f7;
+  font-weight: 600;
+  font-size: 0.9em;
+  text-shadow: 0 0 6px rgba(168, 85, 247, 0.5);
+  pointer-events: none;
+}
+
 .priority-label {
   font-weight: bold;
   font-size: 1.1em;
