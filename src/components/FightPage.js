@@ -727,7 +727,7 @@ function FightPage({ uid, searchState, setSearchState }) {
           }`}
           onClick={() => setShowDailyBoxModal(true)}
         >
-          <img src="/frames/lootbox.png" alt="box" />
+          <img src="LUTBOX.png" alt="box" />
 
           {dailyBoxLoaded && (canDailyBoxClaim || dailyBoxReward) && (
             <div className="claim-alert_FightPage claim-alert_FightPage--purple">
