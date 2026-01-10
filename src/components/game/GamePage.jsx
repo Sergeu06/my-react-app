@@ -657,6 +657,7 @@ function GamePage() {
         nickname={gameData.opponent.nickname}
         lvl={gameData.opponent.lvl}
         position="top"
+        multiplierLabel={opponentMultiplierLabel}
       />
       <HPBar
         hp={gameData.opponent.hp}
@@ -671,6 +672,7 @@ function GamePage() {
         nickname={gameData.player.nickname}
         lvl={gameData.player.lvl}
         position="bottom"
+        multiplierLabel={playerMultiplierLabel}
       />
       <HPBar
         hp={gameData.player.hp}

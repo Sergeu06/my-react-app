@@ -8,6 +8,7 @@ function PlayerInfo({
   lvl,
   position,
   fallbackDataUri,
+  multiplierLabel,
 }) {
   const initials = (nickname || "U").trim().slice(0, 1).toUpperCase();
   const fallbackSvg =
@@ -42,6 +43,9 @@ function PlayerInfo({
           draggable={false}
           data-position={position}
         />
+        {multiplierLabel && (
+          <div className="multiplier-label">{multiplierLabel}</div>
+        )}
       </div>
     </div>
   );
