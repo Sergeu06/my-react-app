@@ -184,6 +184,10 @@ function Collection({ uid }) {
         return bChar.value - aChar.value;
       }
 
+      if (sortCriterion === "level") {
+        return (b.level || 0) - (a.level || 0);
+      }
+
       return 0;
     });
 
@@ -294,155 +298,87 @@ function Collection({ uid }) {
 
   const handleCloseModal = () => setSelectedCard(null);
 
-  // --- Вынесем весь контент Collection в отдельный компонент ---
-  const CollectionContent = () => (
-    <>
-      <div className="notification-container">
-        {notifications.map((note) => (
-          <div key={note.id} className={`notification ${note.type}`}>
-            {note.message}
-          </div>
-        ))}
-      </div>
-
-      <div className="tabs-container">
-        <div className="tabs">
-          <button
-            className={`tab ${activeDeck === 1 ? "active" : ""}`}
-            onClick={() => setActiveDeck(1)}
-          >
-            Колода ПвП
-          </button>
-          <button
-            className={`tab ${activeDeck === 2 ? "active" : ""}`}
-            onClick={() => setActiveDeck(2)}
-          >
-            Колода Рейда
-          </button>
-        </div>
-      </div>
-
-      <div className="deck-info highlight-text">
-        <span
-          ref={deckRef}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (getCurrentDeck().length < getMinDeckSize())
-              setShowDeckHint(true);
-          }}
-          style={{
-            color:
-              getCurrentDeck().length < getMinDeckSize() ? "red" : "inherit",
-            fontWeight: "bold",
-            cursor:
-              getCurrentDeck().length < getMinDeckSize()
-                ? "pointer"
-                : "default",
-          }}
-        >
-          {getCurrentDeck().length}
-        </span>
-        / {MAX_DECK_SIZE}
-      </div>
-
-      {showDeckHint && (
-        <div
-          style={{
-            position: "fixed",
-            top: 150,
-            right: "5%",
-            backgroundColor: "#1e1e1e",
-            color: "#fff",
-            padding: "12px 16px",
-            borderRadius: "8px",
-            border: "1px solid #ffa500",
-            fontSize: "12px",
-            zIndex: 10002,
-            maxWidth: "260px",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
-          }}
-        >
-          ⚠️ Для начала {activeDeck === 1 ? "PvP" : "Raid"} матча требуется
-          минимум <strong>{getMinDeckSize()}</strong> карт. <br />У вас сейчас:{" "}
-          <strong>{getCurrentDeck().length}</strong>.
-        </div>
-      )}
-
-      <div className="grid">
-        {getCurrentDeck().map((card, index) => (
-          <div
-            key={`deck-${card.id}-${index}`}
-            onClick={() => {
-              if (isEditMode) handleRemoveFromDeck(card);
-              else setSelectedCard(card);
-            }}
-            style={{ cursor: "pointer" }}
-          >
-            <FramedCard card={card} showLevel={true} />
-          </div>
-        ))}
-      </div>
-      <div className="sort-refresh-container">
-        <Select
-          value={sortCriterion}
-          onChange={(e) => setSortCriterion(e.target.value)}
-          className="sort-select"
-          IconComponent={ArrowDropDownIcon}
-          sx={{
-            color: "#ffa500",
-            "& .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#ffa500",
-            },
-            "&:hover .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#ffa500",
-            },
-            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#ffa500",
-              boxShadow: "0 0 5px #ffa500",
-            },
-          }}
-          MenuProps={{
-            PaperProps: {
-              sx: {
-                backgroundColor: "#2e2e2e",
-                color: "#ffa500",
-              },
-            },
-          }}
-        >
-          <MenuItem value="rarity">
-            <StarIcon sx={{ color: "#ffa500", mr: 1 }} />
-            Редкость
-          </MenuItem>
-
-          <MenuItem value="characteristic">
-            <FlashOnIcon sx={{ color: "#ffa500", mr: 1 }} />
-            Характеристика
-          </MenuItem>
-        </Select>
-      </div>
-
-      <h1>Хранилище</h1>
-      {isLoading ? (
-        <div className="grid">
-          {Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="skeleton-card">
-              <div className="skeleton skeleton-image" />
-              <div className="skeleton skeleton-text" />
-              <div className="skeleton skeleton-price" />
+  return (
+    <div className="collection-container">
+      {/* Контент анимируемой страницы */}
+      <div className="page-stack">
+        <div className="notification-container">
+          {notifications.map((note) => (
+            <div key={note.id} className={`notification ${note.type}`}>
+              {note.message}
             </div>
           ))}
         </div>
-      ) : playerCards.length === 0 ? (
-        <div className="empty-inventory">Инвентарь пуст.</div>
-      ) : (
+
+        <div className="tabs-container">
+          <div className="tabs">
+            <button
+              className={`tab ${activeDeck === 1 ? "active" : ""}`}
+              onClick={() => setActiveDeck(1)}
+            >
+              Колода ПвП
+            </button>
+            <button
+              className={`tab ${activeDeck === 2 ? "active" : ""}`}
+              onClick={() => setActiveDeck(2)}
+            >
+              Колода Рейда
+            </button>
+          </div>
+        </div>
+
+        <div className="deck-info highlight-text">
+          <span
+            ref={deckRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (getCurrentDeck().length < getMinDeckSize())
+                setShowDeckHint(true);
+            }}
+            style={{
+              color:
+                getCurrentDeck().length < getMinDeckSize() ? "red" : "inherit",
+              fontWeight: "bold",
+              cursor:
+                getCurrentDeck().length < getMinDeckSize()
+                  ? "pointer"
+                  : "default",
+            }}
+          >
+            {getCurrentDeck().length}
+          </span>
+          / {MAX_DECK_SIZE}
+        </div>
+
+        {showDeckHint && (
+          <div
+            style={{
+              position: "fixed",
+              top: 150,
+              right: "5%",
+              backgroundColor: "#1e1e1e",
+              color: "#fff",
+              padding: "12px 16px",
+              borderRadius: "8px",
+              border: "1px solid #ffa500",
+              fontSize: "12px",
+              zIndex: 10002,
+              maxWidth: "260px",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+            }}
+          >
+            ⚠️ Для начала {activeDeck === 1 ? "PvP" : "Raid"} матча требуется
+            минимум <strong>{getMinDeckSize()}</strong> карт. <br />У вас
+            сейчас: <strong>{getCurrentDeck().length}</strong>.
+          </div>
+        )}
+
         <div className="grid">
-          {sortInventoryCards(playerCards).map((card, index) => (
+          {getCurrentDeck().map((card, index) => (
             <div
-              key={`inventory-${card.id}-${index}`}
+              key={`deck-${card.id}-${index}`}
               onClick={() => {
-                if (isEditMode)
-                  handleAddToDeck({ stopPropagation: () => {} }, card);
+                if (isEditMode) handleRemoveFromDeck(card);
                 else setSelectedCard(card);
               }}
               style={{ cursor: "pointer" }}
@@ -451,34 +387,100 @@ function Collection({ uid }) {
             </div>
           ))}
         </div>
-      )}
+        <div className="sort-refresh-container">
+          <Select
+            value={sortCriterion}
+            onChange={(e) => setSortCriterion(e.target.value)}
+            className="sort-select"
+            IconComponent={ArrowDropDownIcon}
+            sx={{
+              color: "#ffa500",
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: "#ffa500",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "#ffa500",
+              },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: "#ffa500",
+                boxShadow: "0 0 5px #ffa500",
+              },
+            }}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  backgroundColor: "#2e2e2e",
+                  color: "#ffa500",
+                },
+              },
+            }}
+          >
+            <MenuItem value="rarity">
+              <StarIcon sx={{ color: "#ffa500", mr: 1 }} />
+              Редкость
+            </MenuItem>
 
-      {selectedCard && (
-        <CardModal
-          card={selectedCard}
-          onClose={handleCloseModal}
-          onAddToDeck={handleAddToDeck}
-          addNotification={addNotification}
-          playerCards={playerCards}
-          setPlayerCards={setPlayerCards}
-          deck1={deck1}
-          setDeck1={setDeck1}
-          deck2={deck2}
-          setDeck2={setDeck2}
-          activeDeck={activeDeck}
-          uid={uid}
-          db={db}
-          database={database}
-        />
-      )}
-    </>
-  );
+            <MenuItem value="characteristic">
+              <FlashOnIcon sx={{ color: "#ffa500", mr: 1 }} />
+              Характеристика
+            </MenuItem>
 
-  return (
-    <div className="collection-container">
-      {/* Контент анимируемой страницы */}
-      <div className="page-stack">
-        <CollectionContent />
+            <MenuItem value="level">
+              <StarIcon sx={{ color: "#ffa500", mr: 1 }} />
+              Уровень
+            </MenuItem>
+          </Select>
+        </div>
+
+        <h1>Хранилище</h1>
+        {isLoading ? (
+          <div className="grid">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="skeleton-card">
+                <div className="skeleton skeleton-image" />
+                <div className="skeleton skeleton-text" />
+                <div className="skeleton skeleton-price" />
+              </div>
+            ))}
+          </div>
+        ) : playerCards.length === 0 ? (
+          <div className="empty-inventory">Инвентарь пуст.</div>
+        ) : (
+          <div className="grid">
+            {sortInventoryCards(playerCards).map((card, index) => (
+              <div
+                key={`inventory-${card.id}-${index}`}
+                onClick={() => {
+                  if (isEditMode)
+                    handleAddToDeck({ stopPropagation: () => {} }, card);
+                  else setSelectedCard(card);
+                }}
+                style={{ cursor: "pointer" }}
+              >
+                <FramedCard card={card} showLevel={true} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {selectedCard && (
+          <CardModal
+            card={selectedCard}
+            onClose={handleCloseModal}
+            onAddToDeck={handleAddToDeck}
+            addNotification={addNotification}
+            playerCards={playerCards}
+            setPlayerCards={setPlayerCards}
+            deck1={deck1}
+            setDeck1={setDeck1}
+            deck2={deck2}
+            setDeck2={setDeck2}
+            activeDeck={activeDeck}
+            uid={uid}
+            db={db}
+            database={database}
+          />
+        )}
       </div>
 
       {/* Кнопка вынесена наружу, фиксирована на экране */}

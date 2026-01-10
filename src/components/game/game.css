@@ -365,16 +365,25 @@
 /* цифра урона */
 .damage-number {
   position: absolute;
-  bottom: 100%; /* 👈 над аватаркой */
   left: 50%;
-  transform: translateX(-50%);
   font-size: 1.8em;
   font-weight: bold;
   color: #ff3b3b;
   text-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
   pointer-events: none;
   z-index: 3000;
+}
+
+.damage-number-up {
+  bottom: 100%; /* 👈 над аватаркой */
+  transform: translateX(-50%);
   animation: floatUp 0.8s ease-out forwards;
+}
+
+.damage-number-down {
+  top: 100%; /* 👈 под аватаркой */
+  transform: translateX(-50%);
+  animation: floatDown 0.8s ease-out forwards;
 }
 
 @keyframes floatUp {
@@ -384,6 +393,17 @@
   }
   100% {
     transform: translate(-50%, -40px);
+    opacity: 0;
+  }
+}
+
+@keyframes floatDown {
+  0% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, 40px);
     opacity: 0;
   }
 }

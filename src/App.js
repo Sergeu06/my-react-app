@@ -38,6 +38,7 @@ import Game from "./components/game/GamePage";
 import UpgradePage from "./components/UpgradePage";
 import Raid from "./components/raid-boss/RaidPage";
 import ResultPage from "./components/ResultPage";
+import GlobalLoader from "./components/GlobalLoader";
 
 import { UserProvider } from "./components/UserContext";
 
@@ -168,6 +169,7 @@ function App() {
   const [, setTelegramUser] = useState(null);
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState(null);
+  const [assetsReady, setAssetsReady] = useState(false);
   const [searchState, setSearchState] = useState({
     isSearching: false,
     searchStartPath: null,
@@ -186,6 +188,83 @@ function App() {
   const prevTabIndexRef = useRef(tabIndex);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isVerified) return;
+    let isActive = true;
+    const staticAssets = [
+      "/666666.png",
+      "/CARDB.jpg",
+      "/favicon.ico",
+      "/logo192.png",
+      "/logo512.png",
+      "/moneta.png",
+      "/pngegg.png",
+      "/sperm-1.png",
+      "/sperm-2.png",
+      "/ticket.png",
+      "/озеро2.png",
+      "/озеро3.png",
+      "/Secret Recipes.png",
+      "/frames/common.png",
+      "/frames/epic.png",
+      "/frames/legend.png",
+      "/frames/lootbox.png",
+      "/frames/rare.png",
+      "/images/lid.png",
+      "/images/plate.png",
+      "/images/QR.png",
+      "/images/raidboss.png",
+    ];
+
+    const preloadImage = (src) =>
+      new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        img.src = src;
+      });
+
+    const warmCache = async () => {
+      try {
+        if ("caches" in window) {
+          const cache = await caches.open("app-static-assets-v1");
+          await Promise.all(
+            staticAssets.map(async (url) => {
+              try {
+                const response = await fetch(url, { cache: "force-cache" });
+                if (response.ok) {
+                  await cache.put(url, response.clone());
+                }
+              } catch (err) {
+                console.warn("[GlobalLoader] cache preload failed", url, err);
+              }
+            })
+          );
+        }
+      } catch (err) {
+        console.warn("[GlobalLoader] cache warmup failed", err);
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      if (isActive) setAssetsReady(true);
+    }, 7000);
+
+    Promise.all(staticAssets.map(preloadImage))
+      .then(warmCache)
+      .catch((err) => console.warn("[GlobalLoader] preload failed", err))
+      .finally(() => {
+        if (!isActive) return;
+        clearTimeout(timeoutId);
+        setAssetsReady(true);
+      });
+
+    return () => {
+      isActive = false;
+      clearTimeout(timeoutId);
+    };
+  }, [isVerified]);
 
   const tabRoutes = [
     `/shop?start=${uid}`,
@@ -522,6 +601,9 @@ function App() {
         <p>Проверка авторизации Telegram...</p>
       </div>
     );
+  }
+  if (!assetsReady) {
+    return <GlobalLoader />;
   }
 
   const path = location.pathname.toLowerCase();
