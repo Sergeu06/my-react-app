@@ -239,6 +239,19 @@
   pointer-events: none;
 }
 
+.free-box-btn {
+  background: linear-gradient(140deg, #8b5cf6, #6d28d9);
+  color: #fff;
+  border: none;
+  margin-top: 12px;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.6);
+}
+
+.free-box-btn:hover {
+  box-shadow: 0 0 16px rgba(167, 139, 250, 0.9);
+  transform: scale(1.02);
+}
+
 /* Центрирование label и input */
 .overlay-content label {
   display: flex;

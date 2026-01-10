@@ -7,7 +7,7 @@ import {
   updateDoc,
   arrayUnion,
 } from "firebase/firestore";
-import { database, databaseRef, set, db } from "./firebase";
+import { database, databaseRef, set, db, onValue } from "./firebase";
 import Market from "./Market";
 import CardTooltip from "../utils/CardTooltip";
 import FramedCard from "../utils/FramedCard";
@@ -22,7 +22,7 @@ import InfoIcon from "@mui/icons-material/Info";
 import "./ShopPage.css";
 import { useNavigate } from "react-router-dom";
 import { getGlowColor } from "../utils/FramedCard";
-import { remove } from "firebase/database";
+import { ref as realtimeRef } from "firebase/database";
 
 function ShopPage({ uid }) {
   const [activeTab, setActiveTab] = useState("shop");
@@ -44,6 +44,7 @@ function ShopPage({ uid }) {
   const [, setAnimationAmount] = useState(1);
   const boxContentsCache = useRef({});
   const [lockedTooltip, setLockedTooltip] = useState(null);
+  const [dailyBoxReward, setDailyBoxReward] = useState(null);
 
   const navigate = useNavigate();
   const rarityAccessLevel = {
@@ -85,6 +86,17 @@ function ShopPage({ uid }) {
       return () => clearTimeout(timer);
     }
   }, [showBoxInfo]);
+
+  useEffect(() => {
+    if (!uid) return;
+    const rewardRef = realtimeRef(
+      database,
+      `users/${uid}/settings/dailyBoxReward`
+    );
+    return onValue(rewardRef, (snap) => {
+      setDailyBoxReward(snap.val() || null);
+    });
+  }, [uid]);
 
   useEffect(() => {
     const fetchLootboxes = async () => {
@@ -462,6 +474,11 @@ function ShopPage({ uid }) {
       return 0;
     });
   };
+
+  const hasFreeBoxReward =
+    !!dailyBoxReward &&
+    selectedCard?.rarity === "lootbox" &&
+    dailyBoxReward.boxId === selectedCard.card_id;
   const groupedCards = groupCardsByCharacteristic(sortCards(allCards));
   const categoryNames = {
     damage: "Боевые карты (Урон)",
@@ -794,6 +811,31 @@ function ShopPage({ uid }) {
                       </div>
                     )}
                   </div>
+
+                  {hasFreeBoxReward && (
+                    <button
+                      className="buy-btn free-box-btn"
+                      onClick={async () => {
+                        try {
+                          await set(
+                            databaseRef(
+                              database,
+                              `users/${uid}/settings/dailyBoxReward`
+                            ),
+                            null
+                          );
+                          navigate("/open-box", {
+                            state: { boxId: selectedCard.card_id },
+                          });
+                        } catch (err) {
+                          console.error("Ошибка при открытии бонусного бокса:", err);
+                          setError("Не удалось открыть бесплатный бокс");
+                        }
+                      }}
+                    >
+                      Открыть бесплатно
+                    </button>
+                  )}
 
                   {/* Новая кнопка покупки коробки */}
                   <button

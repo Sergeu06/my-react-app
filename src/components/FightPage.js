@@ -9,7 +9,7 @@ import {
   serverTimestamp,
 } from "firebase/database"; // serverTimestamp можно импортировать отсюда
 
-import { addMinutes, differenceInSeconds } from "date-fns";
+import { addMinutes, addHours, differenceInSeconds } from "date-fns";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 
 import { db, database } from "./firebase";
@@ -17,6 +17,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import "./FightPage.css";
+import CachedImage from "../utils/CachedImage";
 
 function FightPage({ uid, searchState, setSearchState }) {
   const { isSearching, lobbyId } = searchState;
@@ -53,6 +54,16 @@ function FightPage({ uid, searchState, setSearchState }) {
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [selectedReward, setSelectedReward] = useState(null);
   const [claimLoaded, setClaimLoaded] = useState(false);
+
+  const [lastDailyBoxClaimAt, setLastDailyBoxClaimAt] = useState(null);
+  const [canDailyBoxClaim, setCanDailyBoxClaim] = useState(false);
+  const [dailyBoxRemaining, setDailyBoxRemaining] = useState(0);
+  const [showDailyBoxModal, setShowDailyBoxModal] = useState(false);
+  const [selectedDailyBox, setSelectedDailyBox] = useState(null);
+  const [dailyBoxReward, setDailyBoxReward] = useState(null);
+  const [dailyBoxLoaded, setDailyBoxLoaded] = useState(false);
+  const [dailyBoxes, setDailyBoxes] = useState([]);
+  const [dailyBoxesLoading, setDailyBoxesLoading] = useState(false);
   const switchLeaderboard = async () => {
     const next = modalBoardType === "raid" ? "pvp" : "raid";
     setModalBoardType(next);
@@ -117,6 +128,35 @@ function FightPage({ uid, searchState, setSearchState }) {
     });
   }, [uid]);
 
+  useEffect(() => {
+    if (!uid) return;
+
+    const dailyClaimRef = ref(
+      database,
+      `users/${uid}/settings/lastDailyBoxClaimAt`
+    );
+
+    return onValue(dailyClaimRef, (snap) => {
+      const val = snap.val();
+      if (!val) setLastDailyBoxClaimAt(null);
+      else setLastDailyBoxClaimAt(new Date(val));
+      setDailyBoxLoaded(true);
+    });
+  }, [uid]);
+
+  useEffect(() => {
+    if (!uid) return;
+
+    const dailyRewardRef = ref(
+      database,
+      `users/${uid}/settings/dailyBoxReward`
+    );
+
+    return onValue(dailyRewardRef, (snap) => {
+      setDailyBoxReward(snap.val() || null);
+    });
+  }, [uid]);
+
   // таймер
   useEffect(() => {
     if (!claimLoaded) return; // Данные ещё не получены — ничего не делаем
@@ -143,6 +183,34 @@ function FightPage({ uid, searchState, setSearchState }) {
 
     return () => clearInterval(interval);
   }, [lastClaimAt]);
+
+  useEffect(() => {
+    if (!dailyBoxLoaded) return;
+    if (dailyBoxReward) {
+      setDailyBoxRemaining(0);
+      setCanDailyBoxClaim(false);
+      return;
+    }
+
+    if (!lastDailyBoxClaimAt) {
+      setDailyBoxRemaining(0);
+      setCanDailyBoxClaim(true);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const nextTime = addHours(lastDailyBoxClaimAt, 24);
+      const diff = differenceInSeconds(nextTime, new Date());
+
+      setDailyBoxRemaining(diff > 0 ? diff : 0);
+      setCanDailyBoxClaim((prev) => {
+        const nowCanClaim = diff <= 0;
+        return prev !== nowCanClaim ? nowCanClaim : prev;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [dailyBoxLoaded, dailyBoxReward, lastDailyBoxClaimAt]);
 
   // обработчик claim
   const handleClaim = async (type) => {
@@ -173,6 +241,45 @@ function FightPage({ uid, searchState, setSearchState }) {
       tickets: reward.tickets,
     });
   };
+
+  const handleDailyBoxClaim = async () => {
+    if (!canDailyBoxClaim || !selectedDailyBox) return;
+
+    await update(ref(database, `users/${uid}/settings`), {
+      lastDailyBoxClaimAt: serverTimestamp(),
+      dailyBoxReward: {
+        boxId: selectedDailyBox.id,
+        name: selectedDailyBox.name || "Лутбокс",
+        image_url: selectedDailyBox.image_url || "",
+      },
+    });
+
+    setShowDailyBoxModal(false);
+    setSelectedDailyBox(null);
+  };
+
+  useEffect(() => {
+    if (!showDailyBoxModal || dailyBoxesLoading || dailyBoxes.length > 0)
+      return;
+
+    const fetchDailyBoxes = async () => {
+      try {
+        setDailyBoxesLoading(true);
+        const snapshot = await getDocs(collection(db, "box"));
+        const data = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        }));
+        setDailyBoxes(data);
+      } catch (error) {
+        console.error("Ошибка загрузки боксов:", error);
+      } finally {
+        setDailyBoxesLoading(false);
+      }
+    };
+
+    fetchDailyBoxes();
+  }, [showDailyBoxModal, dailyBoxesLoading, dailyBoxes.length]);
 
   // --- загрузка лидерборда PvP (топ-3 по RI) ---
   useEffect(() => {
@@ -614,6 +721,20 @@ function FightPage({ uid, searchState, setSearchState }) {
             <div className="claim-alert_FightPage">!</div>
           )}
         </div>
+        <div
+          className={`claim-widget_FightPage claim-widget_FightPage--purple ${
+            showDailyBoxModal ? "hidden-claim_FightPage" : ""
+          }`}
+          onClick={() => setShowDailyBoxModal(true)}
+        >
+          <img src="/frames/lootbox.png" alt="box" />
+
+          {dailyBoxLoaded && (canDailyBoxClaim || dailyBoxReward) && (
+            <div className="claim-alert_FightPage claim-alert_FightPage--purple">
+              !
+            </div>
+          )}
+        </div>
         {showClaimModal && (
           <div
             className="claim-overlay_FightPage"
@@ -695,6 +816,94 @@ function FightPage({ uid, searchState, setSearchState }) {
                     {(remaining % 60).toString().padStart(2, "0")}
                   </span>
                 </div>
+              )}
+            </div>
+          </div>
+        )}
+        {showDailyBoxModal && (
+          <div
+            className="claim-overlay_FightPage"
+            onClick={() => {
+              setShowDailyBoxModal(false);
+              setSelectedDailyBox(null);
+            }}
+          >
+            <div
+              className="claim-window_FightPage"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="claim-title_FightPage">Ежедневный бонус</h3>
+
+              {dailyBoxReward ? (
+                <>
+                  <div className="claim-reward_FightPage">
+                    <CachedImage
+                      src={dailyBoxReward.image_url}
+                      alt={dailyBoxReward.name || "Лутбокс"}
+                      className="claim-coin_FightPage"
+                    />
+                    <span className="claim-amount_FightPage">
+                      {dailyBoxReward.name || "Лутбокс"}
+                    </span>
+                  </div>
+                  <button
+                    className="claim-button_FightPage"
+                    onClick={() => navigate(`/shop?start=${uid}`)}
+                  >
+                    Открыть в магазине
+                  </button>
+                </>
+              ) : (
+                <>
+                  {dailyBoxesLoading && <div>Загрузка...</div>}
+                  {!dailyBoxesLoading && dailyBoxes.length === 0 && (
+                    <div>Нет доступных боксов</div>
+                  )}
+                  {!dailyBoxesLoading &&
+                    dailyBoxes.map((box) => (
+                      <div
+                        key={box.id}
+                        className={`claim-reward_FightPage selectable_FightPage ${
+                          selectedDailyBox?.id === box.id
+                            ? "selected_FightPage"
+                            : ""
+                        }`}
+                        onClick={() => setSelectedDailyBox(box)}
+                      >
+                        <CachedImage
+                          src={box.image_url}
+                          alt={box.name || "Лутбокс"}
+                          className="claim-coin_FightPage"
+                        />
+                        <span className="claim-amount_FightPage">
+                          {box.name || "Лутбокс"}
+                        </span>
+                      </div>
+                    ))}
+
+                  {canDailyBoxClaim && (
+                    <button
+                      disabled={!selectedDailyBox}
+                      className="claim-button_FightPage"
+                      onClick={handleDailyBoxClaim}
+                    >
+                      Забрать
+                    </button>
+                  )}
+
+                  {!canDailyBoxClaim && (
+                    <div className="claim-timer_FightPage">
+                      Доступно через:{" "}
+                      <span className="claim-timer-value_FightPage">
+                        {Math.floor(dailyBoxRemaining / 3600)}:
+                        {Math.floor((dailyBoxRemaining % 3600) / 60)
+                          .toString()
+                          .padStart(2, "0")}
+                        :{(dailyBoxRemaining % 60).toString().padStart(2, "0")}
+                      </span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

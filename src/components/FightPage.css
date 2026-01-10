@@ -403,6 +403,13 @@
     inset 0 0 3px #ffffff33;
 }
 
+.claim-widget_FightPage--purple {
+  top: 45vh;
+  background: linear-gradient(145deg, #3f2b5c, #1c1428);
+  box-shadow: 0 0 10px #8b5cf666, 0 0 4px #000 inset,
+    inset 0 0 10px #8b5cf633, inset 0 0 3px #ffffff33;
+}
+
 /* исчезновение при открытии оверлея */
 .hidden-claim_FightPage {
   opacity: 0;
@@ -415,6 +422,11 @@
   box-shadow: 0 0 18px #ffa500aa, 0 0 6px #000 inset, inset 0 0 16px #ffa50055,
     inset 0 0 6px #ffffff44;
   transform: rotate(45deg) scale(1.06);
+}
+
+.claim-widget_FightPage--purple:hover {
+  box-shadow: 0 0 18px #8b5cf6aa, 0 0 6px #000 inset,
+    inset 0 0 16px #8b5cf655, inset 0 0 6px #ffffff44;
 }
 
 /* Монета внутри */
@@ -442,6 +454,11 @@
   transform: rotate(-45deg);
   box-shadow: 0 0 6px #ffb933dd;
   border: 2px solid #2e2e2e;
+}
+
+.claim-alert_FightPage--purple {
+  background: #8b5cf6;
+  box-shadow: 0 0 6px #a78bfa;
 }
 
 /* --------------------------- */

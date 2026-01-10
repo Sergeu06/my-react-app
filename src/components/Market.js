@@ -15,6 +15,7 @@ import IconButton from "@mui/material/IconButton";
 
 import FramedCard from "../utils/FramedCard";
 import MarketModal from "./MarketModal";
+import "./Market.css";
 
 function useQuery() {
   return new URLSearchParams(window.location.search);

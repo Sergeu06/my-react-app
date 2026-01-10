@@ -36,6 +36,17 @@
 }
 
 /* =======================
+   Сетка карточек
+======================= */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1em 1.5em;
+  justify-items: center;
+  padding: 0.5em 0;
+}
+
+/* =======================
    Уведомления
 ======================= */
 .notification-container {
@@ -694,6 +705,12 @@
   .card img {
     width: 100%;
     height: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 450px) {
