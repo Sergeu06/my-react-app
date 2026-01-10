@@ -33,6 +33,12 @@ const sortPlayedCards = (cards = []) =>
     return String(a.id ?? "").localeCompare(String(b.id ?? ""));
   });
 
+const formatMultiplierValue = (value) => {
+  if (!isFinite(value)) return null;
+  const rounded = Math.round(value * 100) / 100;
+  return rounded.toFixed(2).replace(/\.?0+$/, "");
+};
+
 function GamePage() {
   const [searchParams] = useSearchParams();
   const uid = searchParams.get("start");
@@ -615,6 +621,17 @@ function GamePage() {
 
   if (!gameData) return <div>Загрузка...</div>;
 
+  const buildMultiplierLabel = (effect) => {
+    if (!effect?.multiplier || !effect?.turnsLeft) return null;
+    const formatted = formatMultiplierValue(effect.multiplier);
+    if (!formatted) return null;
+    return `x${formatted}-${effect.turnsLeft}`;
+  };
+  const playerMultiplierLabel = buildMultiplierLabel(effectsByUid[uid]?.mult);
+  const opponentMultiplierLabel = buildMultiplierLabel(
+    effectsByUid[gameData.opponentUid]?.mult
+  );
+
   return (
     <div className="game-container">
       <TurnControls
@@ -640,6 +657,7 @@ function GamePage() {
         nickname={gameData.opponent.nickname}
         lvl={gameData.opponent.lvl}
         position="top"
+        multiplierLabel={opponentMultiplierLabel}
       />
       <HPBar
         hp={gameData.opponent.hp}
@@ -653,6 +671,7 @@ function GamePage() {
         nickname={gameData.player.nickname}
         lvl={gameData.player.lvl}
         position="bottom"
+        multiplierLabel={playerMultiplierLabel}
       />
       <HPBar
         hp={gameData.player.hp}

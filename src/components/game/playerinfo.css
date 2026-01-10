@@ -2,6 +2,7 @@
   display: flex;
   justify-content: center;
   margin-bottom: 8px;
+  position: relative;
 }
 
 .player-avatar {
@@ -13,6 +14,17 @@
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
 
   position: relative; /* 👈 теперь damage-number будет отталкиваться от аватарки */
+}
+
+.multiplier-label {
+  position: absolute;
+  bottom: -18px;
+  right: -6px;
+  color: #a855f7;
+  font-weight: 600;
+  font-size: 0.9em;
+  text-shadow: 0 0 6px rgba(168, 85, 247, 0.5);
+  pointer-events: none;
 }
 
 .priority-label {

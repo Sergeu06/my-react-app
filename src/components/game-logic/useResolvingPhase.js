@@ -104,6 +104,50 @@ export default function useResolvingPhase(params) {
           syncedPlayerCards,
           syncedOpponentCards,
         });
+
+        if (isHost && lobbyId && gameData?.opponentUid) {
+          const revealUpdates = {};
+          const updatedPlayerCards = syncedPlayerCards.map((card) => {
+            const turnsLeft =
+              card.dotTurnsLeft ?? card.damage_over_time?.length ?? 0;
+            if (Array.isArray(card.damage_over_time) && turnsLeft > 0) {
+              if (!card.revealed) {
+                revealUpdates[
+                  `playedCards/${uid}/${card.id}/revealed`
+                ] = true;
+                return { ...card, revealed: true };
+              }
+            }
+            return card;
+          });
+          const updatedOpponentCards = syncedOpponentCards.map((card) => {
+            const turnsLeft =
+              card.dotTurnsLeft ?? card.damage_over_time?.length ?? 0;
+            if (Array.isArray(card.damage_over_time) && turnsLeft > 0) {
+              if (!card.revealed) {
+                revealUpdates[
+                  `playedCards/${gameData.opponentUid}/${card.id}/revealed`
+                ] = true;
+                return { ...card, revealed: true };
+              }
+            }
+            return card;
+          });
+
+          if (updatedPlayerCards !== syncedPlayerCards) {
+            syncedPlayerCards = updatedPlayerCards;
+          }
+          if (updatedOpponentCards !== syncedOpponentCards) {
+            syncedOpponentCards = updatedOpponentCards;
+          }
+
+          if (Object.keys(revealUpdates).length > 0) {
+            await update(ref(database, `lobbies/${lobbyId}`), revealUpdates);
+          }
+
+          setPlayedCards(syncedPlayerCards);
+          setOpponentPlayed(syncedOpponentCards);
+        }
       } catch (err) {
         console.warn(
           "[useResolvingPhase] Не удалось синхронизировать playedCards",
