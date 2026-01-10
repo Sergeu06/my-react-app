@@ -33,7 +33,7 @@ export function addDamageMultiplierEffectPvP(
     delta: existingDelta + delta,
     // итоговый коэффициент
     multiplier: 1 + existingDelta + delta,
-    turnsLeft: damageMultiplierEffect?.turnsLeft ?? 3,
+    turnsLeft: 3,
     id: damageMultiplierEffect?.id ?? generateId(),
   };
 }
