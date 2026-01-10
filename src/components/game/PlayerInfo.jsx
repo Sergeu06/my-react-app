@@ -44,7 +44,11 @@ function PlayerInfo({
           data-position={position}
         />
         {multiplierLabel && (
-          <div className="multiplier-label">{multiplierLabel}</div>
+          <div
+            className={`avatar-multiplier-label avatar-multiplier-${position}`}
+          >
+            {multiplierLabel}
+          </div>
         )}
       </div>
     </div>

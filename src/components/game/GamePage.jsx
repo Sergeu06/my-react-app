@@ -59,7 +59,6 @@ function GamePage() {
   const [selectedCardId, setSelectedCardId] = useState(null);
   const [round, setRound] = useState(1);
   const [showDamageFlash, setShowDamageFlash] = useState(false);
-  const [damageNumbers, setDamageNumbers] = useState([]);
   const [turnEnded, setTurnEnded] = useState(false);
   const [opponentTurnEnded, setOpponentTurnEnded] = useState(false);
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
@@ -686,30 +685,6 @@ function GamePage() {
       {waitingForOpponent && roundPhase === "play" && (
         <div className="waiting-message">Ждём соперника...</div>
       )}
-
-      <AnimatePresence>
-        {damageNumbers.map((d) => (
-          <motion.div
-            key={d.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: -40 }}
-            exit={{ opacity: 0, y: -60 }}
-            transition={{ duration: 1 }}
-            className="damage-number"
-            style={{
-              position: "absolute",
-              left: d.target === "opponent" ? "60%" : "20%",
-              top: d.target === "opponent" ? "15%" : "70%",
-              fontSize: "2rem",
-              fontWeight: "bold",
-              color: "red",
-              pointerEvents: "none",
-            }}
-          >
-            -{d.amount}
-          </motion.div>
-        ))}
-      </AnimatePresence>
 
       <div className="board-center">
         {/* Верхняя половина — соперник */}
