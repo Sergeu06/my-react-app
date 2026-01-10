@@ -665,6 +665,7 @@ function GamePage() {
         position="top"
         style={{ position: "absolute", top: "1%", left: "3%" }}
         hasPriority={priorityUid === gameData.opponentUid} // 👈
+        multiplierLabel={opponentMultiplierLabel}
       />
       <PlayerInfo
         avatarUrl={gameData.player.avatar_url}
@@ -679,6 +680,7 @@ function GamePage() {
         position="bottom"
         style={{ position: "absolute", bottom: "18vh", left: "3%" }}
         hasPriority={priorityUid === uid} // 👈
+        multiplierLabel={playerMultiplierLabel}
       />
 
       {waitingForOpponent && roundPhase === "play" && (

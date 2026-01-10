@@ -229,20 +229,23 @@ export default function useResolvingPhase(params) {
           card.raw.damage_multiplier > 0;
 
         // Выбираем effectiveTarget в зависимости от типа карты
-        const attackerEffects = effectsByUid[attackerUid] || { mult: null };
+        const targetEffects = effectsByUid[damageTargetUid] || { mult: null };
         const nextMult = isMultiplierCard
-          ? applyDamageMultiplierPvP(attackerEffects.mult, card.raw)
-          : attackerEffects.mult;
+          ? applyDamageMultiplierPvP(targetEffects.mult, card.raw)
+          : targetEffects.mult;
 
-        if (isMultiplierCard && nextMult !== attackerEffects.mult) {
+        if (isMultiplierCard && nextMult !== targetEffects.mult) {
           await set(
-            ref(database, `lobbies/${lobbyId}/effects/${attackerUid}/multiplier`),
+            ref(
+              database,
+              `lobbies/${lobbyId}/effects/${damageTargetUid}/multiplier`
+            ),
             nextMult
           );
           setEffectsByUid((prev) => ({
             ...prev,
-            [attackerUid]: {
-              ...(prev[attackerUid] || {}),
+            [damageTargetUid]: {
+              ...(prev[damageTargetUid] || {}),
               mult: nextMult,
             },
           }));
@@ -304,24 +307,24 @@ export default function useResolvingPhase(params) {
           continue; // <-- ключевое: пропускаем урон/лечение
         }
 
-        const strikePromise = strikeSequence(
-          card.ownerLabel === "player" ? "player" : "opponent",
-          card.ownerLabel === "player" ? "top" : "bottom",
-          lobbyId,
-          card.owner,
-          database,
-          card.id,
-          false,
-          null,
-          null,
-          null,
-          0,
-          450,
-          isHealCard,
-          isDotCard && !isFinalDot // последний тик = обычная анимация
-        );
         if (isHealCard) {
           // === Heal logic: лечим владельца карты (healTargetUid) ===
+          const strikePromise = strikeSequence(
+            card.ownerLabel === "player" ? "player" : "opponent",
+            card.ownerLabel === "player" ? "top" : "bottom",
+            lobbyId,
+            card.owner,
+            database,
+            card.id,
+            false,
+            null,
+            null,
+            null,
+            0,
+            450,
+            true,
+            false
+          );
           const healPromise = (async () => {
             await new Promise((res) => setTimeout(res, damageDelayMs));
 
@@ -366,11 +369,31 @@ export default function useResolvingPhase(params) {
           const tickIndex = card.raw.damage_over_time.length - turnsLeft;
           const dotDamage = Number(card.raw.damage_over_time[tickIndex]) || 0;
 
+          const effectiveDotDamage = Math.max(
+            1,
+            Math.round(dotDamage * (nextMult?.multiplier ?? 1))
+          );
+          const strikePromise = strikeSequence(
+            card.ownerLabel === "player" ? "player" : "opponent",
+            card.ownerLabel === "player" ? "top" : "bottom",
+            lobbyId,
+            card.owner,
+            database,
+            card.id,
+            false,
+            null,
+            null,
+            effectiveDotDamage,
+            0,
+            450,
+            false,
+            isDotCard && !isFinalDot
+          );
           const damagePromise = (async () => {
             await new Promise((res) => setTimeout(res, damageDelayMs));
-          const newHp = await applyDotPvP(
-            damageTargetUid,
-            card.raw,
+            const newHp = await applyDotPvP(
+              damageTargetUid,
+              card.raw,
             tickIndex,
             lobbyId,
             nextMult
@@ -393,23 +416,6 @@ export default function useResolvingPhase(params) {
               });
             }
 
-            try {
-              const avatarEl = document.querySelector(
-                `.player-avatar[data-position="${targetPos}"]`
-              );
-              if (avatarEl && dotDamage > 0) {
-                const effective = Math.max(
-                  1,
-                  Math.round(dotDamage * (nextMult?.multiplier ?? 1))
-                );
-                showDamageNumber(avatarEl, effective);
-              }
-            } catch (err) {
-              console.warn(
-                "[useResolvingPhase] не удалось показать цифру DoT",
-                err
-              );
-            }
           })();
 
           await Promise.all([strikePromise, damagePromise]);
@@ -446,6 +452,22 @@ export default function useResolvingPhase(params) {
             Math.max(1, Math.floor(baseDamage * (nextMult?.multiplier ?? 1))) ||
             0;
 
+          const strikePromise = strikeSequence(
+            card.ownerLabel === "player" ? "player" : "opponent",
+            card.ownerLabel === "player" ? "top" : "bottom",
+            lobbyId,
+            card.owner,
+            database,
+            card.id,
+            false,
+            null,
+            null,
+            damage,
+            0,
+            450,
+            false,
+            false
+          );
           const damagePromise = (async () => {
             await new Promise((res) => setTimeout(res, damageDelayMs));
 
@@ -473,19 +495,6 @@ export default function useResolvingPhase(params) {
               });
             }
 
-            try {
-              const avatarEl = document.querySelector(
-                `.player-avatar[data-position="${targetPos}"]`
-              );
-              if (avatarEl && typeof damage === "number" && damage > 0) {
-                showDamageNumber(avatarEl, damage);
-              }
-            } catch (err) {
-              console.warn(
-                "[useResolvingPhase] не удалось показать цифру урона",
-                err
-              );
-            }
           })();
 
           await Promise.all([strikePromise, damagePromise]);
