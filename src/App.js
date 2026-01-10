@@ -170,6 +170,10 @@ function App() {
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState(null);
   const [assetsReady, setAssetsReady] = useState(false);
+  const [assetsProgress, setAssetsProgress] = useState({
+    loaded: 0,
+    total: 0,
+  });
   const [searchState, setSearchState] = useState({
     isSearching: false,
     searchStartPath: null,
@@ -217,11 +221,24 @@ function App() {
       "/images/raidboss.png",
     ];
 
+    if (isActive) {
+      setAssetsProgress({ loaded: 0, total: staticAssets.length });
+    }
+
     const preloadImage = (src) =>
       new Promise((resolve) => {
         const img = new Image();
-        img.onload = () => resolve();
-        img.onerror = () => resolve();
+        const done = () => {
+          if (isActive) {
+            setAssetsProgress((prev) => ({
+              loaded: Math.min(prev.loaded + 1, prev.total),
+              total: prev.total,
+            }));
+          }
+          resolve();
+        };
+        img.onload = done;
+        img.onerror = done;
         img.src = src;
       });
 
@@ -603,7 +620,12 @@ function App() {
     );
   }
   if (!assetsReady) {
-    return <GlobalLoader />;
+    return (
+      <GlobalLoader
+        loaded={assetsProgress.loaded}
+        total={assetsProgress.total}
+      />
+    );
   }
 
   const path = location.pathname.toLowerCase();

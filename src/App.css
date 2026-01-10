@@ -85,6 +85,26 @@ body {
   opacity: 0.9;
 }
 
+.global-loader__progress {
+  width: min(320px, 70vw);
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.global-loader__progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #9b5cff, #ffa500);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.global-loader__progress-text {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
 @keyframes loader-spin {
   to {
     transform: rotate(360deg);
