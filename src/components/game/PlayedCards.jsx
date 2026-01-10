@@ -23,8 +23,8 @@ function PlayedCards({
         const tilt = offset < 0 ? "10deg" : offset > 0 ? "-10deg" : "0deg";
 
         const hasActiveDoT =
-          Array.isArray(card.damage_over_time_queue) &&
-          card.damage_over_time_queue.some((d) => d.turnsLeft > 0);
+          Array.isArray(card.damage_over_time) &&
+          (card.dotTurnsLeft ?? card.damage_over_time.length ?? 0) > 0;
 
         const dotClass = hasActiveDoT ? "dot-active" : "";
 
@@ -43,7 +43,10 @@ function PlayedCards({
             title={side === "player" ? card.name : "Opponent card"}
             style={{ "--tilt": tilt }}
           >
-            {side === "player" || bothTurnsEnded || hasActiveDoT ? (
+            {side === "player" ||
+            bothTurnsEnded ||
+            hasActiveDoT ||
+            card.revealed ? (
               <>
                 <FramedCard
                   card={card}

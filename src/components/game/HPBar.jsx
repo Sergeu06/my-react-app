@@ -8,6 +8,7 @@ function HPBar({
   position = "default", // "vertical"
   style = {},
   hasPriority = false,
+  multiplierLabel,
 }) {
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -30,6 +31,9 @@ function HPBar({
 
   return (
     <div className={`hp-bar-container ${position}`} style={style}>
+      {multiplierLabel && (
+        <div className="hp-multiplier-label">{multiplierLabel}</div>
+      )}
       <div className={`hp-bar ${position === "vertical" ? "vertical" : ""}`}>
         <div
           className={`hp-fill ${position === "vertical" ? "vertical" : ""}`}
