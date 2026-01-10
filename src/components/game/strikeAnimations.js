@@ -54,21 +54,23 @@ const waitForCardEl = (
     tryFind();
   });
 
-export const showDamageNumber = (avatarEl, damage) => {
-  if (!avatarEl || damage <= 0) return;
+export const showDamageNumber = (
+  avatarEl,
+  damage,
+  { direction = "bottom", isHeal = false } = {}
+) => {
+  if (!avatarEl || !Number.isFinite(damage) || damage <= 0) return;
 
   const dmgEl = document.createElement("div");
-  dmgEl.className = "damage-number";
-  dmgEl.textContent = `-${damage}`;
-  avatarEl.appendChild(dmgEl);
+  const directionClass =
+    direction === "top" ? "damage-number-down" : "damage-number-up";
+  const value = Math.abs(Math.round(damage));
+  dmgEl.className = `damage-number ${directionClass}`;
+  dmgEl.textContent = `${isHeal ? "+" : "-"}${value}`;
 
-  dmgEl.animate(
-    [
-      { transform: "translateY(0)", opacity: 1 },
-      { transform: "translateY(-40px)", opacity: 0 },
-    ],
-    { duration: 800, easing: "ease-out" }
-  );
+  const container = avatarEl.closest(".avatar-wrapper") ?? avatarEl.parentElement;
+  if (!container) return;
+  container.appendChild(dmgEl);
 
   setTimeout(() => dmgEl.remove(), 800);
 };
@@ -154,7 +156,12 @@ export const strikeSequence = async (
     setTimeout(() => {
       onDamageFlash?.();
       onDamageCommit?.();
-      if (damage !== null) showDamageNumber(avatar, damage);
+      if (damage !== null) {
+        showDamageNumber(avatar, damage, {
+          direction: targetAvatarPos,
+          isHeal,
+        });
+      }
       if (isDot) log.info("DoT тик нанесён", { cardId, damage });
     }, damageDelayMs);
 

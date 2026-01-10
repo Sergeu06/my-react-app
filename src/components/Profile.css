@@ -266,7 +266,7 @@
 }
 .showcase-slot {
   flex: 0 0 auto;
-  width: 120px;
+  width: 150px;
   aspect-ratio: 3 / 4; /* Это ключевая строка */
   border: 2px dashed #aaa;
   border-radius: 8px;
@@ -301,9 +301,22 @@
     justify-content: center;
   }
   .showcase-slot {
-    width: calc(40% - 4px);
+    width: calc(48% - 6px);
     aspect-ratio: 8 / 10;
     margin-bottom: 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .card-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-items: center;
+  }
+
+  .card-style {
+    width: 100%;
+    max-width: 180px;
   }
 }
 

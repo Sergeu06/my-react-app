@@ -4,6 +4,8 @@ import { db, database } from "./firebase";
 import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { set, ref as databaseRef } from "firebase/database";
 import "./OpenBoxPage.css";
+import CachedImage from "../utils/CachedImage";
+import { preloadImageToCache } from "../utils/imageCache";
 
 function OpenBoxPage({ uid }) {
   const location = useLocation();
@@ -128,15 +130,11 @@ function OpenBoxPage({ uid }) {
           : "0";
       setDropChance(perCardChance);
 
-      // предзагрузка
-      const img = new Image();
-      img.src = selectedCard.image_url;
-      img.onload = () => {
-        setTimeout(() => {
-          setIsReady(true);
-          setLoading(false);
-        }, 300);
-      };
+      await preloadImageToCache(selectedCard.image_url);
+      setTimeout(() => {
+        setIsReady(true);
+        setLoading(false);
+      }, 300);
     } catch (err) {
       console.error("Ошибка при открытии коробки:", err);
     }
@@ -237,7 +235,7 @@ function OpenBoxPage({ uid }) {
           onAnimationEnd={handleAnimEnd}
         >
           {resultCard && (
-            <img
+            <CachedImage
               src={resultCard.image_url}
               alt={resultCard.name}
               className="card-image"

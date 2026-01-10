@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import CachedImage from "../utils/CachedImage";
 import "./Profile.css";
 import { useParams, useSearchParams } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -359,7 +360,7 @@ const ProfilePage = () => {
                     style={{ position: "relative" }}
                   >
                     <div className="card-name">{card.name}</div>
-                    <img src={card.image_url} alt={card.name} />
+                    <CachedImage src={card.image_url} alt={card.name} />
                     {card.lvl && (
                       <div className="card-level-overlay">
                         {toRoman(card.lvl)}

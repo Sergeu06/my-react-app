@@ -1,4 +1,5 @@
 import React from "react";
+import CachedImage from "./CachedImage";
 import { toRoman } from "../utils/toRoman";
 
 const rarityFrameMap = {
@@ -88,7 +89,11 @@ function FramedCard({
           (quantityBadge || <div className="card-quantity-badge" />)}
 
         {showName && <div className="card-name">{card.name}</div>}
-        <img src={card.image_url} alt={card.name} className="card-image" />
+        <CachedImage
+          src={card.image_url}
+          alt={card.name}
+          className="card-image"
+        />
       </div>
     </div>
   );
