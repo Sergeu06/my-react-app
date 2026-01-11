@@ -15,6 +15,7 @@ import { Select, MenuItem } from "@mui/material";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import StarIcon from "@mui/icons-material/Star";
 import FlashOnIcon from "@mui/icons-material/FlashOn";
+import { DAILY_TASK_IDS, completeDailyTask } from "../utils/dailyTasks";
 
 function Collection({ uid }) {
   const [playerCards, setPlayerCards] = useState([]);
@@ -48,6 +49,14 @@ function Collection({ uid }) {
   useEffect(() => {
     localStorage.setItem("collection_activeDeck", activeDeck.toString());
   }, [activeDeck]);
+
+  useEffect(() => {
+    if (!uid) return;
+    const markTask = async () => {
+      await completeDailyTask(database, uid, DAILY_TASK_IDS, "daily_collection");
+    };
+    markTask();
+  }, [uid]);
 
   const addNotification = (message, type) => {
     const id = Date.now();

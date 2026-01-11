@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   ref,
   get,
@@ -18,6 +18,11 @@ import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import "./FightPage.css";
 import CachedImage from "../utils/CachedImage";
+import {
+  ensureDailyTasks,
+  completeDailyTask,
+  claimDailyTask,
+} from "../utils/dailyTasks";
 
 function FightPage({ uid, searchState, setSearchState }) {
   const { isSearching, lobbyId } = searchState;
@@ -65,39 +70,53 @@ function FightPage({ uid, searchState, setSearchState }) {
   const [dailyBoxes, setDailyBoxes] = useState([]);
   const [dailyBoxesLoading, setDailyBoxesLoading] = useState(false);
   const [showDailyTasksModal, setShowDailyTasksModal] = useState(false);
+  const [dailyTaskState, setDailyTaskState] = useState({});
+  const [dailyTasksLoaded, setDailyTasksLoaded] = useState(false);
 
-  const dailyTasks = [
-    {
-      id: "daily_duel",
-      title: "Быстрая дуэль",
-      description: "Сыграйте 1 PvP матч.",
-      reward: "+120 монет",
-    },
-    {
-      id: "daily_raid",
-      title: "Рейдовая вылазка",
-      description: "Сыграйте 1 рейд.",
-      reward: "+1 билет",
-    },
-    {
-      id: "daily_upgrade",
-      title: "Лёгкая прокачка",
-      description: "Улучшите карту 1 раз.",
-      reward: "+2 SecretRecipes",
-    },
-    {
-      id: "daily_shop",
-      title: "Пополнение запасов",
-      description: "Купите 1 карту у поставщика.",
-      reward: "+80 монет",
-    },
-    {
-      id: "daily_collection",
-      title: "Наведение порядка",
-      description: "Откройте коллекцию карт.",
-      reward: "+1 билет",
-    },
-  ];
+  const dailyTasks = useMemo(
+    () => [
+      {
+        id: "daily_duel",
+        title: "Быстрая дуэль",
+        description: "Сыграйте 1 PvP матч.",
+        reward: { coins: 120 },
+        rewardLabel: "+120 монет",
+      },
+      {
+        id: "daily_raid",
+        title: "Рейдовая вылазка",
+        description: "Сыграйте 1 рейд.",
+        reward: { tickets: 1 },
+        rewardLabel: "+1 билет",
+      },
+      {
+        id: "daily_upgrade",
+        title: "Лёгкая прокачка",
+        description: "Улучшите карту 1 раз.",
+        reward: { SecretRecipes: 2 },
+        rewardLabel: "+2 SecretRecipes",
+      },
+      {
+        id: "daily_shop",
+        title: "Пополнение запасов",
+        description: "Купите 1 карту у поставщика.",
+        reward: { coins: 80 },
+        rewardLabel: "+80 монет",
+      },
+      {
+        id: "daily_collection",
+        title: "Наведение порядка",
+        description: "Откройте коллекцию карт.",
+        reward: { tickets: 1 },
+        rewardLabel: "+1 билет",
+      },
+    ],
+    []
+  );
+  const dailyTaskIds = useMemo(
+    () => dailyTasks.map((task) => task.id),
+    [dailyTasks]
+  );
   const switchLeaderboard = async () => {
     const next = modalBoardType === "raid" ? "pvp" : "raid";
     setModalBoardType(next);
@@ -145,6 +164,27 @@ function FightPage({ uid, searchState, setSearchState }) {
       }
     });
   }, [uid]);
+
+  useEffect(() => {
+    if (!uid) return;
+    let unsubscribe;
+
+    const initDailyTasks = async () => {
+      await ensureDailyTasks(database, uid, dailyTaskIds);
+      const tasksRef = ref(database, `users/${uid}/settings/dailyTasks`);
+      unsubscribe = onValue(tasksRef, (snap) => {
+        const data = snap.val() || {};
+        setDailyTaskState(data.tasks || {});
+        setDailyTasksLoaded(true);
+      });
+    };
+
+    initDailyTasks();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [dailyTaskIds, uid]);
 
   // загрузка времени claim из DB
   useEffect(() => {
@@ -290,6 +330,35 @@ function FightPage({ uid, searchState, setSearchState }) {
 
     setShowDailyBoxModal(false);
     setSelectedDailyBox(null);
+  };
+
+  const handleDailyTaskClaim = async (task) => {
+    if (!uid) return;
+    const state = dailyTaskState?.[task.id];
+    if (!state?.completed || state?.claimed) return;
+
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return;
+    const userDoc = userSnap.data();
+
+    const updates = {};
+    if (task.reward?.coins) {
+      updates.balance = (userDoc.balance ?? 0) + task.reward.coins;
+    }
+    if (task.reward?.tickets) {
+      updates.tickets = (userDoc.tickets ?? 0) + task.reward.tickets;
+    }
+    if (task.reward?.SecretRecipes) {
+      updates.SecretRecipes =
+        (userDoc.SecretRecipes ?? 0) + task.reward.SecretRecipes;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await updateDoc(userRef, updates);
+    }
+
+    await claimDailyTask(database, uid, dailyTaskIds, task.id);
   };
 
   useEffect(() => {
@@ -507,6 +576,7 @@ function FightPage({ uid, searchState, setSearchState }) {
     }
 
     isCancelled.current = false;
+    await completeDailyTask(database, uid, dailyTaskIds, "daily_duel");
 
     const lobbyRef = ref(database, "lobbies");
     const snapshot = await get(lobbyRef);
@@ -964,19 +1034,41 @@ function FightPage({ uid, searchState, setSearchState }) {
                 Выполни все задания за несколько минут и собери награды.
               </p>
               <div className="daily-tasks-list_FightPage">
-                {dailyTasks.map((task) => (
-                  <div key={task.id} className="daily-task-card_FightPage">
-                    <div className="daily-task-title_FightPage">
-                      {task.title}
+                {dailyTasks.map((task) => {
+                  const state = dailyTaskState?.[task.id];
+                  const isCompleted = state?.completed;
+                  const isClaimed = state?.claimed;
+
+                  return (
+                    <div key={task.id} className="daily-task-card_FightPage">
+                      <div className="daily-task-title_FightPage">
+                        {task.title}
+                      </div>
+                      <div className="daily-task-desc_FightPage">
+                        {task.description}
+                      </div>
+                      <div className="daily-task-reward_FightPage">
+                        Награда: {task.rewardLabel}
+                      </div>
+                      <div className="daily-task-status_FightPage">
+                        {isClaimed
+                          ? "Награда получена"
+                          : isCompleted
+                            ? "Задание выполнено"
+                            : "В процессе"}
+                      </div>
+                      {dailyTasksLoaded && (
+                        <button
+                          className="daily-task-claim-button_FightPage"
+                          disabled={!isCompleted || isClaimed}
+                          onClick={() => handleDailyTaskClaim(task)}
+                        >
+                          {isClaimed ? "Получено" : "Забрать награду"}
+                        </button>
+                      )}
                     </div>
-                    <div className="daily-task-desc_FightPage">
-                      {task.description}
-                    </div>
-                    <div className="daily-task-reward_FightPage">
-                      Награда: {task.reward}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <button
                 className="claim-button_FightPage"
@@ -1275,6 +1367,13 @@ function FightPage({ uid, searchState, setSearchState }) {
                       await updateDoc(doc(db, "users", uid), {
                         tickets: userTickets - 1,
                       });
+
+                      await completeDailyTask(
+                        database,
+                        uid,
+                        dailyTaskIds,
+                        "daily_raid"
+                      );
 
                       setShowRaidConfirm(false);
                       navigate(`/Raid?start=${uid}`);

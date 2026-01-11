@@ -571,6 +571,34 @@
   color: #a5f3fc;
 }
 
+.daily-task-status_FightPage {
+  margin-top: 6px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.daily-task-claim-button_FightPage {
+  margin-top: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(90deg, #7c4dff, #9c27b0);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.2s ease;
+}
+
+.daily-task-claim-button_FightPage:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.daily-task-claim-button_FightPage:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
 @keyframes popup_FightPage {
   from {
     transform: scale(0.8);
