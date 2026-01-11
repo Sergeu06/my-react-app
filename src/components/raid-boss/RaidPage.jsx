@@ -15,10 +15,16 @@ import {
   applyDamageMultiplier,
   generateId,
 } from "../../utils/cardEffects";
+import {
+  applyRaidModifiers,
+  formatRaidCountdown,
+  getRaidEventInfo,
+} from "../../utils/raidEvents";
 
 function RaidPage() {
   const [searchParams] = useSearchParams();
   const uid = searchParams.get("start");
+  const baseEnergy = 50;
 
   const [damageMultiplierEffect, setDamageMultiplierEffect] = useState(null);
   const [allBosses, setAllBosses] = useState({});
@@ -31,11 +37,14 @@ function RaidPage() {
   const [isBossShaking, setIsBossShaking] = useState(false);
   const [damageThisTurnDot, setDamageThisTurnDot] = useState(null);
   const [notEnoughEnergyMessage, setNotEnoughEnergyMessage] = useState(null);
+  const [raidEvent, setRaidEvent] = useState(null);
+  const [eventCountdown, setEventCountdown] = useState(0);
 
   const [gameStarted, setGameStarted] = useState(false);
   const [showEndScreen, setShowEndScreen] = useState(false);
 
   const bossHpRef = useRef(null);
+  const hpFillRef = useRef(null);
   const [damageThisTurn, setDamageThisTurn] = useState(null);
   const [totalDamageDealt, setTotalDamageDealt] = useState(0);
   const [totalCardsPlayed, setTotalCardsPlayed] = useState(0);
@@ -45,7 +54,7 @@ function RaidPage() {
   const [deck, setDeck] = useState([]);
   const [selectedCardId, setSelectedCardId] = useState(null);
   const [playingCard, setPlayingCard] = useState(null);
-  const [energy, setEnergy] = useState(50);
+  const [energy, setEnergy] = useState(baseEnergy);
 
   const [turn, setTurn] = useState(0);
 
@@ -66,6 +75,31 @@ function RaidPage() {
     nextTurnDotDamage * totalMultiplier
   );
 
+  const baseModifiers = {
+    energyMultiplier: 1,
+    costMultiplier: 1,
+    damageMultiplier: 1,
+    extraPlayChance: 0,
+    burnBonus: 0,
+  };
+  const raidModifiers = applyRaidModifiers(raidEvent, baseModifiers);
+
+  useEffect(() => {
+    if (gameStarted) return;
+    setEnergy(Math.round(baseEnergy * raidModifiers.energyMultiplier));
+  }, [baseEnergy, gameStarted, raidModifiers.energyMultiplier]);
+
+  useEffect(() => {
+    const updateEvent = () => {
+      const { event, secondsRemaining } = getRaidEventInfo();
+      setRaidEvent(event);
+      setEventCountdown(secondsRemaining);
+    };
+    updateEvent();
+    const timer = setInterval(updateEvent, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => {
     if (!gameStarted) return;
 
@@ -81,7 +115,10 @@ function RaidPage() {
     setDamageMultiplierEffect(newDamageMultiplierEffect);
 
     if (dotDamageThisTurn && dotDamageThisTurn > 0) {
-      setDamageThisTurnDot(dotDamageThisTurn);
+      setDamageThisTurnDot({
+        id: generateId(),
+        value: dotDamageThisTurn,
+      });
       setTotalDamageDealt((prev) => prev + dotDamageThisTurn);
     }
   }, [turn]);
@@ -171,6 +208,12 @@ function RaidPage() {
 
   const currentHpPercent = Math.max(0, Math.min(100, (bossHP / maxHP) * 100));
 
+  useEffect(() => {
+    if (hpFillRef.current) {
+      hpFillRef.current.style.width = `${currentHpPercent}%`;
+    }
+  }, [currentHpPercent]);
+
   if (showEndScreen) {
     return (
       <RaidEndScreen
@@ -207,7 +250,11 @@ function RaidPage() {
   function playCard(card) {
     if (flyingCard) return;
 
-    const cardCost = card.value ?? 0;
+    const baseCost = card.value ?? 0;
+    const cardCost = Math.max(
+      0,
+      Math.ceil(baseCost * raidModifiers.costMultiplier)
+    );
     if (energy < cardCost) {
       setNotEnoughEnergyMessage(`Недостаточно энергии (${energy}/${cardCost})`);
       setTimeout(() => setNotEnoughEnergyMessage(null), 2000);
@@ -224,12 +271,13 @@ function RaidPage() {
       const multiplier = damageMultiplierEffect
         ? damageMultiplierEffect.multiplier
         : 1;
+      const eventMultiplier = raidModifiers.damageMultiplier;
       let immediateDamage = 0;
 
       setTotalCardsPlayed((prev) => prev + 1);
 
       if (typeof card.damage === "number" && card.damage > 0) {
-        immediateDamage = Math.floor(card.damage * multiplier);
+        immediateDamage = Math.floor(card.damage * multiplier * eventMultiplier);
       }
 
       let instantDotDamage = 0;
@@ -237,12 +285,22 @@ function RaidPage() {
         Array.isArray(card.damage_over_time) &&
         card.damage_over_time.length > 0
       ) {
-        instantDotDamage = Math.floor(card.damage_over_time[0] * multiplier);
+        instantDotDamage = Math.floor(
+          card.damage_over_time[0] * multiplier * eventMultiplier
+        );
         immediateDamage += instantDotDamage;
       }
 
+      if (raidModifiers.burnBonus > 0 && immediateDamage > 0) {
+        immediateDamage += Math.floor(immediateDamage * raidModifiers.burnBonus);
+      }
+
       await applyDamageToBossInDatabase(currentBossKey, immediateDamage);
-      setDamageThisTurn(immediateDamage > 0 ? immediateDamage : null);
+      setDamageThisTurn(
+        immediateDamage > 0
+          ? { id: generateId(), value: immediateDamage }
+          : null
+      );
       setTotalDamageDealt((prev) => prev + immediateDamage);
 
       if (
@@ -285,7 +343,9 @@ function RaidPage() {
 
       const energyAfterPlay = energy - cardCost;
       const canPlayAny = totalNewHand.some(
-        (c) => (c.value ?? 0) <= energyAfterPlay
+        (c) =>
+          Math.ceil((c.value ?? 0) * raidModifiers.costMultiplier) <=
+          energyAfterPlay
       );
 
       if (!canPlayAny) {
@@ -301,6 +361,23 @@ function RaidPage() {
         }, 500);
       } else {
         setTurn((prevTurn) => prevTurn + 1);
+      }
+
+      if (
+        raidModifiers.extraPlayChance > 0 &&
+        Math.random() < raidModifiers.extraPlayChance
+      ) {
+        const remainingHand = totalNewHand.filter((c) => c.id !== card.id);
+        if (remainingHand.length > 0) {
+          const extraCard =
+            remainingHand[Math.floor(Math.random() * remainingHand.length)];
+          const extraCost = Math.ceil(
+            (extraCard.value ?? 0) * raidModifiers.costMultiplier
+          );
+          if (energyAfterPlay >= extraCost) {
+            playCard(extraCard);
+          }
+        }
       }
     }, 350);
   }
@@ -318,22 +395,22 @@ function RaidPage() {
         />
         <div className="boss-info-overlay">
           <div className="boss-name">{bossName}</div>
-          {damageThisTurnDot !== null && (
+          {damageThisTurnDot && (
             <div
               className="damage-number dot-damage"
-              key={`dot-${damageThisTurnDot}`}
+              key={`dot-${damageThisTurnDot.id}`}
               onAnimationEnd={() => setDamageThisTurnDot(null)}
             >
-              -{damageThisTurnDot}
+              -{damageThisTurnDot.value.toLocaleString()}
             </div>
           )}
-          {damageThisTurn !== null && (
+          {damageThisTurn && (
             <div
               className="damage-number"
-              key={damageThisTurn}
+              key={damageThisTurn.id}
               onAnimationEnd={handleDamageAnimationEnd}
             >
-              -{damageThisTurn}
+              -{damageThisTurn.value.toLocaleString()}
             </div>
           )}
 
@@ -344,27 +421,15 @@ function RaidPage() {
             aria-valuemin={0}
             aria-valuemax={maxHP}
             aria-valuenow={bossHP}
-            style={{ width: 300 }}
           >
-            <div
-              className="hp-bar-fill"
-              style={{ width: `${currentHpPercent}%` }}
-            />
+            <div className="hp-bar-fill" ref={hpFillRef} />
             <div className="hp-label">
-              {bossHP} / {maxHP} HP
+              {Math.max(0, Math.floor(bossHP)).toLocaleString()} /{" "}
+              {Math.floor(maxHP).toLocaleString()} HP
             </div>
           </div>
 
-          <div
-            className="damage-multiplier-effects"
-            style={{
-              marginTop: 8,
-              color: "#ffa500",
-              fontWeight: "bold",
-              display: "flex",
-              gap: 16,
-            }}
-          >
+          <div className="damage-multiplier-effects">
             {effectiveDamageMultipliers.length > 0 ? (
               effectiveDamageMultipliers.map((effect) => (
                 <div
@@ -372,36 +437,32 @@ function RaidPage() {
                   title={`Множитель урона: ${effect.multiplier.toFixed(
                     2
                   )}x, ходов осталось: ${effect.turnsLeft + 1}`}
-                  style={{
-                    display: "inline-block",
-                    padding: "2px 6px",
-                    backgroundColor: "rgba(255, 165, 0, 0.2)",
-                    borderRadius: 4,
-                    userSelect: "none",
-                  }}
+                  className="damage-multiplier-chip"
                 >
                   +{effect.multiplier.toFixed(2)}x ({effect.turnsLeft})
                 </div>
               ))
             ) : (
-              <div style={{ fontStyle: "italic", color: "#ccc" }}>
-                Эффектов нет
-              </div>
+              <div className="damage-multiplier-empty">Эффектов нет</div>
             )}
 
             <div
+              className="damage-multiplier-next"
               title="Следующий урон по времени с учётом множителей"
-              style={{
-                color: "#ff6600",
-                fontWeight: "bold",
-                userSelect: "none",
-                alignSelf: "center",
-              }}
             >
-              Next DoT: {nextTurnDotDamage} → {nextTurnDotDamageWithMultiplier}{" "}
-              dmg
+              След. DoT: {nextTurnDotDamage.toLocaleString()} →{" "}
+              {nextTurnDotDamageWithMultiplier.toLocaleString()}
             </div>
           </div>
+          {raidEvent && (
+            <div className="raid-event-banner">
+              <div className="raid-event-title">{raidEvent.title}</div>
+              <div className="raid-event-desc">{raidEvent.description}</div>
+              <div className="raid-event-timer">
+                Смена через {formatRaidCountdown(eventCountdown)}
+              </div>
+            </div>
+          )}
         </div>
 
         {playingCard && !flyingCard && (
@@ -439,10 +500,7 @@ function RaidPage() {
                       e.stopPropagation();
                       handleCardClick(card.id);
                     }}
-                    style={{
-                      pointerEvents: playingCard ? "none" : "auto",
-                      position: "relative",
-                    }}
+                    data-playable={playingCard ? "false" : "true"}
                   >
                     <FramedCard card={card} showLevel={true} showName={false} />
 
@@ -451,20 +509,17 @@ function RaidPage() {
                         className="card-corner cost"
                         aria-label={`Стоимость: ${card.value}`}
                       >
-                        {card.value}
+                        {Math.ceil(
+                          (card.value ?? 0) * raidModifiers.costMultiplier
+                        )}
                       </div>
                     )}
 
                     {renderCardStats(card).map((stat, index) => (
                       <div
                         key={stat.label + index}
-                        className={`card-corner ${stat.type}`}
+                        className={`card-corner ${stat.type} stat-${index}`}
                         aria-label={stat.label}
-                        style={{
-                          bottom: `${-12 + index * 22}px`,
-                          left: -12,
-                          fontSize: "1em",
-                        }}
                       >
                         {stat.value !== null ? stat.value : "×"}
                       </div>
