@@ -122,25 +122,27 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: rgba(0, 0, 0, 0.75);
+  background-color: var(--modal-overlay-bg);
+  backdrop-filter: blur(var(--modal-overlay-blur));
   z-index: 9999;
-  backdrop-filter: blur(3px);
   overflow: hidden;
+  padding: 24px;
 }
 
 .overlay-content,
 .confirmation-content {
   position: relative;
-  background: #2e2e2e;
-  color: #fff;
-  padding: 24px;
-  border-radius: 12px;
-  width: 90%;
+  background: var(--modal-card-bg);
+  color: var(--modal-card-text);
+  padding: var(--modal-card-padding);
+  border-radius: var(--modal-card-radius);
+  width: var(--modal-card-width);
   max-width: 420px;
   text-align: center;
-  box-shadow: 0 0 25px rgba(255, 165, 0, 0.4);
+  box-shadow: var(--modal-card-shadow);
+  border: var(--modal-card-border);
   transform: translateY(0);
-  animation: fadeInOverlay 0.3s ease-out;
+  animation: modalPopIn 0.25s ease-out;
 }
 
 @keyframes fadeInOverlay {
@@ -152,17 +154,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.overlay-content,
-.confirmation-content {
-  background: #686d76;
-  padding: 20px;
-  border-radius: 15px;
-  max-width: 400px;
-  width: 80%;
-  text-align: center;
-  box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.4);
 }
 
 .overlay-content h3 {
@@ -194,17 +185,23 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--modal-overlay-bg);
+  backdrop-filter: blur(var(--modal-overlay-blur));
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 2;
+  padding: 24px;
 }
 
 .modal-content {
-  padding: 20px;
-  border-radius: 8px;
+  padding: var(--modal-card-padding);
+  border-radius: var(--modal-card-radius);
   text-align: center;
+  background: var(--modal-card-bg);
+  color: var(--modal-card-text);
+  border: var(--modal-card-border);
+  box-shadow: var(--modal-card-shadow);
 }
 
 .price-row {

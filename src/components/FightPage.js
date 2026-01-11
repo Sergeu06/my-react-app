@@ -64,6 +64,40 @@ function FightPage({ uid, searchState, setSearchState }) {
   const [dailyBoxLoaded, setDailyBoxLoaded] = useState(false);
   const [dailyBoxes, setDailyBoxes] = useState([]);
   const [dailyBoxesLoading, setDailyBoxesLoading] = useState(false);
+  const [showDailyTasksModal, setShowDailyTasksModal] = useState(false);
+
+  const dailyTasks = [
+    {
+      id: "daily_duel",
+      title: "Быстрая дуэль",
+      description: "Сыграйте 1 PvP матч.",
+      reward: "+120 монет",
+    },
+    {
+      id: "daily_raid",
+      title: "Рейдовая вылазка",
+      description: "Сыграйте 1 рейд.",
+      reward: "+1 билет",
+    },
+    {
+      id: "daily_upgrade",
+      title: "Лёгкая прокачка",
+      description: "Улучшите карту 1 раз.",
+      reward: "+2 SecretRecipes",
+    },
+    {
+      id: "daily_shop",
+      title: "Пополнение запасов",
+      description: "Купите 1 карту у поставщика.",
+      reward: "+80 монет",
+    },
+    {
+      id: "daily_collection",
+      title: "Наведение порядка",
+      description: "Откройте коллекцию карт.",
+      reward: "+1 билет",
+    },
+  ];
   const switchLeaderboard = async () => {
     const next = modalBoardType === "raid" ? "pvp" : "raid";
     setModalBoardType(next);
@@ -735,6 +769,14 @@ function FightPage({ uid, searchState, setSearchState }) {
             </div>
           )}
         </div>
+        <div
+          className={`claim-widget_FightPage claim-widget_FightPage--blue ${
+            showDailyTasksModal ? "hidden-claim_FightPage" : ""
+          }`}
+          onClick={() => setShowDailyTasksModal(true)}
+        >
+          <img src="/pngegg.png" alt="tasks" />
+        </div>
         {showClaimModal && (
           <div
             className="claim-overlay_FightPage"
@@ -905,6 +947,43 @@ function FightPage({ uid, searchState, setSearchState }) {
                   )}
                 </>
               )}
+            </div>
+          </div>
+        )}
+        {showDailyTasksModal && (
+          <div
+            className="claim-overlay_FightPage"
+            onClick={() => setShowDailyTasksModal(false)}
+          >
+            <div
+              className="claim-window_FightPage daily-tasks-window_FightPage"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="claim-title_FightPage">Ежедневные задания</h3>
+              <p className="daily-tasks-subtitle_FightPage">
+                Выполни все задания за несколько минут и собери награды.
+              </p>
+              <div className="daily-tasks-list_FightPage">
+                {dailyTasks.map((task) => (
+                  <div key={task.id} className="daily-task-card_FightPage">
+                    <div className="daily-task-title_FightPage">
+                      {task.title}
+                    </div>
+                    <div className="daily-task-desc_FightPage">
+                      {task.description}
+                    </div>
+                    <div className="daily-task-reward_FightPage">
+                      Награда: {task.reward}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                className="claim-button_FightPage"
+                onClick={() => setShowDailyTasksModal(false)}
+              >
+                Понятно
+              </button>
             </div>
           </div>
         )}
