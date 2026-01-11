@@ -6,7 +6,6 @@ function CachedImage({ src, alt, className, ...props }) {
 
   useEffect(() => {
     let active = true;
-    let objectUrl = null;
 
     if (!src) {
       setResolvedSrc(src);
@@ -15,24 +14,13 @@ function CachedImage({ src, alt, className, ...props }) {
 
     getCachedImageUrl(src)
       .then((url) => {
-        if (!active) {
-          if (url && url.startsWith("blob:")) {
-            URL.revokeObjectURL(url);
-          }
-          return;
-        }
-        if (url && url.startsWith("blob:")) {
-          objectUrl = url;
-        }
+        if (!active) return;
         setResolvedSrc(url || src);
       })
       .catch(() => setResolvedSrc(src));
 
     return () => {
       active = false;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
     };
   }, [src]);
 

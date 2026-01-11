@@ -148,6 +148,8 @@ function Collection({ uid }) {
 
   const characteristicGroupsOrder = ["damage", "heal", "damage_multiplier"];
 
+  const getCardLevel = (card) => card.lvl ?? card.level ?? 0;
+
   function getMainCharacteristic(card) {
     const characteristics = [
       ["damage", card.damage || 0],
@@ -185,7 +187,7 @@ function Collection({ uid }) {
       }
 
       if (sortCriterion === "level") {
-        return (b.level || 0) - (a.level || 0);
+        return getCardLevel(b) - getCardLevel(a);
       }
 
       return 0;
