@@ -110,24 +110,26 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: var(--modal-overlay-bg);
+  backdrop-filter: blur(var(--modal-overlay-blur));
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 24px;
 }
 
 .modal-window {
   position: relative; /* Добавлено для позиционирования крестика */
-  background: #2e2e2e;
-  padding: 20px;
-  border-radius: 16px;
-  color: #f0f0f0;
-  max-width: 80vw;
+  background: var(--modal-card-bg);
+  padding: var(--modal-card-padding);
+  border-radius: var(--modal-card-radius);
+  color: var(--modal-card-text);
+  max-width: var(--modal-card-width);
   text-align: center;
-  animation: fadeIn 0.3s ease-in-out;
-  box-shadow: 0 0 20px rgba(255, 165, 0, 0.2);
+  animation: modalPopIn 0.25s ease-in-out;
+  box-shadow: var(--modal-card-shadow);
+  border: var(--modal-card-border);
 }
 
 .modal-window a {
