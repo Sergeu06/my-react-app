@@ -12,6 +12,120 @@ import FramedCard from "../utils/FramedCard";
 
 const SHOWCASE_SLOTS = 4;
 const MAX_LEVEL = 100;
+const ACHIEVEMENT_SLOTS = 3;
+
+const ACHIEVEMENTS = [
+  {
+    id: "arena_wins",
+    title: "Победитель арены",
+    description: "Побеждайте в PvP матчах.",
+    getValue: (data) => data.stats?.wins ?? 0,
+    levels: [
+      { value: 10, label: "10 побед" },
+      { value: 50, label: "50 побед" },
+      { value: 150, label: "150 побед" },
+    ],
+  },
+  {
+    id: "arena_matches",
+    title: "Заядлый боец",
+    description: "Сыграйте больше PvP матчей.",
+    getValue: (data) => (data.stats?.wins ?? 0) + (data.stats?.losses ?? 0),
+    levels: [
+      { value: 20, label: "20 матчей" },
+      { value: 100, label: "100 матчей" },
+      { value: 300, label: "300 матчей" },
+    ],
+  },
+  {
+    id: "raid_veteran",
+    title: "Ветеран рейдов",
+    description: "Участвуйте в рейдах против боссов.",
+    getValue: (data) => data.stats?.raid_count ?? 0,
+    levels: [
+      { value: 5, label: "5 рейдов" },
+      { value: 25, label: "25 рейдов" },
+      { value: 80, label: "80 рейдов" },
+    ],
+  },
+  {
+    id: "raid_damage",
+    title: "Сокрушитель титанов",
+    description: "Наносите урон боссам в рейдах.",
+    getValue: (data) => data.stats?.total_damage_raid ?? 0,
+    levels: [
+      { value: 5000, label: "5 000 урона" },
+      { value: 25000, label: "25 000 урона" },
+      { value: 100000, label: "100 000 урона" },
+    ],
+  },
+  {
+    id: "collector",
+    title: "Коллекционер",
+    description: "Собирайте карты в инвентаре.",
+    getValue: (data) => data.cards?.length ?? 0,
+    levels: [
+      { value: 10, label: "10 карт" },
+      { value: 50, label: "50 карт" },
+      { value: 120, label: "120 карт" },
+    ],
+  },
+  {
+    id: "level_master",
+    title: "Мастер уровня",
+    description: "Повышайте уровень профиля.",
+    getValue: (data) => data.stats?.lvl ?? 1,
+    levels: [
+      { value: 10, label: "10 уровень" },
+      { value: 30, label: "30 уровень" },
+      { value: 60, label: "60 уровень" },
+    ],
+  },
+  {
+    id: "rich",
+    title: "Богач",
+    description: "Накопите золото.",
+    getValue: (data) => Math.floor(data.balance ?? 0),
+    levels: [
+      { value: 500, label: "500 золота" },
+      { value: 2500, label: "2 500 золота" },
+      { value: 10000, label: "10 000 золота" },
+    ],
+  },
+  {
+    id: "recipes",
+    title: "Алхимик рецептов",
+    description: "Собирайте SecretRecipes.",
+    getValue: (data) => data.SecretRecipes ?? 0,
+    levels: [
+      { value: 10, label: "10 рецептов" },
+      { value: 50, label: "50 рецептов" },
+      { value: 150, label: "150 рецептов" },
+    ],
+  },
+  {
+    id: "rating",
+    title: "Признанный герой",
+    description: "Повышайте рейтинг RI.",
+    getValue: (data) => data.stats?.RI ?? 1000,
+    levels: [
+      { value: 1100, label: "RI 1100" },
+      { value: 1250, label: "RI 1250" },
+      { value: 1500, label: "RI 1500" },
+    ],
+  },
+  {
+    id: "xp_master",
+    title: "Опытный стратег",
+    description: "Набирайте опыт в боях.",
+    getValue: (data) => data.stats?.xp ?? 0,
+    levels: [
+      { value: 500, label: "500 XP" },
+      { value: 2000, label: "2 000 XP" },
+      { value: 8000, label: "8 000 XP" },
+    ],
+  },
+];
 
 const ProfilePage = () => {
   const { userId: paramUserId } = useParams();
@@ -33,6 +147,11 @@ const ProfilePage = () => {
 
   const [showcase, setShowcase] = useState(Array(SHOWCASE_SLOTS).fill(null));
   const [userCards, setUserCards] = useState([]); // карты для выбора
+  const [achievementsShowcase, setAchievementsShowcase] = useState(
+    Array(ACHIEVEMENT_SLOTS).fill(null)
+  );
+  const [showAchievementModal, setShowAchievementModal] = useState(false);
+  const [activeAchievementSlot, setActiveAchievementSlot] = useState(null);
 
   // Загрузка карт из колоды в RealtimeDB
   const loadCardsFromDeck = async (deckName, cardKeys) => {
@@ -83,6 +202,9 @@ const ProfilePage = () => {
         const loadedShowcase =
           data.showcase || Array(SHOWCASE_SLOTS).fill(null);
         setShowcase(loadedShowcase);
+        const loadedAchievements =
+          data.achievements_showcase || Array(ACHIEVEMENT_SLOTS).fill(null);
+        setAchievementsShowcase(loadedAchievements);
 
         // Для витрины загружаем карты, которые там выставлены
         const showcaseCardIds = loadedShowcase.filter(Boolean); // убрать null
@@ -150,6 +272,32 @@ const ProfilePage = () => {
     }
   };
 
+  const saveAchievementsShowcase = async (newShowcase) => {
+    if (!isOwnProfile) return;
+    try {
+      await updateDoc(doc(db, "users", currentUserId), {
+        achievements_showcase: newShowcase,
+      });
+      setAchievementsShowcase(newShowcase);
+    } catch (error) {
+      console.error("Ошибка сохранения ачивок:", error);
+    }
+  };
+
+  const getAchievementProgress = (achievement, data) => {
+    const value = achievement.getValue(data);
+    const achievedLevels = achievement.levels.filter(
+      (level) => value >= level.value
+    ).length;
+    const nextLevel = achievement.levels[achievedLevels] || null;
+    return {
+      value,
+      achievedLevels,
+      nextLevel,
+      maxLevel: achievement.levels.length,
+    };
+  };
+
   const placeCardInSlot = (card, slotIndex) => {
     if (!isOwnProfile) return;
 
@@ -182,6 +330,27 @@ const ProfilePage = () => {
       setSelectedCard(null);
       setActiveSlotIndex(null);
     }
+  };
+
+  const handleAchievementSelect = (achievementId) => {
+    if (activeAchievementSlot === null || !isOwnProfile) return;
+    const updated = [...achievementsShowcase];
+    for (let i = 0; i < updated.length; i += 1) {
+      if (i !== activeAchievementSlot && updated[i] === achievementId) {
+        updated[i] = null;
+      }
+    }
+    updated[activeAchievementSlot] = achievementId;
+    saveAchievementsShowcase(updated);
+    setShowAchievementModal(false);
+    setActiveAchievementSlot(null);
+  };
+
+  const removeAchievementSlot = (slotIndex) => {
+    if (!isOwnProfile) return;
+    const updated = [...achievementsShowcase];
+    updated[slotIndex] = null;
+    saveAchievementsShowcase(updated);
   };
 
   if (loadingProfile)
@@ -419,6 +588,151 @@ const ProfilePage = () => {
         <div className="stat">
           Всего урона боссу: {profileData.stats?.total_damage_raid ?? 0}
         </div>
+      </div>
+
+      <div className="achievements-section">
+        <h3>Ачивки</h3>
+        <p className="achievements-hint">
+          Выполняйте условия и выставляйте любимые достижения в профиль.
+        </p>
+        <div className="achievement-slots">
+          {achievementsShowcase.map((achievementId, index) => {
+            const achievement = ACHIEVEMENTS.find(
+              (item) => item.id === achievementId
+            );
+            if (achievement) {
+              const progress = getAchievementProgress(
+                achievement,
+                profileData
+              );
+              return (
+                <div key={achievement.id} className="achievement-slot filled">
+                  <div className="achievement-title">{achievement.title}</div>
+                  <div className="achievement-level">
+                    Уровень {progress.achievedLevels}/{progress.maxLevel}
+                  </div>
+                  <div className="achievement-progress">
+                    {progress.nextLevel
+                      ? `${progress.value}/${progress.nextLevel.value}`
+                      : "Максимум"}
+                  </div>
+                  {isOwnProfile && (
+                    <button
+                      className="achievement-remove"
+                      onClick={() => removeAchievementSlot(index)}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <button
+                key={`achievement-slot-${index}`}
+                className="achievement-slot empty"
+                onClick={() => {
+                  if (!isOwnProfile) return;
+                  setActiveAchievementSlot(index);
+                  setShowAchievementModal(true);
+                }}
+                type="button"
+              >
+                <span>Выбрать</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="achievement-list">
+          {ACHIEVEMENTS.map((achievement) => {
+            const progress = getAchievementProgress(
+              achievement,
+              profileData
+            );
+            return (
+              <div key={achievement.id} className="achievement-card">
+                <div className="achievement-card-header">
+                  <div>
+                    <h4>{achievement.title}</h4>
+                    <p>{achievement.description}</p>
+                  </div>
+                  <div className="achievement-level">
+                    {progress.achievedLevels}/{progress.maxLevel}
+                  </div>
+                </div>
+                <ul>
+                  {achievement.levels.map((level, idx) => (
+                    <li
+                      key={level.value}
+                      className={
+                        progress.achievedLevels > idx ? "done" : ""
+                      }
+                    >
+                      {level.label}
+                    </li>
+                  ))}
+                </ul>
+                <div className="achievement-progress">
+                  Прогресс:{" "}
+                  {progress.nextLevel
+                    ? `${progress.value}/${progress.nextLevel.value}`
+                    : "Достигнут максимум"}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {showAchievementModal && (
+          <div
+            className="modal-overlay"
+            onClick={() => setShowAchievementModal(false)}
+          >
+            <div
+              className="modal-window achievement-modal"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button
+                className="close-button"
+                onClick={() => setShowAchievementModal(false)}
+              >
+                ✕
+              </button>
+              <h3>Выберите ачивку</h3>
+              <div className="achievement-modal-list">
+                {ACHIEVEMENTS.map((achievement) => {
+                  const progress = getAchievementProgress(
+                    achievement,
+                    profileData
+                  );
+                  return (
+                    <button
+                      key={achievement.id}
+                      type="button"
+                      className="achievement-modal-item"
+                      onClick={() => handleAchievementSelect(achievement.id)}
+                    >
+                      <div className="achievement-title">
+                        {achievement.title}
+                      </div>
+                      <div className="achievement-progress">
+                        Уровень {progress.achievedLevels}/
+                        {progress.maxLevel}
+                      </div>
+                      <div className="achievement-progress">
+                        {progress.nextLevel
+                          ? `${progress.value}/${progress.nextLevel.value}`
+                          : "Максимум"}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Модальное окно смены аватара - только для своего профиля */}
