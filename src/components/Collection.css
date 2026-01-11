@@ -558,24 +558,26 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(18, 18, 18, 0.85);
+  background-color: var(--modal-overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(var(--modal-overlay-blur));
   animation: fadeIn 0.3s ease;
+  padding: 24px;
 }
 
 .collection-container .overlay-content {
-  background-color: #1c1c1c;
-  color: #f0f0f0;
-  padding: 30px 40px;
-  border-radius: 12px;
-  box-shadow: 0 0 25px rgba(255, 165, 0, 0.2);
+  background-color: var(--modal-card-bg);
+  color: var(--modal-card-text);
+  padding: var(--modal-card-padding);
+  border-radius: var(--modal-card-radius);
+  box-shadow: var(--modal-card-shadow);
+  border: var(--modal-card-border);
   max-width: 500px;
-  width: 90%;
-  animation: slideUp 0.3s ease;
+  width: var(--modal-card-width);
+  animation: modalPopIn 0.25s ease;
 }
 
 .collection-container .overlay-content h3 {
@@ -744,22 +746,27 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.75);
+  background: var(--modal-overlay-bg);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 999;
+  backdrop-filter: blur(var(--modal-overlay-blur));
+  padding: 24px;
 }
 
 .overlay-content {
-  background: #2e2e2e;
-  padding: 20px;
-  border-radius: 16px;
+  background: var(--modal-card-bg);
+  padding: var(--modal-card-padding);
+  border-radius: var(--modal-card-radius);
   text-align: center;
   max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
-  color: #f0f0f0;
+  color: var(--modal-card-text);
+  border: var(--modal-card-border);
+  box-shadow: var(--modal-card-shadow);
+  animation: modalPopIn 0.25s ease;
 }
 
 .overlay-content button {

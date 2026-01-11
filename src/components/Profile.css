@@ -110,24 +110,26 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: var(--modal-overlay-bg);
+  backdrop-filter: blur(var(--modal-overlay-blur));
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 24px;
 }
 
 .modal-window {
   position: relative; /* Добавлено для позиционирования крестика */
-  background: #2e2e2e;
-  padding: 20px;
-  border-radius: 16px;
-  color: #f0f0f0;
-  max-width: 80vw;
+  background: var(--modal-card-bg);
+  padding: var(--modal-card-padding);
+  border-radius: var(--modal-card-radius);
+  color: var(--modal-card-text);
+  max-width: var(--modal-card-width);
   text-align: center;
-  animation: fadeIn 0.3s ease-in-out;
-  box-shadow: 0 0 20px rgba(255, 165, 0, 0.2);
+  animation: modalPopIn 0.25s ease-in-out;
+  box-shadow: var(--modal-card-shadow);
+  border: var(--modal-card-border);
 }
 
 .modal-window a {
@@ -158,6 +160,162 @@
   color: #ff6b6b;
 }
 
+.achievements-section {
+  width: 100%;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.achievements-section h3 {
+  margin: 0;
+  color: #ffa500;
+  text-align: center;
+}
+
+.achievements-hint {
+  margin: 0;
+  text-align: center;
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+.achievement-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.achievement-slot {
+  min-height: 90px;
+  border-radius: 12px;
+  padding: 10px;
+  border: 1px dashed #444;
+  background: rgba(20, 20, 20, 0.8);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  position: relative;
+  text-align: center;
+}
+
+.achievement-slot.empty {
+  cursor: pointer;
+  color: #ffa500;
+  font-weight: 600;
+  background: rgba(30, 30, 30, 0.8);
+}
+
+.achievement-slot.filled {
+  border-style: solid;
+  border-color: rgba(255, 165, 0, 0.4);
+  box-shadow: 0 0 10px rgba(255, 165, 0, 0.2);
+}
+
+.achievement-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.achievement-level {
+  font-size: 0.8rem;
+  color: #ffa500;
+}
+
+.achievement-progress {
+  font-size: 0.75rem;
+  color: #bbb;
+}
+
+.achievement-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #444;
+  background: #2a2a2a;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.achievement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.achievement-card {
+  background: rgba(15, 15, 15, 0.8);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid #333;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+}
+
+.achievement-card h4 {
+  margin: 0;
+  color: #ffa500;
+}
+
+.achievement-card p {
+  margin: 4px 0 0;
+  color: #bbb;
+  font-size: 0.85rem;
+}
+
+.achievement-card ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: #ccc;
+  font-size: 0.85rem;
+}
+
+.achievement-card li.done {
+  color: #00ff88;
+}
+
+.achievement-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.achievement-modal {
+  max-width: 520px;
+  width: 95%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.achievement-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.achievement-modal-item {
+  border: 1px solid #444;
+  border-radius: 10px;
+  padding: 10px;
+  background: #1f1f1f;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.achievement-modal-item:hover {
+  border-color: #ffa500;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -171,6 +329,14 @@
 
 .profile-avatar {
   position: relative; /* Для позиционирования дочерних элементов */
+  cursor: default;
+}
+
+.profile-avatar.clickable {
+  cursor: pointer;
+}
+
+.showcase-slot.clickable {
   cursor: pointer;
 }
 
@@ -393,6 +559,12 @@ select option {
   justify-content: center;
   gap: 1rem;
   margin-top: 1rem;
+}
+
+.card-list--modal {
+  flex: 1;
+  max-height: 500px;
+  overflow-y: auto;
 }
 
 .close-button {
