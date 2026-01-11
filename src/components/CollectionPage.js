@@ -15,6 +15,7 @@ import { Select, MenuItem } from "@mui/material";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import StarIcon from "@mui/icons-material/Star";
 import FlashOnIcon from "@mui/icons-material/FlashOn";
+import { DAILY_TASK_IDS, completeDailyTask } from "../utils/dailyTasks";
 
 function Collection({ uid }) {
   const [playerCards, setPlayerCards] = useState([]);
@@ -48,6 +49,14 @@ function Collection({ uid }) {
   useEffect(() => {
     localStorage.setItem("collection_activeDeck", activeDeck.toString());
   }, [activeDeck]);
+
+  useEffect(() => {
+    if (!uid) return;
+    const markTask = async () => {
+      await completeDailyTask(database, uid, DAILY_TASK_IDS, "daily_collection");
+    };
+    markTask();
+  }, [uid]);
 
   const addNotification = (message, type) => {
     const id = Date.now();
@@ -148,6 +157,8 @@ function Collection({ uid }) {
 
   const characteristicGroupsOrder = ["damage", "heal", "damage_multiplier"];
 
+  const getCardLevel = (card) => card.lvl ?? card.level ?? 0;
+
   function getMainCharacteristic(card) {
     const characteristics = [
       ["damage", card.damage || 0],
@@ -185,7 +196,7 @@ function Collection({ uid }) {
       }
 
       if (sortCriterion === "level") {
-        return (b.level || 0) - (a.level || 0);
+        return getCardLevel(b) - getCardLevel(a);
       }
 
       return 0;

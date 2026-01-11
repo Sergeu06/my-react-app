@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from "react";
-import CachedImage from "../utils/CachedImage";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { ref, get as rtdbGet, update as rtdbUpdate } from "firebase/database";
+import FramedCard from "../utils/FramedCard";
+import { collection, doc, getDoc, getDocs, updateDoc } from "firebase/firestore";
+import {
+  get as rtdbGet,
+  ref,
+  remove as rtdbRemove,
+  set as rtdbSet,
+  update as rtdbUpdate,
+} from "firebase/database";
 import { db, database } from "./firebase";
 import { useUser } from "./UserContext";
 import "./UpgradePage.css";
-import { toRoman } from "../utils/toRoman";
+import { DAILY_TASK_IDS, completeDailyTask } from "../utils/dailyTasks";
 
 function UpgradePage() {
   const { userData } = useUser();
@@ -20,6 +26,22 @@ function UpgradePage() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [showCardModal, setShowCardModal] = useState(false);
   const [loadingUpgrade, setLoadingUpgrade] = useState(false);
+  const [activeTab, setActiveTab] = useState("upgrade");
+
+  const [fusionSlots, setFusionSlots] = useState(Array(5).fill(null));
+  const [fusionSlotIndex, setFusionSlotIndex] = useState(null);
+  const [showFusionModal, setShowFusionModal] = useState(false);
+  const [fusionBonus, setFusionBonus] = useState(0);
+  const [fusionResult, setFusionResult] = useState(null);
+  const [fusionError, setFusionError] = useState("");
+  const [fusionInProgress, setFusionInProgress] = useState(false);
+  const [secretBalance, setSecretBalance] = useState(
+    userData?.SecretRecipes ?? 0
+  );
+
+  useEffect(() => {
+    setSecretBalance(userData?.SecretRecipes ?? 0);
+  }, [userData]);
 
   useEffect(() => {
     if (!uid) return;
@@ -60,6 +82,39 @@ function UpgradePage() {
 
     fetchCards();
   }, [uid]);
+
+  const normalizeRarity = (rarity) => {
+    if (!rarity) return "обычная";
+    const lower = rarity.toLowerCase();
+    if (lower.includes("легенд")) return "легендарная";
+    if (lower.includes("эпич")) return "эпическая";
+    if (lower.includes("редк")) return "редкая";
+    if (lower.includes("comm") || lower.includes("обыч")) return "обычная";
+    return lower;
+  };
+
+  const getCardCharacteristicType = (card) => {
+    if (
+      Array.isArray(card.damage_over_time) &&
+      card.damage_over_time.length > 0
+    ) {
+      return "damage_over_time";
+    }
+    if (card.remove_multiplier) return "remove_multiplier";
+    if (card.damage) return "damage";
+    if (card.heal) return "heal";
+    if (card.damage_multiplier) return "damage_multiplier";
+    return "other";
+  };
+
+  const characteristicLabels = {
+    damage: "Урон",
+    heal: "Лечение",
+    damage_multiplier: "Множитель урона",
+    damage_over_time: "Поэтапный урон",
+    remove_multiplier: "Снятие эффекта",
+    other: "Прочее",
+  };
 
   const handleCardSelect = async (card) => {
     if (!card.original_id) {
@@ -306,6 +361,7 @@ function UpgradePage() {
         balance: (userDoc.balance ?? 0) - upgradeCost,
         SecretRecipes: (userDoc.SecretRecipes ?? 0) - secretCost,
       });
+      await completeDailyTask(database, uid, DAILY_TASK_IDS, "daily_upgrade");
 
       setAnimationSuccess(success);
 
@@ -333,6 +389,246 @@ function UpgradePage() {
       setAnimationSuccess(null);
     }
   };
+
+  const fusionCards = fusionSlots.filter(Boolean);
+  const fusionBaseChance = fusionCards.length * 20;
+  const fusionCharacteristic = fusionCards.length
+    ? getCardCharacteristicType(fusionCards[0])
+    : null;
+  const fusionRarity = fusionCards.length
+    ? normalizeRarity(fusionCards[0].rarity)
+    : null;
+  const fusionMaxBonus = Math.max(
+    0,
+    Math.min(100 - fusionBaseChance, secretBalance)
+  );
+  const fusionTotalChance = Math.min(100, fusionBaseChance + fusionBonus);
+
+  useEffect(() => {
+    if (fusionBonus > fusionMaxBonus) {
+      setFusionBonus(fusionMaxBonus);
+    }
+  }, [fusionBonus, fusionMaxBonus]);
+
+  const handleOpenFusionModal = (index) => {
+    setFusionError("");
+    setFusionSlotIndex(index);
+    setShowFusionModal(true);
+  };
+
+  const handleRemoveFusionCard = (index) => {
+    setFusionSlots((prev) => {
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
+  };
+
+  const handleFusionCardSelect = (card) => {
+    if (fusionSlotIndex === null) return;
+    const cardType = getCardCharacteristicType(card);
+    if (fusionCharacteristic && cardType !== fusionCharacteristic) {
+      setFusionError("Можно выбирать карты только с одним типом эффекта.");
+      return;
+    }
+    const cardRarity = normalizeRarity(card.rarity);
+    if (fusionRarity && cardRarity !== fusionRarity) {
+      setFusionError("Можно выбирать карты только одной редкости.");
+      return;
+    }
+    if (fusionSlots.some((slot) => slot?.card_id === card.card_id)) {
+      setFusionError("Эта карта уже выбрана.");
+      return;
+    }
+
+    setFusionSlots((prev) => {
+      const next = [...prev];
+      next[fusionSlotIndex] = card;
+      return next;
+    });
+    setShowFusionModal(false);
+  };
+
+  const handleFusionAttempt = async () => {
+    if (!uid || fusionCards.length === 0 || fusionInProgress) return;
+
+    setFusionError("");
+    setFusionResult(null);
+    setFusionInProgress(true);
+
+    const baseChance = fusionCards.length * 20;
+    const totalChance = Math.min(100, baseChance + fusionBonus);
+    const firstCard = fusionCards[0];
+    const currentRarity = normalizeRarity(firstCard.rarity);
+    const rarityOrder = ["обычная", "редкая", "эпическая", "легендарная"];
+    const currentIndex = rarityOrder.indexOf(currentRarity);
+    const nextRarity =
+      currentIndex >= 0 && currentIndex < rarityOrder.length - 1
+        ? rarityOrder[currentIndex + 1]
+        : null;
+
+    if (!nextRarity) {
+      setFusionError("Для слияния нужна карта не выше эпической редкости.");
+      setFusionInProgress(false);
+      return;
+    }
+
+    try {
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) throw new Error("Пользователь не найден.");
+      const userDoc = userSnap.data();
+
+      if ((userDoc.SecretRecipes ?? 0) < fusionBonus) {
+        setFusionError("Недостаточно SecretRecipes для выбранного бонуса.");
+        setFusionInProgress(false);
+        return;
+      }
+
+      const success = Math.random() * 100 < totalChance;
+      let newCardPayload = null;
+
+      if (success) {
+        const shopSnapshot = await getDocs(collection(db, "shop"));
+        if (shopSnapshot.empty) {
+          throw new Error("Магазин пуст.");
+        }
+        const shopCardsMap = {};
+        shopSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          shopCardsMap[docSnap.id] = {
+            increase: data.increase,
+          };
+        });
+
+        const cardIds = new Set(Object.keys(shopCardsMap));
+        const templatesSnap = await getDocs(collection(db, "cards"));
+        const availableTemplates = [];
+        templatesSnap.forEach((docSnap) => {
+          const templateData = docSnap.data();
+          if (!cardIds.has(docSnap.id)) return;
+          const templateRarity = normalizeRarity(templateData.rarity);
+          const templateType = getCardCharacteristicType(templateData);
+          if (
+            templateRarity === nextRarity &&
+            templateType === fusionCharacteristic
+          ) {
+            availableTemplates.push({
+              id: docSnap.id,
+              data: {
+                ...templateData,
+                increase:
+                  shopCardsMap[docSnap.id]?.increase ?? templateData.increase,
+              },
+            });
+          }
+        });
+
+        if (!availableTemplates.length) {
+          throw new Error("Не найдено подходящих карт для слияния.");
+        }
+
+        const selectedTemplate =
+          availableTemplates[
+            Math.floor(Math.random() * availableTemplates.length)
+          ];
+        const newId = crypto.randomUUID();
+        newCardPayload = {
+          id: newId,
+          data: selectedTemplate.data,
+          templateId: selectedTemplate.id,
+        };
+      }
+
+      const consumedIds = fusionCards.map((card) => card.card_id);
+      const updatedCards = (userDoc.cards || []).filter(
+        (id) => !consumedIds.includes(id)
+      );
+      const updatedRaid = (userDoc.deck_raid || []).filter(
+        (id) => !consumedIds.includes(id)
+      );
+      const updatedPvp = (userDoc.deck_pvp || []).filter(
+        (id) => !consumedIds.includes(id)
+      );
+
+      if (newCardPayload) {
+        const { data, templateId, id } = newCardPayload;
+        await rtdbSet(ref(database, `cards/${id}`), {
+          ...data,
+          lvl: 1,
+          owner: uid,
+          fleet: parseFloat(Math.random().toFixed(10)),
+          sell: false,
+          original_id: templateId,
+          upgradeBonus: 0,
+          increase: data.increase ?? 1,
+        });
+        updatedCards.push(id);
+      }
+
+      await updateDoc(userRef, {
+        cards: updatedCards,
+        deck_raid: updatedRaid,
+        deck_pvp: updatedPvp,
+        SecretRecipes: (userDoc.SecretRecipes ?? 0) - fusionBonus,
+      });
+
+      await Promise.all(
+        consumedIds.map((cardId) =>
+          rtdbRemove(ref(database, `cards/${cardId}`))
+        )
+      );
+
+      setSecretBalance((prev) => Math.max(0, prev - fusionBonus));
+      setPlayerCards((prev) => {
+        const remaining = prev.filter(
+          (card) => !consumedIds.includes(card.card_id)
+        );
+        if (newCardPayload) {
+          const { data, id, templateId } = newCardPayload;
+          remaining.push({
+            ...data,
+            card_id: id,
+            original_id: templateId,
+            lvl: 1,
+            owner: uid,
+            inRaid: false,
+            inPvp: false,
+            upgradeBonus: 0,
+            increase: data.increase ?? 1,
+          });
+        }
+        return remaining;
+      });
+
+      if (selectedCard && consumedIds.includes(selectedCard.card_id)) {
+        setSelectedCard(null);
+      }
+
+      setFusionSlots(Array(5).fill(null));
+      setFusionBonus(0);
+      setFusionResult(success ? "success" : "fail");
+    } catch (error) {
+      console.error("Ошибка слияния:", error);
+      setFusionError("Не удалось выполнить слияние.");
+    } finally {
+      setFusionInProgress(false);
+      setTimeout(() => setFusionResult(null), 2000);
+    }
+  };
+
+  const availableFusionCards = playerCards.filter((card) => {
+    if (fusionSlots.some((slot) => slot?.card_id === card.card_id)) {
+      return false;
+    }
+    const matchesCharacteristic = fusionCharacteristic
+      ? getCardCharacteristicType(card) === fusionCharacteristic
+      : true;
+    const matchesRarity = fusionRarity
+      ? normalizeRarity(card.rarity) === fusionRarity
+      : true;
+    return matchesCharacteristic && matchesRarity;
+  });
 
   const renderCardDetails = (card) => {
     const details = [];
@@ -438,13 +734,7 @@ function UpgradePage() {
 
     return (
       <>
-        <div className="card-name">{preview.name}</div>
-        <div className="card-image-wrapper">
-          <CachedImage src={preview.image_url} alt="preview" />
-          {preview.lvl && (
-            <div className="card-level-overlay">{toRoman(preview.lvl)}</div>
-          )}
-        </div>
+        <FramedCard card={preview} showLevel={true} />
         {renderCardDetails(preview)}
       </>
     );
@@ -458,142 +748,249 @@ function UpgradePage() {
             ? "success-glow"
             : "fail-glow"
           : ""
-      }`}
+      } ${activeTab === "fusion" ? "fusion-mode" : ""}`}
     >
       <div className="upgrade-title-wrapper">
-        <h1 className="upgrade-title">Повышение ранга</h1>
-        <button className="info-buttonU" onClick={() => setShowInfo(true)}>
-          i
+        <h1 className="upgrade-title">
+          {activeTab === "upgrade" ? "Повышение ранга" : "Слияние"}
+        </h1>
+        {activeTab === "upgrade" && (
+          <button className="info-buttonU" onClick={() => setShowInfo(true)}>
+            i
+          </button>
+        )}
+      </div>
+
+      <div className="tabs upgrade-tabs">
+        <button
+          className={`tab ${activeTab === "upgrade" ? "active" : ""}`}
+          onClick={() => setActiveTab("upgrade")}
+        >
+          Прокачка
+        </button>
+        <button
+          className={`tab ${activeTab === "fusion" ? "active" : ""}`}
+          onClick={() => setActiveTab("fusion")}
+        >
+          Слияние
         </button>
       </div>
 
-      <div
-        className="upgrade-panel"
-        style={{ display: "flex", alignItems: "center" }}
-      >
-        <div className="card-style">{renderPreviewCard()}</div>
-
-        <div
-          className="arrow-up"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            margin: "0 20px",
-            position: "relative",
-            fontSize: "40px", // стала больше
-            fontWeight: "bold",
-            color: "#ffa500", // оранжевый цвет стрелки
-            WebkitTextStroke: "1px black", // чёрный контур
-            textShadow: `
-              -1px -1px 0 #000,
-               1px -1px 0 #000,
-              -1px  1px 0 #000,
-               1px  1px 0 #000
-            `, // дополнительный контур на всех браузерах
-          }}
-        >
-          ↑
+      {activeTab === "upgrade" && (
+        <>
           <div
-            className="success-rate"
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "100%",
-              transform: "translate(10px, -50%)",
-              fontWeight: "bold", // изменено с normal на bold
-              fontSize: "28px",
-              whiteSpace: "nowrap",
-              color: "#ffa500", // цвет текста
-              WebkitTextStroke: "1px black", // контур для WebKit
-              textShadow: `
-      -1px -1px 0 #000,
-      1px -1px 0 #000,
-      -1px 1px 0 #000,
-      1px 1px 0 #000
-    `, // запасной вариант для других браузеров
-            }}
+            className="upgrade-panel"
+            style={{ display: "flex", alignItems: "center" }}
           >
-            {selectedCard
-              ? Math.round(
-                  getSuccessRate(
-                    Number(selectedCard.lvl) || 1,
-                    selectedCard.upgradeBonus || 0
-                  ) * 100
-                ) + "%"
-              : ""}
-          </div>
-        </div>
+            <div className="card-style">{renderPreviewCard()}</div>
 
-        <div
-          className={`card-style clickable
-              ${animating ? "upgrade-glow-pulse" : ""}
-              ${
-                animationSuccess === null && animating
-                  ? "upgrade-glow-flicker"
-                  : ""
-              }
-              ${animationSuccess === true ? "upgrade-success-glow" : ""}
-              ${animationSuccess === false ? "upgrade-fail-shake-glow" : ""}
-            `}
-          style={{ position: "relative" }}
-          onClick={() => setShowCardModal(true)}
-        >
-          {animating && <div className="upgrade-mystic-fog" />}
-          {selectedCard ? (
-            <>
-              <div className="card-name">{selectedCard.name}</div>
-              <div className="card-image-wrapper">
-                <CachedImage src={selectedCard.image_url} alt="selected" />
-                {selectedCard.lvl && (
-                  <div className="card-level-overlay">
-                    {toRoman(selectedCard.lvl)}
-                  </div>
+            <div
+              className="arrow-up"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                margin: "0 20px",
+                position: "relative",
+                fontSize: "40px",
+                fontWeight: "bold",
+                color: "#ffa500",
+                WebkitTextStroke: "1px black",
+                textShadow: `
+                  -1px -1px 0 #000,
+                   1px -1px 0 #000,
+                  -1px  1px 0 #000,
+                   1px  1px 0 #000
+                `,
+              }}
+            >
+              ↑
+              <div
+                className="success-rate"
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "100%",
+                  transform: "translate(10px, -50%)",
+                  fontWeight: "bold",
+                  fontSize: "28px",
+                  whiteSpace: "nowrap",
+                  color: "#ffa500",
+                  WebkitTextStroke: "1px black",
+                  textShadow: `
+          -1px -1px 0 #000,
+          1px -1px 0 #000,
+          -1px 1px 0 #000,
+          1px 1px 0 #000
+        `,
+                }}
+              >
+                {selectedCard
+                  ? Math.round(
+                      getSuccessRate(
+                        Number(selectedCard.lvl) || 1,
+                        selectedCard.upgradeBonus || 0
+                      ) * 100
+                    ) + "%"
+                  : ""}
+              </div>
+            </div>
+
+            <div
+              className={`card-style clickable
+                  ${animating ? "upgrade-glow-pulse" : ""}
+                  ${
+                    animationSuccess === null && animating
+                      ? "upgrade-glow-flicker"
+                      : ""
+                  }
+                  ${animationSuccess === true ? "upgrade-success-glow" : ""}
+                  ${animationSuccess === false ? "upgrade-fail-shake-glow" : ""}
+                `}
+              style={{ position: "relative" }}
+              onClick={() => setShowCardModal(true)}
+            >
+              {animating && <div className="upgrade-mystic-fog" />}
+              {selectedCard ? (
+                <>
+              <FramedCard card={selectedCard} showLevel={true} />
+              {renderCardDetails(selectedCard)}
+                </>
+              ) : (
+                <div className="empty-card">
+                  <div className="card-name">Выберите карту</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <button
+            className="upgrade-button"
+            onClick={upgradeSelectedCard}
+            disabled={!selectedCard || loadingUpgrade || animating}
+          >
+            {loadingUpgrade ? (
+              "Улучшение..."
+            ) : selectedCard ? (
+              <span
+                style={{ display: "flex", alignItems: "center", gap: "6px" }}
+              >
+                <span>{(selectedCard.lvl || 1) * 100}</span>
+                <img
+                  src="moneta.png"
+                  alt="coin"
+                  style={{ width: 20, height: 20 }}
+                />
+                <span>+</span>
+                <span>{Math.max(0, (selectedCard.lvl || 1) - 1)}</span>
+                <img
+                  src="666666.png"
+                  alt="secret"
+                  style={{ width: 20, height: 20 }}
+                />
+              </span>
+            ) : (
+              "Улучшить"
+            )}
+          </button>
+
+          {upgradeResult === "success" && (
+            <div className="upgrade-result upgrade-success"></div>
+          )}
+          {upgradeResult === "fail" && (
+            <div className="upgrade-result upgrade-failure"></div>
+          )}
+        </>
+      )}
+
+      {activeTab === "fusion" && (
+        <div className="fusion-panel">
+          <p className="fusion-hint">
+            Выберите до 5 карт с одинаковым типом эффекта, чтобы попытаться
+            повысить редкость.
+          </p>
+          <div className="fusion-slots">
+            {fusionSlots.map((slot, index) => (
+              <div key={index} className="fusion-slot">
+                {slot ? (
+                  <>
+                    <FramedCard card={slot} showLevel={true} showName={false} />
+                    <button
+                      className="fusion-slot-remove"
+                      onClick={() => handleRemoveFusionCard(index)}
+                      type="button"
+                    >
+                      ✕
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="fusion-slot-add"
+                    onClick={() => handleOpenFusionModal(index)}
+                    type="button"
+                  >
+                    +
+                  </button>
                 )}
               </div>
-              {renderCardDetails(selectedCard)}
-            </>
-          ) : (
-            <div className="empty-card">
-              <div className="card-name">Выберите карту</div>
+            ))}
+          </div>
+
+          <div className="fusion-stats">
+            <div>
+              Тип эффекта:{" "}
+              <strong>
+                {fusionCharacteristic
+                  ? characteristicLabels[fusionCharacteristic]
+                  : "не выбран"}
+              </strong>
+            </div>
+            <div>
+              Базовый шанс: <strong>{fusionBaseChance}%</strong>
+            </div>
+            <div>
+              Итоговый шанс: <strong>{fusionTotalChance}%</strong>
+            </div>
+          </div>
+
+          <div className="fusion-slider">
+            <div className="fusion-slider-label">
+              Бонус SecretRecipes: <strong>{fusionBonus}%</strong>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max={fusionMaxBonus}
+              value={fusionBonus}
+              onChange={(event) =>
+                setFusionBonus(Number(event.target.value))
+              }
+            />
+            <div className="fusion-slider-meta">
+              Доступно: {secretBalance} | Потратится: {fusionBonus}
+            </div>
+          </div>
+
+          {fusionError && <div className="fusion-error">{fusionError}</div>}
+          {fusionResult === "success" && (
+            <div className="fusion-result success">
+              Слияние успешно! Карта стала более редкой.
             </div>
           )}
+          {fusionResult === "fail" && (
+            <div className="fusion-result fail">
+              Неудача. Карты исчезли без результата.
+            </div>
+          )}
+
+          <button
+            className="upgrade-button fusion-button"
+            onClick={handleFusionAttempt}
+            disabled={fusionCards.length === 0 || fusionInProgress}
+          >
+            {fusionInProgress ? "Попытка..." : "Попытать удачу"}
+          </button>
         </div>
-      </div>
-
-      <button
-        className="upgrade-button"
-        onClick={upgradeSelectedCard}
-        disabled={!selectedCard || loadingUpgrade || animating}
-      >
-        {loadingUpgrade ? (
-          "Улучшение..."
-        ) : selectedCard ? (
-          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span>{(selectedCard.lvl || 1) * 100}</span>
-            <img
-              src="moneta.png"
-              alt="coin"
-              style={{ width: 20, height: 20 }}
-            />
-            <span>+</span>
-            <span>{Math.max(0, (selectedCard.lvl || 1) - 1)}</span>
-            <img
-              src="666666.png"
-              alt="secret"
-              style={{ width: 20, height: 20 }}
-            />
-          </span>
-        ) : (
-          "Улучшить"
-        )}
-      </button>
-
-      {upgradeResult === "success" && (
-        <div className="upgrade-result upgrade-success"></div>
-      )}
-      {upgradeResult === "fail" && (
-        <div className="upgrade-result upgrade-failure"></div>
       )}
       {showInfo && (
         <div
@@ -663,8 +1060,7 @@ function UpgradePage() {
                   key={card.card_id}
                   onClick={() => handleCardSelect(card)}
                 >
-                  <div className="card-name">{card.name}</div>
-                  <CachedImage src={card.image_url} alt={card.name} />
+                  <FramedCard card={card} showLevel={true} />
                   {renderCardDetails(card)}
 
                   {(card.inRaid || card.inPvp) && (
@@ -682,6 +1078,79 @@ function UpgradePage() {
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFusionModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowFusionModal(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            className="card-modal-content-upgrade"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxHeight: "80vh",
+            }}
+          >
+            <div className="fusion-modal-header">
+              <span>
+                {fusionCharacteristic
+                  ? `Тип: ${characteristicLabels[fusionCharacteristic]}`
+                  : "Выберите первую карту"}
+              </span>
+              <button
+                className="fusion-modal-close"
+                onClick={() => setShowFusionModal(false)}
+                type="button"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="card-list">
+              {availableFusionCards.map((card) => (
+                <div
+                  className="card-style clickable"
+                  key={card.card_id}
+                  onClick={() => handleFusionCardSelect(card)}
+                >
+                  <FramedCard card={card} showLevel={true} />
+                  {renderCardDetails(card)}
+
+                  {(card.inRaid || card.inPvp) && (
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: "14px",
+                        color: "#ffa500",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      В колоде {card.inRaid ? "(Рейд)" : ""}{" "}
+                      {card.inPvp ? "(ПвП)" : ""}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {availableFusionCards.length === 0 && (
+                <div className="fusion-empty">
+                  Нет подходящих карт для слияния.
+                </div>
+              )}
             </div>
           </div>
         </div>

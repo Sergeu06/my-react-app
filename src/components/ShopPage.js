@@ -23,6 +23,7 @@ import "./ShopPage.css";
 import { useNavigate } from "react-router-dom";
 import { getGlowColor } from "../utils/FramedCard";
 import { ref as realtimeRef } from "firebase/database";
+import { DAILY_TASK_IDS, completeDailyTask } from "../utils/dailyTasks";
 
 function ShopPage({ uid }) {
   const [activeTab, setActiveTab] = useState("shop");
@@ -424,6 +425,8 @@ function ShopPage({ uid }) {
       await updateDoc(doc(db, "shop", selectedCard.card_id), {
         quantity: selectedCard.quantity - purchaseAmount,
       });
+
+      await completeDailyTask(database, uid, DAILY_TASK_IDS, "daily_shop");
 
       setAllCards((prev) =>
         prev.map((c) =>

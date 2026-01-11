@@ -4,7 +4,7 @@ import { db, database } from "./firebase";
 import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { set, ref as databaseRef } from "firebase/database";
 import "./OpenBoxPage.css";
-import CachedImage from "../utils/CachedImage";
+import FramedCard from "../utils/FramedCard";
 import { preloadImageToCache } from "../utils/imageCache";
 
 function OpenBoxPage({ uid }) {
@@ -234,13 +234,7 @@ function OpenBoxPage({ uid }) {
           onTransitionEnd={handleAnimEnd}
           onAnimationEnd={handleAnimEnd}
         >
-          {resultCard && (
-            <CachedImage
-              src={resultCard.image_url}
-              alt={resultCard.name}
-              className="card-image"
-            />
-          )}
+          {resultCard && <FramedCard card={resultCard} showLevel={true} />}
         </div>
 
         <img
@@ -256,11 +250,9 @@ function OpenBoxPage({ uid }) {
 
       {!isOpening && resultCard && (
         <div className="result-text">
-          <h3 style={{ color: "#ccc" }}>Вы получили:</h3>
-          <p style={{ color: "#ff9f00" }}>{resultCard.name}</p>
-          <p style={{ fontSize: "14px", color: "#888" }}>
-            (шанс: {dropChance || "?"}%)
-          </p>
+          <h3 className="result-title">Вы получили:</h3>
+          <p className="result-name">{resultCard.name}</p>
+          <p className="result-chance">(шанс: {dropChance || "?"}%)</p>
         </div>
       )}
     </div>
