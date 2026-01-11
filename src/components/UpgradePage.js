@@ -393,6 +393,9 @@ function UpgradePage() {
   const fusionCharacteristic = fusionCards.length
     ? getCardCharacteristicType(fusionCards[0])
     : null;
+  const fusionRarity = fusionCards.length
+    ? normalizeRarity(fusionCards[0].rarity)
+    : null;
   const fusionMaxBonus = Math.max(
     0,
     Math.min(100 - fusionBaseChance, secretBalance)
@@ -424,6 +427,11 @@ function UpgradePage() {
     const cardType = getCardCharacteristicType(card);
     if (fusionCharacteristic && cardType !== fusionCharacteristic) {
       setFusionError("Можно выбирать карты только с одним типом эффекта.");
+      return;
+    }
+    const cardRarity = normalizeRarity(card.rarity);
+    if (fusionRarity && cardRarity !== fusionRarity) {
+      setFusionError("Можно выбирать карты только одной редкости.");
       return;
     }
     if (fusionSlots.some((slot) => slot?.card_id === card.card_id)) {
@@ -479,16 +487,37 @@ function UpgradePage() {
       let newCardPayload = null;
 
       if (success) {
+        const shopSnapshot = await getDocs(collection(db, "shop"));
+        if (shopSnapshot.empty) {
+          throw new Error("Магазин пуст.");
+        }
+        const shopCardsMap = {};
+        shopSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          shopCardsMap[docSnap.id] = {
+            increase: data.increase,
+          };
+        });
+
+        const cardIds = new Set(Object.keys(shopCardsMap));
         const templatesSnap = await getDocs(collection(db, "cards"));
         const availableTemplates = [];
         templatesSnap.forEach((docSnap) => {
           const templateData = docSnap.data();
+          if (!cardIds.has(docSnap.id)) return;
           const templateRarity = normalizeRarity(templateData.rarity);
           const templateType = getCardCharacteristicType(templateData);
-          if (templateRarity === nextRarity && templateType === fusionCharacteristic) {
+          if (
+            templateRarity === nextRarity &&
+            templateType === fusionCharacteristic
+          ) {
             availableTemplates.push({
               id: docSnap.id,
-              data: templateData,
+              data: {
+                ...templateData,
+                increase:
+                  shopCardsMap[docSnap.id]?.increase ?? templateData.increase,
+              },
             });
           }
         });
@@ -590,10 +619,13 @@ function UpgradePage() {
     if (fusionSlots.some((slot) => slot?.card_id === card.card_id)) {
       return false;
     }
-    if (fusionCharacteristic) {
-      return getCardCharacteristicType(card) === fusionCharacteristic;
-    }
-    return true;
+    const matchesCharacteristic = fusionCharacteristic
+      ? getCardCharacteristicType(card) === fusionCharacteristic
+      : true;
+    const matchesRarity = fusionRarity
+      ? normalizeRarity(card.rarity) === fusionRarity
+      : true;
+    return matchesCharacteristic && matchesRarity;
   });
 
   const renderCardDetails = (card) => {
@@ -1044,6 +1076,79 @@ function UpgradePage() {
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFusionModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowFusionModal(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            className="card-modal-content-upgrade"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxHeight: "80vh",
+            }}
+          >
+            <div className="fusion-modal-header">
+              <span>
+                {fusionCharacteristic
+                  ? `Тип: ${characteristicLabels[fusionCharacteristic]}`
+                  : "Выберите первую карту"}
+              </span>
+              <button
+                className="fusion-modal-close"
+                onClick={() => setShowFusionModal(false)}
+                type="button"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="card-list">
+              {availableFusionCards.map((card) => (
+                <div
+                  className="card-style clickable"
+                  key={card.card_id}
+                  onClick={() => handleFusionCardSelect(card)}
+                >
+                  <FramedCard card={card} showLevel={true} />
+                  {renderCardDetails(card)}
+
+                  {(card.inRaid || card.inPvp) && (
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: "14px",
+                        color: "#ffa500",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      В колоде {card.inRaid ? "(Рейд)" : ""}{" "}
+                      {card.inPvp ? "(ПвП)" : ""}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {availableFusionCards.length === 0 && (
+                <div className="fusion-empty">
+                  Нет подходящих карт для слияния.
+                </div>
+              )}
             </div>
           </div>
         </div>
