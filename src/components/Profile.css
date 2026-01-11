@@ -329,6 +329,14 @@
 
 .profile-avatar {
   position: relative; /* Для позиционирования дочерних элементов */
+  cursor: default;
+}
+
+.profile-avatar.clickable {
+  cursor: pointer;
+}
+
+.showcase-slot.clickable {
   cursor: pointer;
 }
 
@@ -551,6 +559,12 @@ select option {
   justify-content: center;
   gap: 1rem;
   margin-top: 1rem;
+}
+
+.card-list--modal {
+  flex: 1;
+  max-height: 500px;
+  overflow-y: auto;
 }
 
 .close-button {

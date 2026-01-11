@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
-import CachedImage from "../utils/CachedImage";
 import "./Profile.css";
 import { useParams, useSearchParams } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db, database, databaseRef } from "./firebase"; // db - Firestore, database - RealtimeDB
 import { get } from "firebase/database";
-import { toRoman } from "../utils/toRoman";
 import { renderCardStats } from "../utils/renderCardStats";
 
 import FramedCard from "../utils/FramedCard";
@@ -372,9 +370,8 @@ const ProfilePage = () => {
   return (
     <div className="profile-container">
       <div
-        className="profile-avatar"
+        className={`profile-avatar ${isOwnProfile ? "clickable" : ""}`}
         onClick={() => isOwnProfile && setShowModal(true)}
-        style={{ cursor: isOwnProfile ? "pointer" : "default" }}
         title={isOwnProfile ? "Кликните для смены аватара" : undefined}
       >
         <img
@@ -431,13 +428,14 @@ const ProfilePage = () => {
               return (
                 <div
                   key={index}
-                  className="showcase-slot filled"
+                  className={`showcase-slot filled ${
+                    isOwnProfile ? "clickable" : ""
+                  }`}
                   onClick={() => {
                     if (!isOwnProfile) return;
                     setActiveSlotIndex(index);
                     setShowCardModal(true);
                   }}
-                  style={{ cursor: isOwnProfile ? "pointer" : "default" }}
                 >
                   <FramedCard
                     card={card}
@@ -483,7 +481,9 @@ const ProfilePage = () => {
             return (
               <div
                 key={index}
-                className="showcase-slot empty"
+                className={`showcase-slot empty ${
+                  isOwnProfile ? "clickable" : ""
+                }`}
                 onClick={() => {
                   if (!isOwnProfile) return;
                   setActiveSlotIndex(index);
@@ -509,13 +509,11 @@ const ProfilePage = () => {
           >
             <div
               className="card-modal-content"
-              style={{ display: "flex", gap: "20px" }}
               onClick={(e) => e.stopPropagation()} // предотвращаем закрытие при клике внутри
             >
               {/* Список карт */}
               <div
-                className="card-list"
-                style={{ flex: 1, maxHeight: "500px", overflowY: "auto" }}
+                className="card-list card-list--modal"
               >
                 <h2>Выберите карту для витрины</h2>
                 {userCards.length === 0 && <p>У вас нет доступных карт.</p>}
@@ -526,41 +524,8 @@ const ProfilePage = () => {
                       selectedCard?.id === card.id ? "selected" : ""
                     }`}
                     onClick={() => handleCardClick(card)}
-                    style={{ position: "relative" }}
                   >
-                    <div className="card-name">{card.name}</div>
-                    <CachedImage src={card.image_url} alt={card.name} />
-                    {card.lvl && (
-                      <div className="card-level-overlay">
-                        {toRoman(card.lvl)}
-                      </div>
-                    )}
-                    {(card.inRaid || card.inPvp) && (
-                      <div
-                        style={{
-                          marginBottom: 6,
-                          fontSize: "14px",
-                          color: "#ffa500",
-                          fontStyle: "italic",
-                        }}
-                      >
-                        В колоде {card.inRaid ? "(Рейд)" : ""}{" "}
-                        {card.inPvp ? "(ПвП)" : ""}
-                      </div>
-                    )}
-
-                    {/* Здесь добавляем блок с описанием характеристик */}
-                    <div
-                      className="card-stats-description"
-                      style={{ fontSize: "12px", color: "#ccc", marginTop: 4 }}
-                    >
-                      {renderCardStats(card).map((stat, idx) => (
-                        <div key={idx}>
-                          <strong>{stat.label}</strong>{" "}
-                          {stat.value !== undefined ? stat.value : ""}
-                        </div>
-                      ))}
-                    </div>
+                    <FramedCard card={card} showLevel={true} />
                   </div>
                 ))}
               </div>

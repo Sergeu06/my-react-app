@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import CachedImage from "../utils/CachedImage";
+import FramedCard from "../utils/FramedCard";
 import { collection, doc, getDoc, getDocs, updateDoc } from "firebase/firestore";
 import {
   get as rtdbGet,
@@ -11,7 +11,6 @@ import {
 import { db, database } from "./firebase";
 import { useUser } from "./UserContext";
 import "./UpgradePage.css";
-import { toRoman } from "../utils/toRoman";
 
 function UpgradePage() {
   const { userData } = useUser();
@@ -701,13 +700,7 @@ function UpgradePage() {
 
     return (
       <>
-        <div className="card-name">{preview.name}</div>
-        <div className="card-image-wrapper">
-          <CachedImage src={preview.image_url} alt="preview" />
-          {preview.lvl && (
-            <div className="card-level-overlay">{toRoman(preview.lvl)}</div>
-          )}
-        </div>
+        <FramedCard card={preview} showLevel={true} />
         {renderCardDetails(preview)}
       </>
     );
@@ -826,16 +819,8 @@ function UpgradePage() {
               {animating && <div className="upgrade-mystic-fog" />}
               {selectedCard ? (
                 <>
-                  <div className="card-name">{selectedCard.name}</div>
-                  <div className="card-image-wrapper">
-                    <CachedImage src={selectedCard.image_url} alt="selected" />
-                    {selectedCard.lvl && (
-                      <div className="card-level-overlay">
-                        {toRoman(selectedCard.lvl)}
-                      </div>
-                    )}
-                  </div>
-                  {renderCardDetails(selectedCard)}
+              <FramedCard card={selectedCard} showLevel={true} />
+              {renderCardDetails(selectedCard)}
                 </>
               ) : (
                 <div className="empty-card">
@@ -895,12 +880,7 @@ function UpgradePage() {
               <div key={index} className="fusion-slot">
                 {slot ? (
                   <>
-                    <CachedImage
-                      src={slot.image_url}
-                      alt={slot.name}
-                      className="fusion-slot-image"
-                    />
-                    <div className="fusion-slot-name">{slot.name}</div>
+                    <FramedCard card={slot} showLevel={true} showName={false} />
                     <button
                       className="fusion-slot-remove"
                       onClick={() => handleRemoveFusionCard(index)}
@@ -1046,8 +1026,7 @@ function UpgradePage() {
                   key={card.card_id}
                   onClick={() => handleCardSelect(card)}
                 >
-                  <div className="card-name">{card.name}</div>
-                  <CachedImage src={card.image_url} alt={card.name} />
+                  <FramedCard card={card} showLevel={true} />
                   {renderCardDetails(card)}
 
                   {(card.inRaid || card.inPvp) && (
@@ -1115,8 +1094,7 @@ function UpgradePage() {
                   key={card.card_id}
                   onClick={() => handleFusionCardSelect(card)}
                 >
-                  <div className="card-name">{card.name}</div>
-                  <CachedImage src={card.image_url} alt={card.name} />
+                  <FramedCard card={card} showLevel={true} />
                   {renderCardDetails(card)}
 
                   {(card.inRaid || card.inPvp) && (
