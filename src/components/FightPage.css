@@ -195,21 +195,26 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: var(--modal-overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 99999;
+  backdrop-filter: blur(var(--modal-overlay-blur));
+  padding: 24px;
 }
 
 .modal-window {
-  background-color: #2e2e2e;
-  padding: 20px;
-  border-radius: 12px;
+  background-color: var(--modal-card-bg);
+  padding: var(--modal-card-padding);
+  border-radius: var(--modal-card-radius);
   max-width: 400px;
   width: 100%;
-  color: white;
+  color: var(--modal-card-text);
   text-align: center;
+  border: var(--modal-card-border);
+  box-shadow: var(--modal-card-shadow);
+  animation: modalPopIn 0.25s ease;
 }
 
 .close-button {
@@ -275,24 +280,27 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: var(--modal-overlay-bg);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 200000;
-  padding: 20px;
+  padding: 24px;
+  backdrop-filter: blur(var(--modal-overlay-blur));
 }
 .modal-content {
-  background-color: #1e1e1e;
-  border-radius: 12px;
-  padding: 20px;
+  background-color: var(--modal-card-bg);
+  border-radius: var(--modal-card-radius);
+  padding: var(--modal-card-padding);
   width: 90%;
   max-width: 600px;
   max-height: 80%;
   overflow-y: auto;
-  color: #ffa500;
+  color: var(--modal-card-text);
   position: relative;
-  box-shadow: 0 0 15px #ffa500aa;
+  box-shadow: var(--modal-card-shadow);
+  border: var(--modal-card-border);
+  animation: modalPopIn 0.25s ease;
 }
 .modal-content h3 {
   margin-top: 0;
@@ -468,13 +476,14 @@
 .claim-overlay_FightPage {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(6px);
+  background: var(--modal-overlay-bg);
+  backdrop-filter: blur(var(--modal-overlay-blur));
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 500000;
   animation: fadeIn_FightPage 0.25s ease forwards;
+  padding: 24px;
 }
 
 @keyframes fadeIn_FightPage {
@@ -490,15 +499,15 @@
 .claim-window_FightPage {
   width: 90%;
   max-width: 360px;
-  background: linear-gradient(160deg, #2e2e2e, #222, #1a1a1a);
-  border-radius: 20px;
-  padding: 24px;
+  background: var(--modal-card-bg);
+  border-radius: var(--modal-card-radius);
+  padding: var(--modal-card-padding);
   text-align: center;
 
-  box-shadow: 0 0 18px #000, inset 0 0 6px #000000aa, 0 0 14px #ffa50055;
-  border: 2px solid #ffa50022;
+  box-shadow: var(--modal-card-shadow);
+  border: var(--modal-card-border);
 
-  animation: popup_FightPage 0.25s ease forwards;
+  animation: modalPopIn 0.25s ease forwards;
   transform-origin: center;
 
   display: flex;
@@ -618,21 +627,24 @@
 .raid-confirm-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: var(--modal-overlay-bg);
   z-index: 20000;
   display: flex;
   justify-content: center;
   align-items: center;
+  backdrop-filter: blur(var(--modal-overlay-blur));
+  padding: 24px;
 }
 .raid-confirm-modal-card {
   width: 100%;
   max-width: 360px;
   max-height: 90dvh;
-  background: #141414;
-  border: 2px solid #ffa500;
-  border-radius: 14px;
-  padding: 14px;
-  box-shadow: 0 0 30px rgba(255, 165, 0, 0.25);
+  background: var(--modal-card-bg);
+  border: var(--modal-card-border);
+  border-radius: var(--modal-card-radius);
+  padding: var(--modal-card-padding);
+  box-shadow: var(--modal-card-shadow);
+  animation: modalPopIn 0.25s ease;
   display: flex;
   flex-direction: column;
   overflow: hidden;

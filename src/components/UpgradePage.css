@@ -119,22 +119,28 @@ h1 {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(10, 10, 10, 0.95);
+  background: var(--modal-overlay-bg);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 99;
+  backdrop-filter: blur(var(--modal-overlay-blur));
+  padding: 24px;
 }
 
 .card-modal-content-upgrade {
-  background: #2e2e2e;
-  border-radius: 16px;
-  padding: 1rem;
-  width: 90%;
+  background: var(--modal-card-bg);
+  border-radius: var(--modal-card-radius);
+  padding: var(--modal-card-padding);
+  width: var(--modal-card-width);
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
   z-index: 10;
+  border: var(--modal-card-border);
+  box-shadow: var(--modal-card-shadow);
+  color: var(--modal-card-text);
+  animation: modalPopIn 0.25s ease;
 }
 
 .card-list {
@@ -539,13 +545,14 @@ h1 {
   transform: translateX(-50%);
   width: 90%;
   max-width: 500px;
-  background: #1e1e1e;
-  color: #f0f0f0;
-  border: 2px solid #ffa500;
-  border-radius: 12px;
-  padding: 1.5rem;
+  background: var(--modal-card-bg);
+  color: var(--modal-card-text);
+  border: var(--modal-card-border);
+  border-radius: var(--modal-card-radius);
+  padding: var(--modal-card-padding);
   z-index: 1000;
-  box-shadow: 0 0 30px rgba(255, 165, 0, 0.3);
+  box-shadow: var(--modal-card-shadow);
+  animation: modalPopIn 0.25s ease;
 }
 
 .info-modalU p {
