@@ -1153,6 +1153,79 @@ function UpgradePage() {
           </div>
         </div>
       )}
+
+      {showFusionModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowFusionModal(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            className="card-modal-content-upgrade"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxHeight: "80vh",
+            }}
+          >
+            <div className="fusion-modal-header">
+              <span>
+                {fusionCharacteristic
+                  ? `Тип: ${characteristicLabels[fusionCharacteristic]}`
+                  : "Выберите первую карту"}
+              </span>
+              <button
+                className="fusion-modal-close"
+                onClick={() => setShowFusionModal(false)}
+                type="button"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="card-list">
+              {availableFusionCards.map((card) => (
+                <div
+                  className="card-style clickable"
+                  key={card.card_id}
+                  onClick={() => handleFusionCardSelect(card)}
+                >
+                  <FramedCard card={card} showLevel={true} />
+                  {renderCardDetails(card)}
+
+                  {(card.inRaid || card.inPvp) && (
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: "14px",
+                        color: "#ffa500",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      В колоде {card.inRaid ? "(Рейд)" : ""}{" "}
+                      {card.inPvp ? "(ПвП)" : ""}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {availableFusionCards.length === 0 && (
+                <div className="fusion-empty">
+                  Нет подходящих карт для слияния.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
