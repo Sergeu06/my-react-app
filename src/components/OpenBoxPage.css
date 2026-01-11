@@ -3,9 +3,9 @@
   flex-direction: column;
   align-items: center;
   padding: 5vw 2vw;
-  color: #f0f0f0;
+  color: var(--text-primary);
   min-height: 100vh;
-  background: #121212;
+  background: var(--app-bg);
 }
 
 .box-container {
@@ -77,17 +77,28 @@
   opacity: 1;
 }
 
-.card-reveal img {
-  height: auto;
-  max-width: 100%;
-  object-fit: contain;
-  display: block;
+.card-reveal .card-frame-wrapper {
+  max-width: min(240px, 70vw);
 }
 
 .result-text {
   text-align: center;
   margin-top: -30vw;
-  color: #ff9f00;
+  color: var(--text-primary);
+}
+
+.result-title {
+  color: var(--text-muted);
+}
+
+.result-name {
+  color: var(--accent-reward);
+  font-weight: 700;
+}
+
+.result-chance {
+  font-size: 14px;
+  color: var(--text-muted);
 }
 
 .rarity-glow {
