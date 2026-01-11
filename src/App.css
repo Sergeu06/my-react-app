@@ -32,6 +32,29 @@ body {
   overflow-x: hidden;
 }
 
+:root {
+  --modal-overlay-bg: rgba(0, 0, 0, 0.75);
+  --modal-overlay-blur: 6px;
+  --modal-card-bg: #2a2a2a;
+  --modal-card-border: 1px solid rgba(255, 165, 0, 0.3);
+  --modal-card-radius: 16px;
+  --modal-card-shadow: 0 0 24px rgba(0, 0, 0, 0.45);
+  --modal-card-text: #f0f0f0;
+  --modal-card-padding: 24px;
+  --modal-card-width: min(90vw, 520px);
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .safe-container {
   min-height: var(--tg-viewport-stable-height, 100vh);
   padding-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top));
