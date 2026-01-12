@@ -1,8 +1,9 @@
 const CARD_IMAGE_CACHE = "card-images-v1";
 
-const isSameOrigin = (src) => {
+const isCacheableUrl = (src) => {
   try {
-    return new URL(src, window.location.href).origin === window.location.origin;
+    const url = new URL(src, window.location.href);
+    return url.protocol === "http:" || url.protocol === "https:";
   } catch (error) {
     return false;
   }
@@ -10,7 +11,7 @@ const isSameOrigin = (src) => {
 
 export const preloadImageToCache = async (src) => {
   if (!src) return false;
-  if (!("caches" in window) || !isSameOrigin(src)) {
+  if (!("caches" in window) || !isCacheableUrl(src)) {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => resolve(true);
@@ -23,8 +24,8 @@ export const preloadImageToCache = async (src) => {
     const cache = await caches.open(CARD_IMAGE_CACHE);
     const cachedResponse = await cache.match(src);
     if (!cachedResponse) {
-      const response = await fetch(src, { cache: "force-cache" });
-      if (response.ok) {
+      const response = await fetch(src, { cache: "force-cache", mode: "cors" });
+      if (response.ok || response.type === "opaque") {
         await cache.put(src, response.clone());
       }
     }
@@ -37,14 +38,14 @@ export const preloadImageToCache = async (src) => {
 
 export const getCachedImageUrl = async (src) => {
   if (!src) return null;
-  if (!("caches" in window) || !isSameOrigin(src)) return src;
+  if (!("caches" in window) || !isCacheableUrl(src)) return src;
 
   try {
     const cache = await caches.open(CARD_IMAGE_CACHE);
     let response = await cache.match(src);
     if (!response) {
-      response = await fetch(src, { cache: "force-cache" });
-      if (response.ok) {
+      response = await fetch(src, { cache: "force-cache", mode: "cors" });
+      if (response.ok || response.type === "opaque") {
         await cache.put(src, response.clone());
       }
     }
