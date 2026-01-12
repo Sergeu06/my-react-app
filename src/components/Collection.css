@@ -802,7 +802,7 @@
   margin: 1rem 0;
 }
 .edit-icon-button {
-  background-color: transparent;
+  background-color: #2e2e2e;
   border: 2px solid #ffa500;
   border-radius: 50%;
   padding: 0.4rem;
@@ -816,7 +816,7 @@
   bottom: 80px;
   right: 20px;
   z-index: 1000;
-  background-color: #1a1a1a;
+  background-color: #2e2e2e;
   border: 2px solid #ffa500;
   border-radius: 50%;
   width: 56px; /* фиксируем ширину */
@@ -830,5 +830,5 @@
 }
 
 .edit-floating-button:hover {
-  background-color: #2a2a2a;
+  background-color: #2e2e2e;
 }

@@ -108,7 +108,7 @@
   font-size: 20px;
   border-radius: 14px;
   border: none;
-  background-color: #2f2f2f;
+  background-color: #2e2e2e;
   color: #ffa500;
   cursor: pointer;
   font-weight: 600;
@@ -117,9 +117,9 @@
 }
 
 .fight-btn-search:hover {
-  background-color: #ffa500;
-  color: #2f2f2f;
-  box-shadow: 0 0 18px #ffb933;
+  background-color: #2e2e2e;
+  color: #ffa500;
+  box-shadow: 0 0 18px #ffa50088;
 }
 
 .fight-btn-raid {
@@ -127,7 +127,7 @@
   font-size: 20px;
   border-radius: 14px;
   border: none;
-  background-color: #2f2f2f;
+  background-color: #2e2e2e;
   color: #ff4c4c; /* красный текст */
   cursor: pointer;
   font-weight: 600;
@@ -136,9 +136,9 @@
 }
 
 .fight-btn-raid:hover {
-  background-color: #ff4c4c;
-  color: #2f2f2f;
-  box-shadow: 0 0 18px #ff6666;
+  background-color: #2e2e2e;
+  color: #ff4c4c;
+  box-shadow: 0 0 18px #ff4c4c88;
 }
 
 .fight-tip {
@@ -333,7 +333,7 @@
 }
 
 .info-button {
-  background-color: #333;
+  background-color: #2e2e2e;
   color: #ffa500;
   border: none;
   border-radius: 50%;
@@ -348,7 +348,7 @@
 }
 
 .info-button:hover {
-  background-color: #444;
+  background-color: #2e2e2e;
 }
 
 .leaderboard-switch {
