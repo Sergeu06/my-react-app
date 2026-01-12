@@ -725,7 +725,8 @@
 }
 
 .refresh-button:hover:not(:disabled) {
-  color: #2e2e2e;
+  background-color: #2e2e2e;
+  color: #ffa500;
 }
 
 .sort-select {
@@ -851,9 +852,9 @@
   position: absolute;
   top: 12px;
   right: 12px;
-  background-color: #ffa500;
-  color: #2e2e2e;
-  border: none;
+  background-color: #2e2e2e;
+  color: #ffa500;
+  border: 1px solid #444;
   padding: 8px 12px;
   cursor: pointer;
   border-radius: 4px;
@@ -865,7 +866,7 @@
 }
 
 .info-btn:hover {
-  background-color: #ffb733;
+  background-color: #2e2e2e;
 }
 .fade-in {
   opacity: 0;
