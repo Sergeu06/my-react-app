@@ -631,12 +631,27 @@ function App() {
   const path = location.pathname.toLowerCase();
   const isGameOrProfile = path === "/game";
   const isRaid = path === "/raid";
+  const backgroundClass = (() => {
+    if (path.includes("/fight")) return "bg-fight";
+    if (path.includes("/shop")) return "bg-shop";
+    if (path.includes("/collection")) return "bg-collection";
+    if (path.includes("/upgrade")) return "bg-upgrade";
+    if (path.includes("/profile")) return "bg-profile";
+    if (path.includes("/raid")) return "bg-raid";
+    if (path.includes("/game")) return "bg-game";
+    if (path.includes("/open-box")) return "bg-open-box";
+    if (path.includes("/result")) return "bg-result";
+    return "bg-shop";
+  })();
 
   return (
     <UserProvider>
       <div>
         <div className="safe-container" {...handlers}>
-          <div className="background-container" ref={backgroundRef} />
+          <div
+            className={`background-container ${backgroundClass}`}
+            ref={backgroundRef}
+          />
           <div className="game-version">v0.9.88.41</div>
 
           <CurrencyBalance />

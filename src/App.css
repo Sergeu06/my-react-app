@@ -142,12 +142,50 @@ a {
   left: 0;
   width: 100vw;
   height: 100vh;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  z-index: -2;
+  will-change: background-position;
+}
+
+.background-container.bg-fight {
   background-image: url("/public/озеро3.png");
   background-size: 100% auto; /* ширина по экрану, высота естественная */
   background-repeat: repeat-y; /* повтор только по вертикали */
   background-position: center 0px; /* начальное значение */
-  z-index: -2;
-  will-change: background-position;
+}
+
+.background-container.bg-shop {
+  background-image: linear-gradient(160deg, #0f141b 0%, #141a24 55%, #0b0f15 100%);
+}
+
+.background-container.bg-collection {
+  background-image: radial-gradient(circle at top, #1a212c 0%, #0e131a 60%, #0b0f14 100%);
+}
+
+.background-container.bg-upgrade {
+  background-image: linear-gradient(180deg, #111723 0%, #171f2b 50%, #0d121a 100%);
+}
+
+.background-container.bg-profile {
+  background-image: radial-gradient(circle at 20% 20%, #1d2330 0%, #121824 45%, #0b0f14 100%);
+}
+
+.background-container.bg-raid {
+  background-image: linear-gradient(135deg, #141a22 0%, #0e1319 55%, #0a0d12 100%);
+}
+
+.background-container.bg-game {
+  background-image: radial-gradient(circle at 50% 0%, #1b1f29 0%, #0b0f14 65%);
+}
+
+.background-container.bg-open-box {
+  background-image: linear-gradient(200deg, #121926 0%, #1a2230 50%, #0d1117 100%);
+}
+
+.background-container.bg-result {
+  background-image: radial-gradient(circle at 50% 30%, #161c2a 0%, #0c1016 70%, #090b10 100%);
 }
 
 .global-loader {
