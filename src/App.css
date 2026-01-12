@@ -157,35 +157,35 @@ a {
 }
 
 .background-container.bg-shop {
-  background-image: linear-gradient(160deg, #0f141b 0%, #141a24 55%, #0b0f15 100%);
+  background-image: linear-gradient(160deg, #182233 0%, #1a2838 45%, #0f1724 100%);
 }
 
 .background-container.bg-collection {
-  background-image: radial-gradient(circle at top, #1a212c 0%, #0e131a 60%, #0b0f14 100%);
+  background-image: radial-gradient(circle at 15% 10%, #2b2746 0%, #1c2434 45%, #0c121b 100%);
 }
 
 .background-container.bg-upgrade {
-  background-image: linear-gradient(180deg, #111723 0%, #171f2b 50%, #0d121a 100%);
+  background-image: linear-gradient(180deg, #1c1930 0%, #1b2436 45%, #0e121b 100%);
 }
 
 .background-container.bg-profile {
-  background-image: radial-gradient(circle at 20% 20%, #1d2330 0%, #121824 45%, #0b0f14 100%);
+  background-image: radial-gradient(circle at 20% 20%, #253042 0%, #1b2231 50%, #0b0f16 100%);
 }
 
 .background-container.bg-raid {
-  background-image: linear-gradient(135deg, #141a22 0%, #0e1319 55%, #0a0d12 100%);
+  background-image: linear-gradient(135deg, #2a1b1f 0%, #1a212d 55%, #0b1016 100%);
 }
 
 .background-container.bg-game {
-  background-image: radial-gradient(circle at 50% 0%, #1b1f29 0%, #0b0f14 65%);
+  background-image: radial-gradient(circle at 50% 0%, #223044 0%, #121824 55%, #0a0f15 100%);
 }
 
 .background-container.bg-open-box {
-  background-image: linear-gradient(200deg, #121926 0%, #1a2230 50%, #0d1117 100%);
+  background-image: linear-gradient(200deg, #1a2032 0%, #24314a 45%, #0d121a 100%);
 }
 
 .background-container.bg-result {
-  background-image: radial-gradient(circle at 50% 30%, #161c2a 0%, #0c1016 70%, #090b10 100%);
+  background-image: radial-gradient(circle at 50% 30%, #2a1d3a 0%, #151b26 55%, #090b12 100%);
 }
 
 .global-loader {
