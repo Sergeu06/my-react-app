@@ -531,6 +531,8 @@
 
 .daily-tasks-window_FightPage {
   max-width: 420px;
+  max-height: min(80vh, 640px);
+  overflow: hidden;
 }
 
 .daily-tasks-subtitle_FightPage {
@@ -544,6 +546,8 @@
   flex-direction: column;
   gap: 10px;
   width: 100%;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .daily-task-card_FightPage {
