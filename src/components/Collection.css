@@ -441,17 +441,21 @@
    Кнопки
 ======================= */
 .collection-container button {
-  background-color: #252525;
+  background: linear-gradient(160deg, #343434 0%, #252525 100%);
   color: var(--accent-color);
-  border: 1px solid #444;
+  border: 1px solid rgba(255, 165, 0, 0.2);
   transition: background-color 0.3s ease;
   cursor: pointer;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.45);
 }
 
 .collection-container button:hover {
-  background-color: #3a3a3a;
+  background: linear-gradient(160deg, #3e3e3e 0%, #2c2c2c 100%);
   color: var(--accent-color);
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 165, 0, 0.2);
 }
 
 /* =======================
@@ -468,17 +472,19 @@
 }
 
 .collection-container .pagination button {
-  background-color: #1c1c1c;
+  background: linear-gradient(160deg, #2e2e2e 0%, #1c1c1c 100%);
   color: #ccc;
   padding: 8px 16px;
   border-radius: 6px;
   border: 1px solid #333;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.45);
 }
 
 .collection-container .pagination button:hover {
-  background-color: #3a3a3a;
+  background: linear-gradient(160deg, #3a3a3a 0%, #262626 100%);
   color: #f5f5f5;
 }
 
@@ -595,19 +601,23 @@
 
 .collection-container .overlay-content button {
   padding: 10px 20px;
-  background-color: #2e2e2e;
+  background: linear-gradient(160deg, #3a3a3a 0%, #2a2a2a 100%);
   color: var(--accent-color);
-  border: 1px solid #444;
+  border: 1px solid rgba(255, 165, 0, 0.2);
   border-radius: 8px;
   font-size: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.4);
 }
 
 .collection-container .overlay-content button:hover {
-  background-color: #3a3a3a;
+  background: linear-gradient(160deg, #444 0%, #2f2f2f 100%);
   color: var(--accent-color);
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 165, 0, 0.2);
 }
 
 .collection-container .overlay-content input[type="number"] {
@@ -772,15 +782,20 @@
 .overlay-content button {
   margin: 10px;
   padding: 10px 20px;
-  background: #2e2e2e;
+  background: linear-gradient(160deg, #3a3a3a 0%, #2a2a2a 100%);
   color: #f5f5f5;
-  border: none;
+  border: 1px solid rgba(255, 165, 0, 0.18);
   border-radius: 8px;
   cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.4);
 }
 
 .overlay-content button:hover {
-  background: #3a3a3a;
+  background: linear-gradient(160deg, #444 0%, #2f2f2f 100%);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 165, 0, 0.2);
 }
 
 .deck-info.highlight-text {
