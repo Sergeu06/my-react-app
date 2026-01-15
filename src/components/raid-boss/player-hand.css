@@ -94,8 +94,8 @@
   bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(145deg, #ffae00, #ffc74d);
-  color: #000;
+  background: linear-gradient(145deg, #2e2e2e, #3d3d3d);
+  color: #f5f5f5;
   font-weight: bold;
   font-size: 14px;
   padding: 6px 14px;
@@ -107,7 +107,7 @@
   animation: popIn 0.15s ease-out;
 }
 .play-card-button:hover {
-  background: linear-gradient(145deg, #ffc74d, #ffae00);
+  background: linear-gradient(145deg, #3d3d3d, #2e2e2e);
   transform: translateX(-50%) scale(1.08);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
 }
