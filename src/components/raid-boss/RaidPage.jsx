@@ -268,6 +268,7 @@ function RaidPage() {
     setPlayingCard(card);
 
     setTimeout(async () => {
+      const isRemoveMultiplierCard = card.remove_multiplier === true;
       const multiplier = damageMultiplierEffect
         ? damageMultiplierEffect.multiplier
         : 1;
@@ -276,19 +277,25 @@ function RaidPage() {
 
       setTotalCardsPlayed((prev) => prev + 1);
 
-      if (typeof card.damage === "number" && card.damage > 0) {
-        immediateDamage = Math.floor(card.damage * multiplier * eventMultiplier);
-      }
+      if (!isRemoveMultiplierCard) {
+        if (typeof card.damage === "number" && card.damage > 0) {
+          immediateDamage = Math.floor(
+            card.damage * multiplier * eventMultiplier
+          );
+        }
 
-      let instantDotDamage = 0;
-      if (
-        Array.isArray(card.damage_over_time) &&
-        card.damage_over_time.length > 0
-      ) {
-        instantDotDamage = Math.floor(
-          card.damage_over_time[0] * multiplier * eventMultiplier
-        );
-        immediateDamage += instantDotDamage;
+        let instantDotDamage = 0;
+        if (
+          Array.isArray(card.damage_over_time) &&
+          card.damage_over_time.length > 0
+        ) {
+          instantDotDamage = Math.floor(
+            card.damage_over_time[0] * multiplier * eventMultiplier
+          );
+          immediateDamage += instantDotDamage;
+        }
+      } else {
+        setDamageMultiplierEffect(null);
       }
 
       if (raidModifiers.burnBonus > 0 && immediateDamage > 0) {
@@ -303,27 +310,31 @@ function RaidPage() {
       );
       setTotalDamageDealt((prev) => prev + immediateDamage);
 
-      if (
-        Array.isArray(card.damage_over_time) &&
-        card.damage_over_time.length > 1
-      ) {
-        const futureDotDamages = card.damage_over_time.slice(1);
-        const newEffects = futureDotDamages
-          .filter((d) => d > 0)
-          .map((damage, i) => ({
-            damage,
-            turnsLeft: i + 2,
-            id: generateId(),
-          }));
+      if (!isRemoveMultiplierCard) {
+        if (
+          Array.isArray(card.damage_over_time) &&
+          card.damage_over_time.length > 1
+        ) {
+          const futureDotDamages = card.damage_over_time.slice(1);
+          const newEffects = futureDotDamages
+            .filter((d) => d > 0)
+            .map((damage, i) => ({
+              damage,
+              turnsLeft: i + 2,
+              id: generateId(),
+            }));
 
-        setDotEffectsQueue((prevQueue) => [...prevQueue, ...newEffects]);
+          setDotEffectsQueue((prevQueue) => [...prevQueue, ...newEffects]);
+        }
       }
 
-      const newDamageMultiplier = applyDamageMultiplier(
-        card,
-        damageMultiplierEffect
-      );
-      setDamageMultiplierEffect(newDamageMultiplier);
+      if (!isRemoveMultiplierCard) {
+        const newDamageMultiplier = applyDamageMultiplier(
+          card,
+          damageMultiplierEffect
+        );
+        setDamageMultiplierEffect(newDamageMultiplier);
+      }
 
       setHand((prevHand) => prevHand.filter((c) => c.id !== card.id));
       setDeck((prevDeck) => {
@@ -429,30 +440,21 @@ function RaidPage() {
             </div>
           </div>
 
-          <div className="damage-multiplier-effects">
+          <div className="boss-effect-summary">
+            <div className="boss-effect-title">Эффект босса</div>
             {effectiveDamageMultipliers.length > 0 ? (
-              effectiveDamageMultipliers.map((effect) => (
-                <div
-                  key={effect.id}
-                  title={`Множитель урона: ${effect.multiplier.toFixed(
-                    2
-                  )}x, ходов осталось: ${effect.turnsLeft + 1}`}
-                  className="damage-multiplier-chip"
-                >
-                  +{effect.multiplier.toFixed(2)}x ({effect.turnsLeft})
+              <div className="boss-effect-content">
+                <div className="boss-effect-name">
+                  Множитель урона +{effectiveDamageMultipliers[0].multiplier.toFixed(2)}x
                 </div>
-              ))
+                <div className="boss-effect-functions">
+                  Усиливает весь урон и урон по времени. Ходов:{" "}
+                  {effectiveDamageMultipliers[0].turnsLeft + 1}
+                </div>
+              </div>
             ) : (
-              <div className="damage-multiplier-empty">Эффектов нет</div>
+              <div className="boss-effect-empty">Эффекты неактивны</div>
             )}
-
-            <div
-              className="damage-multiplier-next"
-              title="Следующий урон по времени с учётом множителей"
-            >
-              След. DoT: {nextTurnDotDamage.toLocaleString()} →{" "}
-              {nextTurnDotDamageWithMultiplier.toLocaleString()}
-            </div>
           </div>
           {raidEvent && (
             <div className="raid-event-banner">
