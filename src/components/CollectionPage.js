@@ -148,6 +148,8 @@ function Collection({ uid }) {
 
     fetchPlayerData();
   }, [uid]);
+  const normalizeRarity = (rarity) =>
+    (rarity || "обычная").toString().trim().toLowerCase();
   const rarityOrder = {
     обычная: 1,
     редкая: 2,
@@ -177,7 +179,9 @@ function Collection({ uid }) {
   const sortInventoryCards = (cards) =>
     [...cards].sort((a, b) => {
       if (sortCriterion === "rarity") {
-        return (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0);
+        const rarityA = normalizeRarity(a.rarity);
+        const rarityB = normalizeRarity(b.rarity);
+        return (rarityOrder[rarityB] || 0) - (rarityOrder[rarityA] || 0);
       }
 
       if (sortCriterion === "characteristic") {
