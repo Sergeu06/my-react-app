@@ -227,6 +227,7 @@ export default function useResolvingPhase(params) {
         const isMultiplierCard =
           typeof card.raw.damage_multiplier === "number" &&
           card.raw.damage_multiplier > 0;
+        const isRemoveMultiplierCard = card.raw.remove_multiplier === true;
 
         // Выбираем effectiveTarget в зависимости от типа карты
         const targetEffects = effectsByUid[damageTargetUid] || { mult: null };
@@ -270,6 +271,48 @@ export default function useResolvingPhase(params) {
         let turnsLeft =
           card.raw.dotTurnsLeft ?? card.raw.damage_over_time?.length ?? 0;
         const isFinalDot = isDotCard && turnsLeft === 1;
+        // Если это карта снятия множителя — снимаем эффект с владельца карты
+        if (isRemoveMultiplierCard) {
+          await set(
+            ref(database, `lobbies/${lobbyId}/effects/${attackerUid}/multiplier`),
+            null
+          );
+          setEffectsByUid((prev) => ({
+            ...prev,
+            [attackerUid]: {
+              ...(prev[attackerUid] || {}),
+              mult: null,
+            },
+          }));
+
+          await strikeSequence(
+            card.ownerLabel === "player" ? "player" : "opponent",
+            card.ownerLabel === "player" ? "top" : "bottom",
+            lobbyId,
+            card.owner,
+            database,
+            card.id,
+            false,
+            null,
+            null,
+            null,
+            0,
+            450,
+            false,
+            false
+          );
+
+          await new Promise((res) => setTimeout(res, interCardDelayMs));
+
+          setProcessedCardIds((prev) => {
+            const s = new Set(prev);
+            s.add(card.id);
+            return s;
+          });
+
+          continue;
+        }
+
         // Если это карта множителя — только наложение эффекта, без урона/лечения
         if (isMultiplierCard) {
           console.log(
@@ -675,8 +718,7 @@ export default function useResolvingPhase(params) {
       };
 
       const restoredPlayer = removedPlayer.map(resetCardState);
-      const restoredOpponent = removedOpponent.map(resetCardState);
-      const fullDeck = [...deck, ...restoredPlayer, ...restoredOpponent];
+      const fullDeck = [...deck, ...restoredPlayer];
       // 🔚 САМЫЙ КОНЕЦ useResolvingPhase
       setRoundPhase("transition");
 
