@@ -237,20 +237,20 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
             marginTop: 30,
             padding: "10px 30px",
             fontSize: 18,
-            backgroundColor: "#ffa500",
+            backgroundColor: "#2e2e2e",
             border: "none",
             borderRadius: 8,
             cursor: "pointer",
             fontWeight: "bold",
-            color: "#222",
-            boxShadow: "0 0 10px #ffa500",
+            color: "#f5f5f5",
+            boxShadow: "0 0 10px rgba(0, 0, 0, 0.45)",
             transition: "background-color 0.3s ease",
           }}
           onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor = "#ffb733")
+            (e.currentTarget.style.backgroundColor = "#3a3a3a")
           }
           onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "#ffa500")
+            (e.currentTarget.style.backgroundColor = "#2e2e2e")
           }
         >
           Выйти
