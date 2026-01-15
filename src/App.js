@@ -17,7 +17,7 @@ import StoreIcon from "@mui/icons-material/Store";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import UpgradeIcon from "@mui/icons-material/ArrowCircleUpRounded";
 import CryptoJS from "crypto-js";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
 import { db } from "./components/firebase"; // твой инициализированный Firestore
 import { DndProvider } from "react-dnd";
 import { TouchBackend } from "react-dnd-touch-backend";
@@ -41,6 +41,7 @@ import ResultPage from "./components/ResultPage";
 import GlobalLoader from "./components/GlobalLoader";
 
 import { UserProvider } from "./components/UserContext";
+import { preloadImageToCache } from "./utils/imageCache";
 
 const BOT_TOKEN = "6990185927:AAG8cCLlwX-z8ZcwYGN_oUOfGC2vONls87Q";
 
@@ -221,55 +222,56 @@ function App() {
       "/images/raidboss.png",
     ];
 
-    if (isActive) {
-      setAssetsProgress({ loaded: 0, total: staticAssets.length });
-    }
-
-    const preloadImage = (src) =>
-      new Promise((resolve) => {
-        const img = new Image();
-        const done = () => {
-          if (isActive) {
-            setAssetsProgress((prev) => ({
-              loaded: Math.min(prev.loaded + 1, prev.total),
-              total: prev.total,
-            }));
-          }
-          resolve();
-        };
-        img.onload = done;
-        img.onerror = done;
-        img.src = src;
-      });
-
-    const warmCache = async () => {
+    const fetchRemoteImages = async () => {
+      const urls = new Set();
       try {
-        if ("caches" in window) {
-          const cache = await caches.open("app-static-assets-v1");
-          await Promise.all(
-            staticAssets.map(async (url) => {
-              try {
-                const response = await fetch(url, { cache: "force-cache" });
-                if (response.ok) {
-                  await cache.put(url, response.clone());
-                }
-              } catch (err) {
-                console.warn("[GlobalLoader] cache preload failed", url, err);
-              }
-            })
-          );
-        }
+        const [cardsSnapshot, boxesSnapshot] = await Promise.all([
+          getDocs(collection(db, "cards")),
+          getDocs(collection(db, "box")),
+        ]);
+
+        cardsSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data?.image_url) urls.add(data.image_url);
+        });
+
+        boxesSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data?.image_url) urls.add(data.image_url);
+        });
       } catch (err) {
-        console.warn("[GlobalLoader] cache warmup failed", err);
+        console.warn("[GlobalLoader] remote image fetch failed", err);
       }
+
+      return Array.from(urls);
     };
 
     const timeoutId = setTimeout(() => {
       if (isActive) setAssetsReady(true);
     }, 7000);
 
-    Promise.all(staticAssets.map(preloadImage))
-      .then(warmCache)
+    const preloadAssets = async () => {
+      const remoteAssets = await fetchRemoteImages();
+      const allAssets = [...staticAssets, ...remoteAssets];
+
+      if (isActive) {
+        setAssetsProgress({ loaded: 0, total: allAssets.length });
+      }
+
+      await Promise.all(
+        allAssets.map(async (src) => {
+          await preloadImageToCache(src);
+          if (isActive) {
+            setAssetsProgress((prev) => ({
+              loaded: Math.min(prev.loaded + 1, prev.total),
+              total: prev.total,
+            }));
+          }
+        })
+      );
+    };
+
+    preloadAssets()
       .catch((err) => console.warn("[GlobalLoader] preload failed", err))
       .finally(() => {
         if (!isActive) return;
@@ -631,12 +633,27 @@ function App() {
   const path = location.pathname.toLowerCase();
   const isGameOrProfile = path === "/game";
   const isRaid = path === "/raid";
+  const backgroundClass = (() => {
+    if (path.includes("/fight")) return "bg-fight";
+    if (path.includes("/shop")) return "bg-shop";
+    if (path.includes("/collection")) return "bg-collection";
+    if (path.includes("/upgrade")) return "bg-upgrade";
+    if (path.includes("/profile")) return "bg-profile";
+    if (path.includes("/raid")) return "bg-raid";
+    if (path.includes("/game")) return "bg-game";
+    if (path.includes("/open-box")) return "bg-open-box";
+    if (path.includes("/result")) return "bg-result";
+    return "bg-shop";
+  })();
 
   return (
     <UserProvider>
       <div>
         <div className="safe-container" {...handlers}>
-          <div className="background-container" ref={backgroundRef} />
+          <div
+            className={`background-container ${backgroundClass}`}
+            ref={backgroundRef}
+          />
           <div className="game-version">v0.9.88.41</div>
 
           <CurrencyBalance />

@@ -43,10 +43,7 @@ function PlayedCards({
             title={side === "player" ? card.name : "Opponent card"}
             style={{ "--tilt": tilt }}
           >
-            {side === "player" ||
-            bothTurnsEnded ||
-            hasActiveDoT ||
-            card.revealed ? (
+            {side === "player" || bothTurnsEnded || card.revealed ? (
               <>
                 <FramedCard
                   card={card}
