@@ -387,6 +387,41 @@
   user-select: none;
 }
 
+.boss-effect-summary {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.boss-effect-title {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.boss-effect-content {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.boss-effect-name {
+  font-weight: 700;
+  color: var(--accent-reward);
+}
+
+.boss-effect-functions {
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.boss-effect-empty {
+  margin-top: 6px;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
 .raid-event-banner {
   margin-top: 10px;
   background: rgba(18, 24, 38, 0.85);
