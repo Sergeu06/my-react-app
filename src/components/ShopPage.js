@@ -446,12 +446,16 @@ function ShopPage({ uid }) {
     }
   };
 
+  const normalizeRarity = (rarity) =>
+    (rarity || "обычная").toString().trim().toLowerCase();
   const rarityOrder = { обычная: 1, редкая: 2, эпическая: 3, легендарная: 4 };
 
   const sortCards = (cards) => {
     return [...cards].sort((a, b) => {
       if (sortCriterion === "rarity") {
-        return (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0);
+        const rarityA = normalizeRarity(a.rarity);
+        const rarityB = normalizeRarity(b.rarity);
+        return (rarityOrder[rarityB] || 0) - (rarityOrder[rarityA] || 0);
       }
       if (sortCriterion === "price") {
         return b.price - a.price;
