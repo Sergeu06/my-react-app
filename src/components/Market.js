@@ -324,7 +324,14 @@ function Market({ setError }) {
             </div>
           )}
         </div>
-        <IconButton onClick={fetchMarketCards} title="Обновить список">
+        <IconButton
+          onClick={fetchMarketCards}
+          title="Обновить список"
+          sx={{
+            backgroundColor: "#2e2e2e",
+            "&:hover": { backgroundColor: "#2e2e2e" },
+          }}
+        >
           <RefreshIcon style={{ color: "#ffa500" }} />
         </IconButton>
       </div>

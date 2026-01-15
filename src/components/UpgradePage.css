@@ -673,7 +673,7 @@ h1 {
 }
 
 .info-buttonU {
-  background-color: #333;
+  background-color: #2e2e2e;
   color: #ffa500;
   border: none;
   border-radius: 50%;
@@ -691,7 +691,7 @@ h1 {
 }
 
 .info-buttonU:hover {
-  background: rgba(255, 165, 0, 0.3);
+  background-color: #2e2e2e;
 }
 
 .info-modalU {
