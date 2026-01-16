@@ -466,16 +466,33 @@ function App() {
     const bg = backgroundRef.current;
     if (!bg) return;
 
+    const path = location.pathname.toLowerCase();
+    const shouldParallax =
+      path.includes("/shop") ||
+      path.includes("/collection") ||
+      path.includes("/profile");
+
+    if (!shouldParallax) {
+      bg.style.backgroundPositionY = "0px";
+      return;
+    }
+
+    let rafId = null;
     const onScroll = () => {
       const scrollY = window.scrollY;
-      requestAnimationFrame(() => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
         bg.style.backgroundPositionY = `${scrollY * -0.4}px`;
       });
     };
 
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [location.pathname]);
 
   useEffect(() => {
     const isDev = window.location.hostname === "localhost";
