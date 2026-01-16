@@ -77,7 +77,33 @@ function UpgradePage() {
 
       const allCards = await Promise.all(cardPromises);
       const validCards = allCards.filter(Boolean);
-      setPlayerCards(validCards);
+      const imageIds = [
+        ...new Set(
+          validCards
+            .map((card) => card.original_id || card.card_id || card.id)
+            .filter(Boolean)
+        ),
+      ];
+      const imageEntries = await Promise.all(
+        imageIds.map(async (cardId) => {
+          try {
+            const snap = await getDoc(doc(db, "cards", cardId));
+            return snap.exists() ? [cardId, snap.data()?.image_url || ""] : null;
+          } catch (error) {
+            console.warn("Не удалось загрузить изображение карты:", error);
+            return null;
+          }
+        })
+      );
+      const imageMap = new Map(imageEntries.filter(Boolean));
+      const hydratedCards = validCards.map((card) => ({
+        ...card,
+        image_url:
+          card.image_url ||
+          imageMap.get(card.original_id || card.card_id || card.id) ||
+          "",
+      }));
+      setPlayerCards(hydratedCards);
     };
 
     fetchCards();
@@ -750,16 +776,9 @@ function UpgradePage() {
           : ""
       } ${activeTab === "fusion" ? "fusion-mode" : ""}`}
     >
-      <div className="upgrade-title-wrapper">
-        <h1 className="upgrade-title">
-          {activeTab === "upgrade" ? "Повышение ранга" : "Слияние"}
-        </h1>
-        {activeTab === "upgrade" && (
-          <button className="info-buttonU" onClick={() => setShowInfo(true)}>
-            i
-          </button>
-        )}
-      </div>
+      <h1 className="upgrade-title">
+        {activeTab === "upgrade" ? "Повышение ранга" : "Слияние"}
+      </h1>
 
       <div className="tabs upgrade-tabs">
         <button
@@ -784,55 +803,62 @@ function UpgradePage() {
           >
             <div className="card-style">{renderPreviewCard()}</div>
 
-            <div
-              className="arrow-up"
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                margin: "0 20px",
-                position: "relative",
-                fontSize: "40px",
-                fontWeight: "bold",
-                color: "#ffa500",
-                WebkitTextStroke: "1px black",
-                textShadow: `
+            <div className="upgrade-arrow-area">
+              {activeTab === "upgrade" && (
+                <button className="info-buttonU" onClick={() => setShowInfo(true)}>
+                  i
+                </button>
+              )}
+              <div
+                className="arrow-up"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  margin: "0 12px",
+                  position: "relative",
+                  fontSize: "40px",
+                  fontWeight: "bold",
+                  color: "#ffa500",
+                  WebkitTextStroke: "1px black",
+                  textShadow: `
                   -1px -1px 0 #000,
                    1px -1px 0 #000,
                   -1px  1px 0 #000,
                    1px  1px 0 #000
                 `,
-              }}
-            >
-              ↑
-              <div
-                className="success-rate"
-                style={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "100%",
-                  transform: "translate(10px, -50%)",
-                  fontWeight: "bold",
-                  fontSize: "28px",
-                  whiteSpace: "nowrap",
-                  color: "#ffa500",
-                  WebkitTextStroke: "1px black",
-                  textShadow: `
+                }}
+              >
+                ↑
+                <div
+                  className="success-rate"
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "100%",
+                    transform: "translate(10px, -50%)",
+                    fontWeight: "bold",
+                    fontSize: "28px",
+                    whiteSpace: "nowrap",
+                    color: "#ffa500",
+                    WebkitTextStroke: "1px black",
+                    textShadow: `
           -1px -1px 0 #000,
           1px -1px 0 #000,
           -1px 1px 0 #000,
           1px 1px 0 #000
         `,
-                }}
-              >
-                {selectedCard
-                  ? Math.round(
-                      getSuccessRate(
-                        Number(selectedCard.lvl) || 1,
-                        selectedCard.upgradeBonus || 0
-                      ) * 100
-                    ) + "%"
-                  : ""}
+                  }}
+                >
+                  {selectedCard
+                    ? Math.round(
+                        getSuccessRate(
+                          Number(selectedCard.lvl) || 1,
+                          selectedCard.upgradeBonus || 0
+                        ) * 100
+                      ) + "%"
+                    : ""}
+                </div>
               </div>
             </div>
 
