@@ -17,12 +17,14 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import "./FightPage.css";
+import "./raid-boss/boss-container.css";
 import CachedImage from "../utils/CachedImage";
 import {
   ensureDailyTasks,
   completeDailyTask,
   claimDailyTask,
 } from "../utils/dailyTasks";
+import { formatRaidCountdown, getRaidEventInfo } from "../utils/raidEvents";
 
 function FightPage({ uid, searchState, setSearchState }) {
   const { isSearching, lobbyId } = searchState;
@@ -43,6 +45,8 @@ function FightPage({ uid, searchState, setSearchState }) {
   // Raid entry confirmation
   const [showRaidConfirm, setShowRaidConfirm] = useState(false);
   const [raidBoss, setRaidBoss] = useState(null); // { name, hp, max_hp, image_url }
+  const [raidEvent, setRaidEvent] = useState(null);
+  const [eventCountdown, setEventCountdown] = useState(0);
   const [userTickets, setUserTickets] = useState(0);
   // --- состояние для двух лидербордов ---
   const [raidLeaderboard, setRaidLeaderboard] = useState([]);
@@ -153,6 +157,18 @@ function FightPage({ uid, searchState, setSearchState }) {
       setRaidEnterError(null);
     }
   }, [showRaidConfirm]);
+
+  useEffect(() => {
+    const updateEvent = () => {
+      const { event, secondsRemaining } = getRaidEventInfo();
+      setRaidEvent(event);
+      setEventCountdown(secondsRemaining);
+    };
+
+    updateEvent();
+    const timer = setInterval(updateEvent, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!uid) return;
@@ -1107,15 +1123,16 @@ function FightPage({ uid, searchState, setSearchState }) {
                     <tbody>
                       <tr>
                         <td>Множитель урона</td>
-                        <td>Усиливает весь урон и урон по времени.</td>
+                        <td>Применяется к обычному урону и DoT.</td>
                         <td>
-                          Суммируется в один эффект, действует несколько ходов.
+                          Суммируется из бонусов карт и действует несколько
+                          ходов.
                         </td>
                       </tr>
                       <tr>
                         <td>Поэтапный урон (DoT)</td>
                         <td>Наносит урон несколько ходов подряд.</td>
-                        <td>Сильнее работает после усилений.</td>
+                        <td>Каждый тик усиливается текущим множителем урона.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1344,6 +1361,18 @@ function FightPage({ uid, searchState, setSearchState }) {
                 <h3 className="raid-confirm-modal-boss-name">
                   {raidBoss.name}
                 </h3>
+
+                {raidEvent && (
+                  <div className="raid-event-banner">
+                    <div className="raid-event-title">{raidEvent.title}</div>
+                    <div className="raid-event-desc">
+                      {raidEvent.description}
+                    </div>
+                    <div className="raid-event-timer">
+                      Смена через {formatRaidCountdown(eventCountdown)}
+                    </div>
+                  </div>
+                )}
 
                 <div className="raid-confirm-modal-hp-bar">
                   <div
