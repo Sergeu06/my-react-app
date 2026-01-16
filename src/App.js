@@ -41,7 +41,7 @@ import ResultPage from "./components/ResultPage";
 import GlobalLoader from "./components/GlobalLoader";
 
 import { UserProvider } from "./components/UserContext";
-import { preloadImageToCache } from "./utils/imageCache";
+import { preloadCardImage, preloadImageToCache } from "./utils/imageCache";
 
 const BOT_TOKEN = "6990185927:AAG8cCLlwX-z8ZcwYGN_oUOfGC2vONls87Q";
 
@@ -224,6 +224,7 @@ function App() {
 
     const fetchRemoteImages = async () => {
       const urls = new Set();
+      const cardEntries = [];
       try {
         const [cardsSnapshot, boxesSnapshot] = await Promise.all([
           getDocs(collection(db, "cards")),
@@ -232,7 +233,14 @@ function App() {
 
         cardsSnapshot.forEach((docSnap) => {
           const data = docSnap.data();
-          if (data?.image_url) urls.add(data.image_url);
+          if (data?.name) {
+            cardEntries.push({
+              name: data.name,
+              image_url: data.image_url || "",
+            });
+          } else if (data?.image_url) {
+            urls.add(data.image_url);
+          }
         });
 
         boxesSnapshot.forEach((docSnap) => {
@@ -243,7 +251,7 @@ function App() {
         console.warn("[GlobalLoader] remote image fetch failed", err);
       }
 
-      return Array.from(urls);
+      return { urls: Array.from(urls), cardEntries };
     };
 
     const timeoutId = setTimeout(() => {
@@ -251,23 +259,43 @@ function App() {
     }, 7000);
 
     const preloadAssets = async () => {
-      const remoteAssets = await fetchRemoteImages();
+      const { urls: remoteAssets, cardEntries } = await fetchRemoteImages();
       const allAssets = [...staticAssets, ...remoteAssets];
 
       if (isActive) {
-        setAssetsProgress({ loaded: 0, total: allAssets.length });
+        setAssetsProgress({
+          loaded: 0,
+          total: allAssets.length + cardEntries.length,
+        });
       }
 
       await Promise.all(
-        allAssets.map(async (src) => {
-          await preloadImageToCache(src);
-          if (isActive) {
-            setAssetsProgress((prev) => ({
-              loaded: Math.min(prev.loaded + 1, prev.total),
-              total: prev.total,
-            }));
-          }
-        })
+        [
+          ...allAssets.map(async (src) => {
+            const cached = await preloadImageToCache(src);
+            console.info("[GlobalLoader] asset cached", { src, cached });
+            if (isActive) {
+              setAssetsProgress((prev) => ({
+                loaded: Math.min(prev.loaded + 1, prev.total),
+                total: prev.total,
+              }));
+            }
+          }),
+          ...cardEntries.map(async (card) => {
+            const result = await preloadCardImage(card.name, card.image_url);
+            console.info("[GlobalLoader] card image cached", {
+              name: card.name,
+              fallbackUrl: card.image_url,
+              ...result,
+            });
+            if (isActive) {
+              setAssetsProgress((prev) => ({
+                loaded: Math.min(prev.loaded + 1, prev.total),
+                total: prev.total,
+              }));
+            }
+          }),
+        ]
       );
     };
 
