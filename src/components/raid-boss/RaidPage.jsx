@@ -17,7 +17,6 @@ import {
 } from "../../utils/cardEffects";
 import {
   applyRaidModifiers,
-  formatRaidCountdown,
   getRaidEventInfo,
 } from "../../utils/raidEvents";
 
@@ -46,8 +45,6 @@ function RaidPage() {
       document.body.style.overflow = originalOverflow;
     };
   }, []);
-  const [eventCountdown, setEventCountdown] = useState(0);
-
   const [gameStarted, setGameStarted] = useState(false);
   const [showEndScreen, setShowEndScreen] = useState(false);
 
@@ -99,9 +96,8 @@ function RaidPage() {
 
   useEffect(() => {
     const updateEvent = () => {
-      const { event, secondsRemaining } = getRaidEventInfo();
+      const { event } = getRaidEventInfo();
       setRaidEvent(event);
-      setEventCountdown(secondsRemaining);
     };
     updateEvent();
     const timer = setInterval(updateEvent, 1000);
@@ -465,13 +461,7 @@ function RaidPage() {
             )}
           </div>
           {raidEvent && (
-            <div className="raid-event-banner">
-              <div className="raid-event-title">{raidEvent.title}</div>
-              <div className="raid-event-desc">{raidEvent.description}</div>
-              <div className="raid-event-timer">
-                Смена через {formatRaidCountdown(eventCountdown)}
-              </div>
-            </div>
+            <div className="raid-event-title">{raidEvent.title}</div>
           )}
         </div>
 
