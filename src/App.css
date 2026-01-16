@@ -231,14 +231,25 @@ a {
 .global-loader {
   position: fixed;
   inset: 0;
-  background: radial-gradient(circle at top, #2a2a2a, #121212);
+  background: radial-gradient(circle at top, rgba(90, 55, 150, 0.35), #0f1118 55%, #090b11 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   color: #fff;
   z-index: 100000;
+}
+
+.global-loader__badge {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(155, 92, 255, 0.2);
+  border: 1px solid rgba(155, 92, 255, 0.4);
+  color: #d7c4ff;
 }
 
 .global-loader__spinner {
@@ -250,31 +261,38 @@ a {
   animation: loader-spin 0.9s linear infinite;
 }
 
+.global-loader__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+}
+
 .global-loader__text {
   font-size: 1rem;
   font-weight: 600;
   text-align: center;
-  opacity: 0.9;
+  opacity: 0.78;
+  max-width: 280px;
 }
 
 .global-loader__progress {
   width: min(320px, 70vw);
   height: 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.12);
   overflow: hidden;
 }
 
 .global-loader__progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #9b5cff, #ffa500);
+  background: linear-gradient(90deg, #9b5cff, #36d1ff 45%, #ffa500);
   border-radius: 999px;
   transition: width 0.3s ease;
 }
 
 .global-loader__progress-text {
   font-size: 0.85rem;
-  opacity: 0.7;
+  opacity: 0.65;
 }
 
 @keyframes loader-spin {
