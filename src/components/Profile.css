@@ -599,15 +599,9 @@ select option {
   z-index: 10;
 }
 
-.card-style img {
-  max-width: 100%;
-  max-height: 300px; /* Ограничение максимальной высоты картинки */
-  object-fit: contain;
-  border-radius: 12px;
+.card-style .card-frame-wrapper {
+  width: min(160px, 100%);
   margin-top: 8px;
-  box-shadow: 0 0 8px rgba(255, 165, 0, 0.7);
-  background-color: #222;
-  display: block;
 }
 
 .card-stat-text {
