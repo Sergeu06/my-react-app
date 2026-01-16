@@ -353,10 +353,13 @@ a {
   flex: 1;
   min-height: 100%;
   box-sizing: border-box;
-  padding: 16px 16px 80px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.page-shell.page-shell--full-bleed {
+  padding: 0;
 }
 
 .page-shell > * {
