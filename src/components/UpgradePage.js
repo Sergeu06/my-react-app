@@ -776,7 +776,7 @@ function UpgradePage() {
           : ""
       } ${activeTab === "fusion" ? "fusion-mode" : ""}`}
     >
-      <h1 className="upgrade-title">
+      <h1>
         {activeTab === "upgrade" ? "Повышение ранга" : "Слияние"}
       </h1>
 
