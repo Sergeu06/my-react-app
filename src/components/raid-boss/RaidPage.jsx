@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import CachedImage from "../../utils/CachedImage";
+import CardImage from "../../utils/CardImage";
 import { useSearchParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { ref, onValue, get, off, runTransaction } from "firebase/database";
@@ -561,8 +561,9 @@ function RaidPage() {
       </div>
 
       {flyingCard && (
-        <CachedImage
-          src={flyingCard.image_url}
+        <CardImage
+          name={flyingCard.name}
+          fallbackSrc={flyingCard.image_url}
           alt={flyingCard.name}
           className="playing-card-fly"
           draggable={false}

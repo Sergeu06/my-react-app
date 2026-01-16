@@ -1,7 +1,9 @@
-const CARD_IMAGE_CACHE = "card-images-v1";
+const CARD_IMAGE_CACHE = "card-images-v2";
+const LOCAL_CARD_PATH = "/cards/";
 
 const inFlightRequests = new Map();
 const failedUrls = new Set();
+const localCardMisses = new Set();
 
 const getRequestMode = (src) => {
   try {
@@ -62,6 +64,72 @@ export const preloadImageToCache = async (src) => {
     console.warn("[imageCache] preload failed", error);
     return false;
   }
+};
+
+const normalizeCardFileName = (name) => {
+  if (!name) return null;
+  const trimmed = String(name).trim();
+  if (!trimmed) return null;
+  return /\.[a-z0-9]+$/i.test(trimmed) ? trimmed : `${trimmed}.png`;
+};
+
+export const getLocalCardImageUrl = (name) => {
+  const fileName = normalizeCardFileName(name);
+  if (!fileName) return null;
+  return `${LOCAL_CARD_PATH}${encodeURIComponent(fileName)}`;
+};
+
+export const preloadCardImage = async (name, fallbackUrl) => {
+  const localUrl = getLocalCardImageUrl(name);
+  if (localUrl) {
+    const cached = await preloadImageToCache(localUrl);
+    if (cached) return true;
+    localCardMisses.add(localUrl);
+  }
+
+  if (fallbackUrl) {
+    return preloadImageToCache(fallbackUrl);
+  }
+
+  return false;
+};
+
+export const getCardImageUrl = async ({ name, fallbackUrl }) => {
+  const localUrl = getLocalCardImageUrl(name);
+  const requestMode = localUrl ? getRequestMode(localUrl) : null;
+  const canUseCache = "caches" in window;
+
+  if (localUrl && !localCardMisses.has(localUrl)) {
+    try {
+      const cache = canUseCache ? await caches.open(CARD_IMAGE_CACHE) : null;
+      let response = cache ? await cache.match(localUrl) : null;
+      if (!response) {
+        response = await fetch(localUrl, {
+          cache: "force-cache",
+          mode: requestMode || "cors",
+        });
+        if (response.ok) {
+          if (cache) {
+          await cache.put(localUrl, response.clone());
+          }
+          return localUrl;
+        }
+        localCardMisses.add(localUrl);
+      } else {
+        return localUrl;
+      }
+    } catch (error) {
+      localCardMisses.add(localUrl);
+      console.warn("[imageCache] local card fetch failed", error);
+    }
+  }
+
+  if (fallbackUrl) {
+    await getCachedImageUrl(fallbackUrl);
+    return fallbackUrl;
+  }
+
+  return localUrl;
 };
 
 export const getCachedImageUrl = async (src) => {
