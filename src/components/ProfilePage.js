@@ -175,6 +175,37 @@ const ProfilePage = () => {
     return cards.filter(Boolean);
   };
 
+  const hydrateCardsWithImages = async (cards) => {
+    const imageIds = [
+      ...new Set(
+        cards
+          .map((card) => card.original_id || card.card_id || card.id)
+          .filter(Boolean)
+      ),
+    ];
+    if (!imageIds.length) return cards;
+
+    const imageEntries = await Promise.all(
+      imageIds.map(async (cardId) => {
+        try {
+          const snap = await getDoc(doc(db, "cards", cardId));
+          return snap.exists() ? [cardId, snap.data()?.image_url || ""] : null;
+        } catch (error) {
+          console.warn("Не удалось загрузить изображение карты:", error);
+          return null;
+        }
+      })
+    );
+    const imageMap = new Map(imageEntries.filter(Boolean));
+    return cards.map((card) => ({
+      ...card,
+      image_url:
+        card.image_url ||
+        imageMap.get(card.original_id || card.card_id || card.id) ||
+        "",
+    }));
+  };
+
   useEffect(() => {
     if (!idToLoad) {
       setProfileError("Не указан пользователь");
@@ -206,7 +237,9 @@ const ProfilePage = () => {
 
         // Для витрины загружаем карты, которые там выставлены
         const showcaseCardIds = loadedShowcase.filter(Boolean); // убрать null
-        const showcaseCards = await loadCardsFromRealtimeDB(showcaseCardIds);
+        const showcaseCardsRaw =
+          await loadCardsFromRealtimeDB(showcaseCardIds);
+        const showcaseCards = await hydrateCardsWithImages(showcaseCardsRaw);
 
         // Для собственного профиля дополнительно загружаем все карты пользователя для выбора
         if (isOwnProfile) {
@@ -232,7 +265,8 @@ const ProfilePage = () => {
           });
 
           const allCards = Array.from(combinedMap.values());
-          setUserCards(allCards);
+          const hydratedCards = await hydrateCardsWithImages(allCards);
+          setUserCards(hydratedCards);
         } else {
           // Для чужого профиля показываем только карты из витрины
           setUserCards(showcaseCards);
@@ -557,9 +591,11 @@ const ProfilePage = () => {
 
       <div className="achievements-section">
         <h3>Ачивки</h3>
-        <p className="achievements-hint">
-          Выполняйте условия и выставляйте любимые достижения в профиль.
-        </p>
+        {isOwnProfile && (
+          <p className="achievements-hint">
+            Выполняйте условия и выставляйте любимые достижения в профиль.
+          </p>
+        )}
         <div className="achievement-slots">
           {achievementsShowcase.map((achievementId, index) => {
             const achievement = ACHIEVEMENTS.find(
@@ -610,47 +646,49 @@ const ProfilePage = () => {
           })}
         </div>
 
-        <div className="achievement-list">
-          {ACHIEVEMENTS.map((achievement) => {
-            const progress = getAchievementProgress(
-              achievement,
-              profileData
-            );
-            return (
-              <div key={achievement.id} className="achievement-card">
-                <div className="achievement-card-header">
-                  <div>
-                    <h4>{achievement.title}</h4>
-                    <p>{achievement.description}</p>
+        {isOwnProfile && (
+          <div className="achievement-list">
+            {ACHIEVEMENTS.map((achievement) => {
+              const progress = getAchievementProgress(
+                achievement,
+                profileData
+              );
+              return (
+                <div key={achievement.id} className="achievement-card">
+                  <div className="achievement-card-header">
+                    <div>
+                      <h4>{achievement.title}</h4>
+                      <p>{achievement.description}</p>
+                    </div>
+                    <div className="achievement-level">
+                      {progress.achievedLevels}/{progress.maxLevel}
+                    </div>
                   </div>
-                  <div className="achievement-level">
-                    {progress.achievedLevels}/{progress.maxLevel}
+                  <ul>
+                    {achievement.levels.map((level, idx) => (
+                      <li
+                        key={level.value}
+                        className={
+                          progress.achievedLevels > idx ? "done" : ""
+                        }
+                      >
+                        {level.label}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="achievement-progress">
+                    Прогресс:{" "}
+                    {progress.nextLevel
+                      ? `${progress.value}/${progress.nextLevel.value}`
+                      : "Достигнут максимум"}
                   </div>
                 </div>
-                <ul>
-                  {achievement.levels.map((level, idx) => (
-                    <li
-                      key={level.value}
-                      className={
-                        progress.achievedLevels > idx ? "done" : ""
-                      }
-                    >
-                      {level.label}
-                    </li>
-                  ))}
-                </ul>
-                <div className="achievement-progress">
-                  Прогресс:{" "}
-                  {progress.nextLevel
-                    ? `${progress.value}/${progress.nextLevel.value}`
-                    : "Достигнут максимум"}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
-        {showAchievementModal && (
+        {showAchievementModal && isOwnProfile && (
           <div
             className="modal-overlay"
             onClick={() => setShowAchievementModal(false)}

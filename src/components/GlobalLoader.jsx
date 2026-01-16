@@ -6,9 +6,11 @@ function GlobalLoader({ loaded = 0, total = 0 }) {
     total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
   return (
     <div className="global-loader">
+      <div className="global-loader__badge">Архив карт</div>
       <div className="global-loader__spinner" />
+      <div className="global-loader__title">Готовим коллекцию</div>
       <div className="global-loader__text">
-        Загружаем и кэшируем ресурсы...
+        Ищем локальные арты в кеше, догружаем недостающие.
       </div>
       <div className="global-loader__progress">
         <div

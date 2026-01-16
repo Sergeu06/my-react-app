@@ -5,7 +5,7 @@ import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { set, ref as databaseRef } from "firebase/database";
 import "./OpenBoxPage.css";
 import FramedCard from "../utils/FramedCard";
-import { preloadImageToCache } from "../utils/imageCache";
+import { preloadCardImage } from "../utils/imageCache";
 
 function OpenBoxPage({ uid }) {
   const location = useLocation();
@@ -130,7 +130,7 @@ function OpenBoxPage({ uid }) {
           : "0";
       setDropChance(perCardChance);
 
-      await preloadImageToCache(selectedCard.image_url);
+      await preloadCardImage(selectedCard.name, selectedCard.image_url);
       setTimeout(() => {
         setIsReady(true);
         setLoading(false);

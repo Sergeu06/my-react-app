@@ -77,7 +77,33 @@ function UpgradePage() {
 
       const allCards = await Promise.all(cardPromises);
       const validCards = allCards.filter(Boolean);
-      setPlayerCards(validCards);
+      const imageIds = [
+        ...new Set(
+          validCards
+            .map((card) => card.original_id || card.card_id || card.id)
+            .filter(Boolean)
+        ),
+      ];
+      const imageEntries = await Promise.all(
+        imageIds.map(async (cardId) => {
+          try {
+            const snap = await getDoc(doc(db, "cards", cardId));
+            return snap.exists() ? [cardId, snap.data()?.image_url || ""] : null;
+          } catch (error) {
+            console.warn("Не удалось загрузить изображение карты:", error);
+            return null;
+          }
+        })
+      );
+      const imageMap = new Map(imageEntries.filter(Boolean));
+      const hydratedCards = validCards.map((card) => ({
+        ...card,
+        image_url:
+          card.image_url ||
+          imageMap.get(card.original_id || card.card_id || card.id) ||
+          "",
+      }));
+      setPlayerCards(hydratedCards);
     };
 
     fetchCards();
