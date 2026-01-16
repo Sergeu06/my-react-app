@@ -660,11 +660,9 @@ h1 {
     1px 1px 0 #000;
 }
 
-.upgrade-title-wrapper {
+.upgrade-arrow-area {
   display: flex;
-  justify-content: center;
-  position: relative;
-  width: 100%;
+  align-items: center;
 }
 
 .info-buttonU {
@@ -680,9 +678,7 @@ h1 {
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s ease;
-
-  margin-top: 6.5vh; /* добавляет отступ сверху */
-  margin-left: 4vw;
+  margin: 0;
 }
 
 .info-buttonU:hover {
