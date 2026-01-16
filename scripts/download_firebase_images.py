@@ -6,7 +6,8 @@ from pathlib import Path
 from urllib.parse import urlparse, unquote
 
 import requests
-from google.cloud import firestore
+import firebase_admin
+from firebase_admin import credentials, firestore
 
 
 def _sanitize_filename(name: str) -> str:
@@ -20,15 +21,22 @@ def _extension_from_url(url: str) -> str:
     return ext if ext else ".png"
 
 
+def init_firebase(cred_path: str) -> None:
+    # Инициализируем Firebase Admin один раз
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+
+
 def download_cards(collection: str, output_dir: Path) -> None:
-    db = firestore.Client()
+    db = firestore.client()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     docs = db.collection(collection).stream()
     seen_names = set()
 
     for doc in docs:
-        data = doc.to_dict()
+        data = doc.to_dict() or {}
         name = data.get("name")
         image_url = data.get("image_url")
 
@@ -36,8 +44,8 @@ def download_cards(collection: str, output_dir: Path) -> None:
             print(f"Skipping {doc.id}: missing name or image_url")
             continue
 
-        base_name = _sanitize_filename(name)
-        ext = _extension_from_url(image_url)
+        base_name = _sanitize_filename(str(name))
+        ext = _extension_from_url(str(image_url))
         filename = f"{base_name}{ext}"
 
         if filename in seen_names:
@@ -46,7 +54,7 @@ def download_cards(collection: str, output_dir: Path) -> None:
         seen_names.add(filename)
         destination = output_dir / filename
 
-        response = requests.get(image_url, timeout=30)
+        response = requests.get(str(image_url), timeout=30)
         response.raise_for_status()
         destination.write_bytes(response.content)
 
@@ -55,9 +63,12 @@ def download_cards(collection: str, output_dir: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description=(
-            "Download card images from Firebase Storage using metadata stored in Cloud Firestore."
-        )
+        description="Download card images from Firebase Storage using metadata stored in Cloud Firestore (Firebase Admin SDK)."
+    )
+    parser.add_argument(
+        "--cred",
+        required=True,
+        help="Path to Firebase service account JSON (certificate).",
     )
     parser.add_argument(
         "--collection",
@@ -71,7 +82,10 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    cred_path = os.path.expanduser(args.cred)
     output_dir = Path(os.path.expanduser(args.output))
+
+    init_firebase(cred_path)
     download_cards(args.collection, output_dir)
 
 
