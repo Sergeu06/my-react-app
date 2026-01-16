@@ -359,6 +359,10 @@ function App() {
     const isGameOrResult =
       location.pathname.startsWith("/game") ||
       location.pathname.startsWith("/result");
+    const isFullBleedPage =
+      location.pathname.startsWith("/raid") ||
+      location.pathname.startsWith("/game") ||
+      location.pathname.startsWith("/open-box");
 
     return (
       <motion.div
@@ -378,7 +382,13 @@ function App() {
           background: isGameOrResult ? "black" : "transparent",
         }}
       >
-        <div className="page-shell">{children}</div>
+        <div
+          className={`page-shell${
+            isFullBleedPage ? " page-shell--full-bleed" : ""
+          }`}
+        >
+          {children}
+        </div>
       </motion.div>
     );
   };
