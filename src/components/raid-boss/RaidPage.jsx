@@ -38,6 +38,14 @@ function RaidPage() {
   const [damageThisTurnDot, setDamageThisTurnDot] = useState(null);
   const [notEnoughEnergyMessage, setNotEnoughEnergyMessage] = useState(null);
   const [raidEvent, setRaidEvent] = useState(null);
+
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
   const [eventCountdown, setEventCountdown] = useState(0);
 
   const [gameStarted, setGameStarted] = useState(false);

@@ -33,7 +33,7 @@ function CardImage({
     return () => {
       active = false;
     };
-  }, [name, fallbackSrc]);
+  }, [name, fallbackSrc, preferLocal]);
 
   return <img src={resolvedSrc} alt={alt} className={className} {...props} />;
 }
