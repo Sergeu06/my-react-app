@@ -775,7 +775,7 @@ function FightPage({ uid, searchState, setSearchState }) {
                   <span style={{ fontWeight: "bold", width: 18 }}>
                     {index + 1}.
                   </span>
-                  <img
+                  <CachedImage
                     src={player.avatar}
                     alt={player.nickname}
                     style={{
@@ -1177,7 +1177,7 @@ function FightPage({ uid, searchState, setSearchState }) {
                   <span style={{ fontWeight: "bold", width: 24 }}>
                     {index + 1}.
                   </span>
-                  <img
+                  <CachedImage
                     src={player.avatar}
                     alt={player.nickname}
                     style={{
