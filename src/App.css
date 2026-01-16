@@ -359,6 +359,10 @@ a {
   gap: 16px;
 }
 
+.page-shell.page-shell--full-bleed {
+  padding: 0;
+}
+
 .page-shell > * {
   scroll-margin-top: 16px;
 }
