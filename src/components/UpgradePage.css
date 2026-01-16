@@ -135,14 +135,21 @@ h1 {
 }
 
 .fusion-slots {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
-  gap: 10px;
-  width: 100%;
+  --fusion-slot-size: 86px;
+  --fusion-slot-gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--fusion-slot-gap);
+  width: min(
+    100%,
+    calc(3 * var(--fusion-slot-size) + 2 * var(--fusion-slot-gap))
+  );
 }
 
 .fusion-slot {
   position: relative;
+  width: var(--fusion-slot-size);
   min-height: 92px;
   background: rgba(20, 20, 20, 0.8);
   border: 1px dashed #444;
