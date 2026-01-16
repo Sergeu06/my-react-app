@@ -44,6 +44,18 @@ function UpgradePage() {
   }, [userData]);
 
   useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!uid) return;
     const fetchCards = async () => {
       const userRef = doc(db, "users", uid);
@@ -776,10 +788,6 @@ function UpgradePage() {
           : ""
       } ${activeTab === "fusion" ? "fusion-mode" : ""}`}
     >
-      <h1 className="upgrade-title">
-        {activeTab === "upgrade" ? "Повышение ранга" : "Слияние"}
-      </h1>
-
       <div className="tabs upgrade-tabs">
         <button
           className={`tab ${activeTab === "upgrade" ? "active" : ""}`}
