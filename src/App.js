@@ -480,9 +480,12 @@ function App() {
     let rafId = null;
     const onScroll = () => {
       const scrollY = window.scrollY;
+      const maxShift = window.innerHeight;
+      const desiredShift = scrollY * -0.4;
+      const clampedShift = Math.max(-maxShift, Math.min(0, desiredShift));
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
-        bg.style.backgroundPositionY = `${scrollY * -0.4}px`;
+        bg.style.backgroundPositionY = `${clampedShift}px`;
       });
     };
 
