@@ -170,6 +170,9 @@ a {
     linear-gradient(160deg, #2b1b12 0%, #251814 45%, #140d0b 100%),
     repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 6px, rgba(255, 255, 255, 0) 6px 24px),
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 5px, rgba(255, 255, 255, 0) 5px 22px);
+  background-size: 100% 200%;
+  background-repeat: repeat-y;
+  background-position: center 0;
 }
 
 .background-container.bg-collection {
@@ -178,6 +181,9 @@ a {
     radial-gradient(circle at 20% 20%, #10313a 0%, #142635 50%, #0b141c 100%),
     repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 6px, rgba(255, 255, 255, 0) 6px 24px),
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 5px, rgba(255, 255, 255, 0) 5px 22px);
+  background-size: 100% 200%;
+  background-repeat: repeat-y;
+  background-position: center 0;
 }
 
 .background-container.bg-upgrade {
@@ -194,6 +200,9 @@ a {
     radial-gradient(circle at 30% 15%, #123126 0%, #182a2a 55%, #0a1110 100%),
     repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 6px, rgba(255, 255, 255, 0) 6px 24px),
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 5px, rgba(255, 255, 255, 0) 5px 22px);
+  background-size: 100% 200%;
+  background-repeat: repeat-y;
+  background-position: center 0;
 }
 
 .background-container.bg-raid {
