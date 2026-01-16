@@ -165,33 +165,33 @@ a {
 }
 
 .background-container.bg-shop {
-  background-image: radial-gradient(circle at 20% 15%, rgba(255, 184, 0, 0.12), transparent 45%),
-    radial-gradient(circle at 80% 20%, rgba(79, 195, 247, 0.12), transparent 50%),
-    linear-gradient(160deg, #182233 0%, #1a2838 45%, #0f1724 100%),
+  background-image: radial-gradient(circle at 20% 15%, rgba(255, 160, 0, 0.22), transparent 45%),
+    radial-gradient(circle at 85% 30%, rgba(255, 87, 34, 0.18), transparent 55%),
+    linear-gradient(160deg, #2b1b12 0%, #251814 45%, #140d0b 100%),
     repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 6px, rgba(255, 255, 255, 0) 6px 24px),
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 5px, rgba(255, 255, 255, 0) 5px 22px);
 }
 
 .background-container.bg-collection {
-  background-image: radial-gradient(circle at 15% 10%, rgba(124, 77, 255, 0.16), transparent 45%),
-    radial-gradient(circle at 85% 15%, rgba(255, 183, 77, 0.12), transparent 50%),
-    radial-gradient(circle at 15% 10%, #2b2746 0%, #1c2434 45%, #0c121b 100%),
+  background-image: radial-gradient(circle at 10% 15%, rgba(0, 200, 190, 0.2), transparent 50%),
+    radial-gradient(circle at 90% 20%, rgba(0, 150, 255, 0.16), transparent 55%),
+    radial-gradient(circle at 20% 20%, #10313a 0%, #142635 50%, #0b141c 100%),
     repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 6px, rgba(255, 255, 255, 0) 6px 24px),
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 5px, rgba(255, 255, 255, 0) 5px 22px);
 }
 
 .background-container.bg-upgrade {
-  background-image: radial-gradient(circle at 70% 20%, rgba(156, 39, 176, 0.16), transparent 50%),
-    radial-gradient(circle at 25% 25%, rgba(124, 77, 255, 0.14), transparent 45%),
-    linear-gradient(180deg, #1c1930 0%, #1b2436 45%, #0e121b 100%),
+  background-image: radial-gradient(circle at 70% 20%, rgba(186, 104, 200, 0.22), transparent 50%),
+    radial-gradient(circle at 25% 25%, rgba(94, 53, 177, 0.18), transparent 50%),
+    linear-gradient(180deg, #23143b 0%, #1a1b33 45%, #0d0f1b 100%),
     repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 6px, rgba(255, 255, 255, 0) 6px 24px),
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 5px, rgba(255, 255, 255, 0) 5px 22px);
 }
 
 .background-container.bg-profile {
-  background-image: radial-gradient(circle at 20% 20%, rgba(255, 193, 7, 0.12), transparent 45%),
-    radial-gradient(circle at 85% 30%, rgba(33, 150, 243, 0.12), transparent 55%),
-    radial-gradient(circle at 20% 20%, #253042 0%, #1b2231 50%, #0b0f16 100%),
+  background-image: radial-gradient(circle at 20% 20%, rgba(76, 175, 80, 0.2), transparent 50%),
+    radial-gradient(circle at 85% 30%, rgba(0, 230, 118, 0.16), transparent 55%),
+    radial-gradient(circle at 30% 15%, #123126 0%, #182a2a 55%, #0a1110 100%),
     repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 6px, rgba(255, 255, 255, 0) 6px 24px),
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 5px, rgba(255, 255, 255, 0) 5px 22px);
 }
