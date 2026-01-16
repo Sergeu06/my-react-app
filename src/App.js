@@ -400,6 +400,7 @@ function App() {
     onSwipedLeft: (eventData) => {
       if (eventData.event.target.closest(".level-reward-scroll-container"))
         return;
+      if (eventData.event.target.closest(".fusion-slider")) return;
 
       if (
         !path.includes("/raid") &&
@@ -412,6 +413,7 @@ function App() {
     onSwipedRight: (eventData) => {
       if (eventData.event.target.closest(".level-reward-scroll-container"))
         return;
+      if (eventData.event.target.closest(".fusion-slider")) return;
 
       if (!path.includes("/raid") && !path.includes("/game") && tabIndex > 0) {
         updateTab(tabIndex - 1, -1); // 👈 влево

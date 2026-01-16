@@ -591,9 +591,11 @@ const ProfilePage = () => {
 
       <div className="achievements-section">
         <h3>Ачивки</h3>
-        <p className="achievements-hint">
-          Выполняйте условия и выставляйте любимые достижения в профиль.
-        </p>
+        {isOwnProfile && (
+          <p className="achievements-hint">
+            Выполняйте условия и выставляйте любимые достижения в профиль.
+          </p>
+        )}
         <div className="achievement-slots">
           {achievementsShowcase.map((achievementId, index) => {
             const achievement = ACHIEVEMENTS.find(
@@ -644,47 +646,49 @@ const ProfilePage = () => {
           })}
         </div>
 
-        <div className="achievement-list">
-          {ACHIEVEMENTS.map((achievement) => {
-            const progress = getAchievementProgress(
-              achievement,
-              profileData
-            );
-            return (
-              <div key={achievement.id} className="achievement-card">
-                <div className="achievement-card-header">
-                  <div>
-                    <h4>{achievement.title}</h4>
-                    <p>{achievement.description}</p>
+        {isOwnProfile && (
+          <div className="achievement-list">
+            {ACHIEVEMENTS.map((achievement) => {
+              const progress = getAchievementProgress(
+                achievement,
+                profileData
+              );
+              return (
+                <div key={achievement.id} className="achievement-card">
+                  <div className="achievement-card-header">
+                    <div>
+                      <h4>{achievement.title}</h4>
+                      <p>{achievement.description}</p>
+                    </div>
+                    <div className="achievement-level">
+                      {progress.achievedLevels}/{progress.maxLevel}
+                    </div>
                   </div>
-                  <div className="achievement-level">
-                    {progress.achievedLevels}/{progress.maxLevel}
+                  <ul>
+                    {achievement.levels.map((level, idx) => (
+                      <li
+                        key={level.value}
+                        className={
+                          progress.achievedLevels > idx ? "done" : ""
+                        }
+                      >
+                        {level.label}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="achievement-progress">
+                    Прогресс:{" "}
+                    {progress.nextLevel
+                      ? `${progress.value}/${progress.nextLevel.value}`
+                      : "Достигнут максимум"}
                   </div>
                 </div>
-                <ul>
-                  {achievement.levels.map((level, idx) => (
-                    <li
-                      key={level.value}
-                      className={
-                        progress.achievedLevels > idx ? "done" : ""
-                      }
-                    >
-                      {level.label}
-                    </li>
-                  ))}
-                </ul>
-                <div className="achievement-progress">
-                  Прогресс:{" "}
-                  {progress.nextLevel
-                    ? `${progress.value}/${progress.nextLevel.value}`
-                    : "Достигнут максимум"}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
-        {showAchievementModal && (
+        {showAchievementModal && isOwnProfile && (
           <div
             className="modal-overlay"
             onClick={() => setShowAchievementModal(false)}
