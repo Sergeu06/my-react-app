@@ -1,5 +1,5 @@
 import React from "react";
-import CachedImage from "./CachedImage";
+import CardImage from "./CardImage";
 import { toRoman } from "../utils/toRoman";
 
 const rarityFrameMap = {
@@ -56,6 +56,8 @@ function FramedCard({
   const normalizedRarity = normalizeRarity(card.rarity);
   const frameSrc =
     rarityFrameMap[normalizedRarity] || rarityFrameMap["обычная"];
+  const shouldPreferLocal = normalizedRarity !== "lootbox";
+  const fallbackSrc = card.image_url || card.imageUrl || card.image || "";
 
   const color = glowColor || getGlowColor(card);
 
@@ -89,8 +91,10 @@ function FramedCard({
           (quantityBadge || <div className="card-quantity-badge" />)}
 
         {showName && <div className="card-name">{card.name}</div>}
-        <CachedImage
-          src={card.image_url}
+        <CardImage
+          name={card.name}
+          fallbackSrc={fallbackSrc}
+          preferLocal={shouldPreferLocal}
           alt={card.name}
           className="card-image"
         />
