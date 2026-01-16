@@ -83,15 +83,22 @@ export const preloadCardImage = async (name, fallbackUrl) => {
   const localUrl = getLocalCardImageUrl(name);
   if (localUrl) {
     const cached = await preloadImageToCache(localUrl);
-    if (cached) return true;
+    if (cached) {
+      return { success: true, source: "local", url: localUrl };
+    }
     localCardMisses.add(localUrl);
   }
 
   if (fallbackUrl) {
-    return preloadImageToCache(fallbackUrl);
+    const cachedFallback = await preloadImageToCache(fallbackUrl);
+    return {
+      success: cachedFallback,
+      source: cachedFallback ? "fallback" : "none",
+      url: fallbackUrl,
+    };
   }
 
-  return false;
+  return { success: false, source: "none", url: localUrl };
 };
 
 export const getCardImageUrl = async ({ name, fallbackUrl }) => {

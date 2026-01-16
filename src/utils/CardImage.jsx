@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { getCardImageUrl } from "./imageCache";
+import { getCachedImageUrl, getCardImageUrl } from "./imageCache";
 
-function CardImage({ name, fallbackSrc, alt, className, ...props }) {
+function CardImage({
+  name,
+  fallbackSrc,
+  preferLocal = true,
+  alt,
+  className,
+  ...props
+}) {
   const [resolvedSrc, setResolvedSrc] = useState(fallbackSrc);
 
   useEffect(() => {
@@ -12,7 +19,11 @@ function CardImage({ name, fallbackSrc, alt, className, ...props }) {
       return () => {};
     }
 
-    getCardImageUrl({ name, fallbackUrl: fallbackSrc })
+    const resolver = preferLocal
+      ? getCardImageUrl({ name, fallbackUrl: fallbackSrc })
+      : getCachedImageUrl(fallbackSrc);
+
+    Promise.resolve(resolver)
       .then((url) => {
         if (!active) return;
         setResolvedSrc(url || fallbackSrc);

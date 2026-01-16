@@ -56,6 +56,7 @@ function FramedCard({
   const normalizedRarity = normalizeRarity(card.rarity);
   const frameSrc =
     rarityFrameMap[normalizedRarity] || rarityFrameMap["обычная"];
+  const shouldPreferLocal = normalizedRarity !== "lootbox";
 
   const color = glowColor || getGlowColor(card);
 
@@ -92,6 +93,7 @@ function FramedCard({
         <CardImage
           name={card.name}
           fallbackSrc={card.image_url}
+          preferLocal={shouldPreferLocal}
           alt={card.name}
           className="card-image"
         />

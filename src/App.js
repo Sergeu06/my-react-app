@@ -272,7 +272,8 @@ function App() {
       await Promise.all(
         [
           ...allAssets.map(async (src) => {
-            await preloadImageToCache(src);
+            const cached = await preloadImageToCache(src);
+            console.info("[GlobalLoader] asset cached", { src, cached });
             if (isActive) {
               setAssetsProgress((prev) => ({
                 loaded: Math.min(prev.loaded + 1, prev.total),
@@ -281,7 +282,12 @@ function App() {
             }
           }),
           ...cardEntries.map(async (card) => {
-            await preloadCardImage(card.name, card.image_url);
+            const result = await preloadCardImage(card.name, card.image_url);
+            console.info("[GlobalLoader] card image cached", {
+              name: card.name,
+              fallbackUrl: card.image_url,
+              ...result,
+            });
             if (isActive) {
               setAssetsProgress((prev) => ({
                 loaded: Math.min(prev.loaded + 1, prev.total),
