@@ -59,14 +59,9 @@ h1 {
   box-shadow: 0 0 20px rgba(255, 140, 0, 0.2);
 }
 
-.card-style img {
-  display: block;
-  width: 150px;
-  height: auto;
-  max-width: 100%;
-  border-radius: 8px;
-  margin: 0 auto 16px;
-  transition: transform 0.3s ease;
+.card-style .card-frame-wrapper {
+  width: min(160px, 100%);
+  margin: 0 auto 12px;
 }
 
 .card-style .card-name {
