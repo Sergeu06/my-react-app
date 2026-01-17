@@ -26,6 +26,7 @@ import InfoIcon from "@mui/icons-material/Info";
 import "./ShopPage.css";
 import { useNavigate } from "react-router-dom";
 import { getGlowColor } from "../utils/FramedCard";
+import { renderCardStats } from "../utils/renderCardStats";
 import { DAILY_TASK_IDS, completeDailyTask } from "../utils/dailyTasks";
 import { buildLootboxChances } from "../utils/lootboxChances";
 
@@ -165,6 +166,16 @@ function ShopPage({ uid }) {
     const [type, value] = filtered[0];
     return { type, value };
   }
+
+  const getCornerStat = (card) => {
+    const stats = renderCardStats(card);
+    if (stats.length === 0) return null;
+    const stat = stats[0];
+    return {
+      type: stat.type,
+      value: stat.value ?? "×",
+    };
+  };
 
   const handleTouchStart = (card, event) => {
     const touch = event.touches ? event.touches[0] : event;
@@ -627,77 +638,92 @@ function ShopPage({ uid }) {
 
         {activeTab === "shop" && (
           <>
-            {lootboxes.length > 0 && (
-              <div className="card-category">
-                <h2 className="category-title">Ланч-боксы</h2>
-                <div className="grid">
-                  {lootboxes.map((box) => (
-                    <FramedCard
-                      key={box.id}
-                      card={{
-                        name: box.name || "Ланч-Загадочный",
-                        image_url: box.image_url,
-                        rarity: "lootbox",
-                        quantity: box.quantity ?? 1,
-                      }}
-                      onClick={() =>
-                        handleCardClick({
-                          ...box,
-                          rarity: "lootbox",
-                          card_id: box.id,
-                          description:
-                            box.description ?? "Содержит случайные карты",
-                        })
-                      }
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {Object.entries(groupedCards).map(([key, cards]) =>
-              cards.length > 0 ? (
-                <div key={key} className="card-category">
-                  <h2 className="category-title">{categoryNames[key]}</h2>
-                  <div className="grid">
-                    {cards.map((card) => (
-                      <FramedCard
-                        key={card.card_id}
-                        card={card}
-                        showQuantityBadge={true}
-                        rarityAccessLevel={rarityAccessLevel}
-                        glowColor={getGlowColor(card)}
-                        onClick={() =>
-                          card.locked
-                            ? handleLockedCardClick(card)
-                            : handleCardClick(card)
-                        }
-                        quantityBadge={
-                          <div className="card-quantity-badge">
-                            {`${card.quantity}/${card.total_quantity}`}
-                          </div>
-                        }
-                        className={`${card.locked ? "locked-card" : ""} ${
-                          card.quantity <= 0 ? "locked-card" : ""
-                        }`}
-                        title={
-                          card.locked
-                            ? `Доступно с уровня ${
-                                rarityAccessLevel[card.rarity] || 1
-                              }`
-                            : ""
-                        }
-                        onTouchStart={(e) => handleTouchStart(card, e)}
-                        onTouchEnd={handleTouchEnd}
-                        onTouchCancel={handleTouchEnd}
-                        onMouseDown={(e) => handleTouchStart(card, e)}
-                        onMouseUp={handleTouchEnd}
-                        onMouseLeave={handleTouchEnd}
-                      />
-                    ))}
+            {isLoading ? (
+              <div className="grid">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <div key={`shop-skeleton-${index}`} className="skeleton-card">
+                    <div className="skeleton skeleton-image" />
+                    <div className="skeleton skeleton-text" />
+                    <div className="skeleton skeleton-price" />
                   </div>
-                </div>
-              ) : null
+                ))}
+              </div>
+            ) : (
+              <>
+                {lootboxes.length > 0 && (
+                  <div className="card-category">
+                    <h2 className="category-title">Ланч-боксы</h2>
+                    <div className="grid">
+                      {lootboxes.map((box) => (
+                        <FramedCard
+                          key={box.id}
+                          card={{
+                            name: box.name || "Ланч-Загадочный",
+                            image_url: box.image_url,
+                            rarity: "lootbox",
+                            quantity: box.quantity ?? 1,
+                          }}
+                          onClick={() =>
+                            handleCardClick({
+                              ...box,
+                              rarity: "lootbox",
+                              card_id: box.id,
+                              description:
+                                box.description ?? "Содержит случайные карты",
+                            })
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {Object.entries(groupedCards).map(([key, cards]) =>
+                  cards.length > 0 ? (
+                    <div key={key} className="card-category">
+                      <h2 className="category-title">{categoryNames[key]}</h2>
+                      <div className="grid">
+                        {cards.map((card) => (
+                          <FramedCard
+                            key={card.card_id}
+                            card={card}
+                            showQuantityBadge={true}
+                            rarityAccessLevel={rarityAccessLevel}
+                            glowColor={getGlowColor(card)}
+                            statBadge={getCornerStat(card)}
+                            onClick={() =>
+                              card.locked
+                                ? handleLockedCardClick(card)
+                                : handleCardClick(card)
+                            }
+                            quantityBadge={
+                              <div className="card-quantity-badge">
+                                {`${card.quantity}/${card.total_quantity}`}
+                              </div>
+                            }
+                            className={`${card.locked ? "locked-card" : ""} ${
+                              card.quantity <= 0 ? "locked-card" : ""
+                            }`}
+                            title={
+                              card.locked
+                                ? `Доступно с уровня ${
+                                    rarityAccessLevel[card.rarity] || 1
+                                  }`
+                                : ""
+                            }
+                            onTouchStart={(e) => handleTouchStart(card, e)}
+                            onTouchEnd={handleTouchEnd}
+                            onTouchCancel={handleTouchEnd}
+                            onMouseDown={(e) => handleTouchStart(card, e)}
+                            onMouseUp={handleTouchEnd}
+                            onMouseLeave={handleTouchEnd}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null
+                )}
+              </>
             )}
           </>
         )}

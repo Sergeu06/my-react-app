@@ -52,6 +52,7 @@ function FramedCard({
   showPriority = false, // 👈 Новый флаг
   glowColor = null,
   showName = true,
+  statBadge = null,
 }) {
   const normalizedRarity = normalizeRarity(card.rarity);
   const frameSrc =
@@ -87,6 +88,15 @@ function FramedCard({
             : ""
         }
       >
+        {statBadge && (
+          <div
+            className={`card-corner ${statBadge.type} ${
+              statBadge.position || "top-left"
+            }`}
+          >
+            {statBadge.value ?? "×"}
+          </div>
+        )}
         {showQuantityBadge &&
           (quantityBadge || <div className="card-quantity-badge" />)}
 

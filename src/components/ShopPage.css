@@ -495,16 +495,15 @@
   background-color: #1a1a1a;
   border-radius: 10px;
   padding: 16px;
-  animation: pulse 1.5s infinite ease-in-out;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+  background: linear-gradient(90deg, #3a3a3a 25%, #4a4a4a 50%, #3a3a3a 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  animation: shimmer 1.2s infinite;
   border-radius: 8px;
 }
 
@@ -522,6 +521,48 @@
 .skeleton-seller {
   width: 60%;
   height: 16px;
+}
+
+.shop-page .card-corner {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-weight: 700;
+  font-size: 0.85em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  user-select: none;
+  pointer-events: none;
+  text-shadow: 1px 1px 2px #000;
+  color: #fff;
+  z-index: 6;
+}
+
+.shop-page .card-corner.damage,
+.shop-page .card-corner.damage_over_time {
+  color: #ff4444;
+}
+
+.shop-page .card-corner.heal {
+  color: #33cc33;
+}
+
+.shop-page .card-corner.damage_multiplier {
+  color: #cc66ff;
+}
+
+.shop-page .card-corner.remove_multiplier {
+  color: #00cccc;
+}
+
+.shop-page .card-corner.top-right {
+  left: auto;
+  right: 6px;
+}
+
+.shop-page .card-corner.bottom-left {
+  top: auto;
+  bottom: 6px;
 }
 
 @keyframes shimmer {
