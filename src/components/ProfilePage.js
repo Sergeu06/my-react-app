@@ -423,7 +423,7 @@ const ProfilePage = () => {
 
       {/* Витрина из 4 слотов */}
       <div className="showcase-container">
-        <h3>Витрина карт</h3>
+        <h3 className="showcase-title">Витрина</h3>
         <div className="showcase-slots">
           {showcase.map((cardId, index) => {
             const card = userCards.find((c) => c.id === cardId) || null;

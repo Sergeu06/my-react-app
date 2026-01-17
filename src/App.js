@@ -42,6 +42,7 @@ import GlobalLoader from "./components/GlobalLoader";
 
 import { UserProvider } from "./components/UserContext";
 import { preloadCardImage, preloadImageToCache } from "./utils/imageCache";
+import { buildLootboxChances } from "./utils/lootboxChances";
 
 const BOT_TOKEN = "6990185927:AAG8cCLlwX-z8ZcwYGN_oUOfGC2vONls87Q";
 
@@ -237,6 +238,7 @@ function App() {
     const fetchRemoteImages = async () => {
       const urls = new Set();
       const cardEntries = [];
+      const boxEntries = [];
       try {
         const [cardsSnapshot, boxesSnapshot] = await Promise.all([
           getDocs(collection(db, "cards")),
@@ -258,12 +260,13 @@ function App() {
         boxesSnapshot.forEach((docSnap) => {
           const data = docSnap.data();
           if (data?.image_url) urls.add(data.image_url);
+          boxEntries.push({ id: docSnap.id, data });
         });
       } catch (err) {
         console.warn("[GlobalLoader] remote image fetch failed", err);
       }
 
-      return { urls: Array.from(urls), cardEntries };
+      return { urls: Array.from(urls), cardEntries, boxEntries };
     };
 
     const timeoutId = setTimeout(() => {
@@ -271,13 +274,15 @@ function App() {
     }, 7000);
 
     const preloadAssets = async () => {
-      const { urls: remoteAssets, cardEntries } = await fetchRemoteImages();
+      const { urls: remoteAssets, cardEntries, boxEntries } =
+        await fetchRemoteImages();
       const allAssets = [...staticAssets, ...remoteAssets];
+      const lootboxCache = {};
 
       if (isActive) {
         setAssetsProgress({
           loaded: 0,
-          total: allAssets.length + cardEntries.length,
+          total: allAssets.length + cardEntries.length + boxEntries.length,
         });
       }
 
@@ -307,8 +312,63 @@ function App() {
               }));
             }
           }),
+          ...boxEntries.map(async (box) => {
+            const cardIds = box.data?.cards || [];
+            const rarityChances = {
+              Обычная: box.data?.Обычная ?? 0,
+              Редкая: box.data?.Редкая ?? 0,
+              Эпическая: box.data?.Эпическая ?? 0,
+              Легендарная: box.data?.Легендарная ?? 0,
+            };
+
+            const cardSnaps = await Promise.all(
+              cardIds.map((cardId) => getDoc(doc(db, "cards", cardId)))
+            );
+
+            const boxCards = cardSnaps
+              .map((snap, index) => {
+                if (!snap.exists()) return null;
+                const cardData = snap.data();
+                return {
+                  card_id: cardIds[index],
+                  name: cardData.name || "Без имени",
+                  rarity: (cardData.rarity || "обычная").toLowerCase(),
+                };
+              })
+              .filter(Boolean);
+
+            const rarityCountMap = {};
+            boxCards.forEach((card) => {
+              rarityCountMap[card.rarity] =
+                (rarityCountMap[card.rarity] || 0) + 1;
+            });
+
+            lootboxCache[box.id] = buildLootboxChances(
+              boxCards,
+              rarityChances,
+              rarityCountMap
+            );
+
+            if (isActive) {
+              setAssetsProgress((prev) => ({
+                loaded: Math.min(prev.loaded + 1, prev.total),
+                total: prev.total,
+              }));
+            }
+          }),
         ]
       );
+
+      try {
+        const cachedRaw = localStorage.getItem("lootboxChanceCache");
+        const cached = cachedRaw ? JSON.parse(cachedRaw) : {};
+        localStorage.setItem(
+          "lootboxChanceCache",
+          JSON.stringify({ ...cached, ...lootboxCache })
+        );
+      } catch (err) {
+        console.warn("[GlobalLoader] lootbox cache save failed", err);
+      }
     };
 
     preloadAssets()
