@@ -1,13 +1,18 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { db, database, retryRequest, update } from "./firebase";
-import { ref, get, remove } from "firebase/database";
 import {
+  db,
+  database,
+  retryRequest,
+  update,
+  databaseRef,
+  get,
+  remove,
   doc,
   getDoc,
   updateDoc,
   arrayUnion,
   runTransaction,
-} from "firebase/firestore";
+} from "./firebase";
 
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -132,7 +137,7 @@ function Market({ setError }) {
   const fetchMarketCards = useCallback(async () => {
     setIsLoading(true);
     try {
-      const marketRef = ref(database, "market");
+      const marketRef = databaseRef(database, "market");
       const marketSnapshot = await retryRequest(() => get(marketRef));
 
       if (marketSnapshot.exists()) {
@@ -144,7 +149,7 @@ function Market({ setError }) {
             const sellerName = marketCard.sellerName;
             const sellerUid = marketCard.sellerUid || null;
 
-            const cardRef = ref(database, `cards/${key}`);
+            const cardRef = databaseRef(database, `cards/${key}`);
             const cardSnapshot = await retryRequest(() => get(cardRef));
             const cardDetails = cardSnapshot.exists()
               ? cardSnapshot.val()
@@ -201,11 +206,11 @@ function Market({ setError }) {
         cards: arrayUnion(selectedCard.key),
       });
 
-      await update(ref(database, `cards/${marketKey}`), {
+      await update(databaseRef(database, `cards/${marketKey}`), {
         sell: false,
       });
 
-      await remove(ref(database, `market/${marketKey}`));
+      await remove(databaseRef(database, `market/${marketKey}`));
 
       const updatedFullList = allCardsFull.filter(
         (card) => card.key !== marketKey
@@ -225,7 +230,7 @@ function Market({ setError }) {
     setActionInProgress(true);
 
     try {
-      const cardRef = ref(database, `cards/${selectedCard.key}`);
+      const cardRef = databaseRef(database, `cards/${selectedCard.key}`);
       const cardSnapshot = await retryRequest(() => get(cardRef));
       const cardData = cardSnapshot.exists() ? cardSnapshot.val() : null;
 
@@ -275,13 +280,13 @@ function Market({ setError }) {
 
         // 3. Обновляем карточку и убираем с рынка
         await retryRequest(() =>
-          update(ref(database, `cards/${selectedCard.key}`), {
+          update(databaseRef(database, `cards/${selectedCard.key}`), {
             owner: currentUid,
             sell: false,
           })
         );
 
-        await remove(ref(database, `market/${selectedCard.key}`));
+        await remove(databaseRef(database, `market/${selectedCard.key}`));
 
         // 4. Обновляем UI
         const updatedFullList = allCardsFull.filter(

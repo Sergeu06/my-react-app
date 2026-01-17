@@ -1,6 +1,5 @@
 // game-logic/cardEffectsPvP.js
-import { ref, get, set } from "firebase/database";
-import { database } from "../firebase";
+import { databaseRef, get, set, database } from "../firebase";
 
 export function generateId() {
   return Math.random().toString(36).substr(2, 9);
@@ -66,8 +65,11 @@ export async function applyHealPvP(targetUid, card, lobbyId) {
   const healValue = Number(card.heal);
   if (!isFinite(healValue) || healValue <= 0) return null;
 
-  const hpRef = ref(database, `lobbies/${lobbyId}/hp/${targetUid}`);
-  const maxHpRef = ref(database, `lobbies/${lobbyId}/maxHp/${targetUid}`);
+  const hpRef = databaseRef(database, `lobbies/${lobbyId}/hp/${targetUid}`);
+  const maxHpRef = databaseRef(
+    database,
+    `lobbies/${lobbyId}/maxHp/${targetUid}`
+  );
 
   const [hpSnap, maxHpSnap] = await Promise.all([get(hpRef), get(maxHpRef)]);
   const currentHp = hpSnap.val() ?? 100;
@@ -101,7 +103,7 @@ export async function applyDamagePvP(
     return null;
   }
 
-  const hpRef = ref(database, `lobbies/${lobbyId}/hp/${targetUid}`);
+  const hpRef = databaseRef(database, `lobbies/${lobbyId}/hp/${targetUid}`);
   const snap = await get(hpRef);
   const currentHp = snap.val() ?? 0;
 
@@ -151,7 +153,7 @@ export async function applyDotPvP(
   const multiplier = damageMultiplierEffect?.multiplier ?? 1;
   const effectiveDamage = Math.max(1, Math.round(baseDamage * multiplier));
 
-  const hpRef = ref(database, `lobbies/${lobbyId}/hp/${targetUid}`);
+  const hpRef = databaseRef(database, `lobbies/${lobbyId}/hp/${targetUid}`);
   const snap = await get(hpRef);
   const currentHp = snap.val() ?? 0;
 

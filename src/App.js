@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Navigate } from "react-router-dom";
-import { ref, onValue } from "firebase/database";
 import {
   Routes,
   Route,
@@ -16,7 +15,17 @@ import StoreIcon from "@mui/icons-material/Store";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import UpgradeIcon from "@mui/icons-material/ArrowCircleUpRounded";
 import CryptoJS from "crypto-js";
-import { db, collection, getDocs, doc, getDoc, setDoc, database} from "./components/firebase";
+import {
+  db,
+  collection,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  database,
+  databaseRef,
+  onValue,
+} from "./components/firebase";
 import { DndProvider } from "react-dnd";
 import { TouchBackend } from "react-dnd-touch-backend";
 import { useSwipeable } from "react-swipeable";
@@ -511,7 +520,7 @@ function App() {
   useEffect(() => {
     if (!searchState.lobbyId || !uid) return;
 
-    const lobbyRef = ref(database, `lobbies/${searchState.lobbyId}`);
+    const lobbyRef = databaseRef(database, `lobbies/${searchState.lobbyId}`);
     const unsubscribe = onValue(lobbyRef, (snapshot) => {
       const lobby = snapshot.val();
       if (!lobby) return;

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { ref, set, update } from "firebase/database";
+import { doc, getDoc, updateDoc, databaseRef, set, update } from "./firebase";
 import FramedCard from "../utils/FramedCard";
 
 function CardModal({
@@ -69,7 +68,7 @@ function CardModal({
       const nickname = userData.nickname || "Без имени";
 
       // Записываем карту в маркет
-      const marketRef = ref(database, `market/${card.id}`);
+      const marketRef = databaseRef(database, `market/${card.id}`);
       await set(marketRef, {
         price: parseFloat(price),
         sellerName: nickname,
@@ -82,7 +81,7 @@ function CardModal({
       });
 
       // Отмечаем карту как продаваемую
-      const cardRef = ref(database, `cards/${card.id}`);
+      const cardRef = databaseRef(database, `cards/${card.id}`);
       await update(cardRef, { sell: true });
 
       // Удаляем из Firestore
@@ -133,7 +132,7 @@ function CardModal({
     if (!confirm) return;
 
     try {
-      const cardRef = ref(database, `cards/${card.id}`);
+      const cardRef = databaseRef(database, `cards/${card.id}`);
       await update(cardRef, { sold: true });
 
       const userRef = doc(db, "users", uid);
