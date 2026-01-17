@@ -25,6 +25,7 @@ import InfoIcon from "@mui/icons-material/Info";
 
 import "./ShopPage.css";
 import { useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { getGlowColor } from "../utils/FramedCard";
 import { DAILY_TASK_IDS, completeDailyTask } from "../utils/dailyTasks";
 import { buildLootboxChances } from "../utils/lootboxChances";
@@ -60,6 +61,10 @@ function ShopPage({ uid }) {
   };
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const uidFromQuery = searchParams.get("start");
+  const effectiveUid = uidFromQuery || uid; // если uid пришёл пропом — используем его
+
   const rarityAccessLevel = {
     обычная: 1,
     редкая: 3,
@@ -887,9 +892,7 @@ function ShopPage({ uid }) {
                             ),
                             null
                           );
-                          navigate("/open-box", {
-                            state: { boxId: selectedCard.card_id },
-                          });
+                          navigate(`/open-box?start=${effectiveUid}`, { state: { boxId: selectedCard.card_id } });
                         } catch (err) {
                           console.error("Ошибка при открытии бонусного бокса:", err);
                           setError("Не удалось открыть бесплатный бокс");
@@ -927,9 +930,7 @@ function ShopPage({ uid }) {
                         });
 
                         // Навигация на страницу открытия бокса
-                        navigate("/open-box", {
-                          state: { boxId: selectedCard.card_id },
-                        });
+                        navigate(`/open-box?start=${effectiveUid}`, { state: { boxId: selectedCard.card_id } });
                       } catch (err) {
                         console.error("Ошибка при покупке бокса:", err);
                         setError("Ошибка при обработке покупки");
