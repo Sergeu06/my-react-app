@@ -132,7 +132,7 @@ function CardModal({
     if (!confirm) return;
 
     try {
-      const cardRef = ref(database, `cards/${card.id}`);
+      const cardRef = databaseRef(database, `cards/${card.id}`);
       await update(cardRef, { sold: true });
 
       const userRef = doc(db, "users", uid);
