@@ -1,9 +1,16 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ref, get, onValue, off, set } from "firebase/database";
-import { db } from "../firebase"; // Firestore
-import { doc, getDoc } from "firebase/firestore"; // для getDoc и doc
-import { database } from "../firebase";
+import {
+  databaseRef,
+  get,
+  onValue,
+  off,
+  set,
+  db,
+  doc,
+  getDoc,
+  database,
+} from "../firebase"; // Firestore
 import { motion, AnimatePresence } from "framer-motion";
 import { addEnergy, spendEnergy } from "../game-logic/energyManager";
 import initGame from "../game-logic/initGame";
@@ -78,7 +85,10 @@ function GamePage() {
     if (!isHost) return; // только хост пишет
     if (!lobbyId) return;
 
-    const timerRef = ref(database, `lobbies/${lobbyId}/turnTimerStart`);
+    const timerRef = databaseRef(
+      database,
+      `lobbies/${lobbyId}/turnTimerStart`
+    );
     await set(timerRef, { start: Date.now(), duration });
     console.log(
       `[Таймер] хост установил новый таймер хода с длительностью ${duration}`
@@ -123,13 +133,13 @@ function GamePage() {
   useEffect(() => {
     if (!lobbyId) return;
 
-    const statusRef = ref(database, `lobbies/${lobbyId}/status`);
+    const statusRef = databaseRef(database, `lobbies/${lobbyId}/status`);
     const unsub = onValue(statusRef, (snap) => {
       const val = snap.val();
       console.log("[GamePage] статус лобби:", val);
       if (val === "end") {
         // подгружаем данные победителя/проигравшего
-        get(ref(database, `lobbies/${lobbyId}`)).then((snap) => {
+        get(databaseRef(database, `lobbies/${lobbyId}`)).then((snap) => {
           if (snap.exists()) {
             const lobby = snap.val();
             const { winner, loser } = lobby;
@@ -146,7 +156,7 @@ function GamePage() {
 
   useEffect(() => {
     if (!lobbyId || !uid) return;
-    const energyRef = ref(database, `lobbies/${lobbyId}/energy/${uid}`);
+    const energyRef = databaseRef(database, `lobbies/${lobbyId}/energy/${uid}`);
     const unsub = onValue(energyRef, (snap) => {
       const val = snap.val();
       if (val !== null) setRecipes(val); // синхронизация локального отображения
@@ -156,8 +166,8 @@ function GamePage() {
   useEffect(() => {
     if (!lobbyId || !uid || !gameData?.opponentUid) return;
 
-    const playerHpRef = ref(database, `lobbies/${lobbyId}/hp/${uid}`);
-    const opponentHpRef = ref(
+    const playerHpRef = databaseRef(database, `lobbies/${lobbyId}/hp/${uid}`);
+    const opponentHpRef = databaseRef(
       database,
       `lobbies/${lobbyId}/hp/${gameData.opponentUid}`
     );
@@ -191,8 +201,8 @@ function GamePage() {
   useEffect(() => {
     if (!lobbyId || !uid || !gameData?.opponentUid) return;
 
-    const playerMaxHpRef = ref(database, `lobbies/${lobbyId}/maxHp/${uid}`);
-    const opponentMaxHpRef = ref(
+    const playerMaxHpRef = databaseRef(database, `lobbies/${lobbyId}/maxHp/${uid}`);
+    const opponentMaxHpRef = databaseRef(
       database,
       `lobbies/${lobbyId}/maxHp/${gameData.opponentUid}`
     );
@@ -232,8 +242,8 @@ function GamePage() {
     const multRefs = [];
 
     uids.forEach((who) => {
-      const dotRef = ref(database, `lobbies/${lobbyId}/effects/${who}/dot`);
-      const multRef = ref(
+      const dotRef = databaseRef(database, `lobbies/${lobbyId}/effects/${who}/dot`);
+      const multRef = databaseRef(
         database,
         `lobbies/${lobbyId}/effects/${who}/multiplier`
       );
@@ -267,7 +277,7 @@ function GamePage() {
   useEffect(() => {
     if (!lobbyId) return;
 
-    const priorityRef = ref(database, `lobbies/${lobbyId}/priority`);
+    const priorityRef = databaseRef(database, `lobbies/${lobbyId}/priority`);
     const unsub = onValue(priorityRef, (snap) => {
       const val = snap.val();
       console.log("[DEBUG] priority from RTDB:", val); // <- добавь это
@@ -279,7 +289,7 @@ function GamePage() {
   useEffect(() => {
     if (!lobbyId) return;
 
-    const roundRef = ref(database, `lobbies/${lobbyId}/round`);
+    const roundRef = databaseRef(database, `lobbies/${lobbyId}/round`);
     const unsub = onValue(roundRef, (snap) => {
       const val = snap.val();
       if (val) setRound(val);
@@ -322,7 +332,7 @@ function GamePage() {
 
         // тянем данные карт из RTDB
         const cardPromises = shuffled.map(async (cardId) => {
-          const snapshot = await get(ref(database, `cards/${cardId}`));
+          const snapshot = await get(databaseRef(database, `cards/${cardId}`));
           if (!snapshot.exists()) {
             console.warn(`[GamePage] карта ${cardId} не найдена в RTDB`);
             return null;
@@ -351,7 +361,7 @@ function GamePage() {
 
     const loadGame = async () => {
       try {
-        const lobbySnap = await get(ref(database, `lobbies/${lobbyId}`));
+        const lobbySnap = await get(databaseRef(database, `lobbies/${lobbyId}`));
         const lobbyData = lobbySnap.val();
         if (!lobbyData?.players) return;
 
@@ -370,17 +380,17 @@ function GamePage() {
 
         // ✅ вот сюда вставляем запись HP в RTDB
         await Promise.all([
-          set(ref(database, `lobbies/${lobbyId}/hp/${uid}`), playerData.hp),
+          set(databaseRef(database, `lobbies/${lobbyId}/hp/${uid}`), playerData.hp),
           set(
-            ref(database, `lobbies/${lobbyId}/maxHp/${uid}`),
+            databaseRef(database, `lobbies/${lobbyId}/maxHp/${uid}`),
             playerData.maxHp
           ),
           set(
-            ref(database, `lobbies/${lobbyId}/hp/${opponentUid}`),
+            databaseRef(database, `lobbies/${lobbyId}/hp/${opponentUid}`),
             opponentData.hp
           ),
           set(
-            ref(database, `lobbies/${lobbyId}/maxHp/${opponentUid}`),
+            databaseRef(database, `lobbies/${lobbyId}/maxHp/${opponentUid}`),
             opponentData.maxHp
           ),
         ]);
@@ -394,7 +404,7 @@ function GamePage() {
           await startFirstRound();
         }
         await set(
-          ref(database, `lobbies/${lobbyId}/recipes/${uid}`),
+          databaseRef(database, `lobbies/${lobbyId}/recipes/${uid}`),
           playerData.recipes || 0
         );
         setRecipes(playerData.recipes || 0);
@@ -413,7 +423,7 @@ function GamePage() {
   useEffect(() => {
     if (!lobbyId || !gameData?.opponentUid) return;
 
-    const oppTurnRef = ref(
+    const oppTurnRef = databaseRef(
       database,
       `lobbies/${lobbyId}/turns/${gameData.opponentUid}`
     );
@@ -431,7 +441,7 @@ function GamePage() {
   useEffect(() => {
     if (!lobbyId || !gameData?.opponentUid) return;
 
-    const oppPlayedRef = ref(
+    const oppPlayedRef = databaseRef(
       database,
       `lobbies/${lobbyId}/playedCards/${gameData.opponentUid}`
     );
@@ -455,7 +465,7 @@ function GamePage() {
   useEffect(() => {
     if (!lobbyId) return;
 
-    const timerRef = ref(database, `lobbies/${lobbyId}/turnTimerStart`);
+    const timerRef = databaseRef(database, `lobbies/${lobbyId}/turnTimerStart`);
     const unsub = onValue(timerRef, (snap) => {
       const val = snap.val();
       if (!val) return;
@@ -492,7 +502,7 @@ function GamePage() {
   useEffect(() => {
     if (!lobbyId) return;
 
-    const doneRef = ref(database, `lobbies/${lobbyId}/resolvingDone`);
+    const doneRef = databaseRef(database, `lobbies/${lobbyId}/resolvingDone`);
     const unsub = onValue(doneRef, (snap) => {
       if (snap.exists()) {
         console.log("[GamePage] resolvingDone received, reset flags only");
@@ -551,7 +561,7 @@ function GamePage() {
     setPlayedCards((prev) => [...prev, cardWithTs]);
 
     // RTDB сыгранные карты
-    const playedRef = ref(
+    const playedRef = databaseRef(
       database,
       `lobbies/${lobbyId}/playedCards/${uid}/${cardToPlay.id}`
     );
@@ -564,8 +574,8 @@ function GamePage() {
   const startFirstRound = async () => {
     if (!isHost || !lobbyId) return;
 
-    const roundRef = ref(database, `lobbies/${lobbyId}/round`);
-    const priorityRef = ref(database, `lobbies/${lobbyId}/priority`);
+    const roundRef = databaseRef(database, `lobbies/${lobbyId}/round`);
+    const priorityRef = databaseRef(database, `lobbies/${lobbyId}/priority`);
 
     await set(roundRef, 1);
     await set(priorityRef, gameData?.player ? uid : gameData?.opponentUid); // 👈 первый ход у хоста
@@ -588,7 +598,7 @@ function GamePage() {
     await addEnergy(database, lobbyId, uid, cost);
 
     // Убираем карту из RTDB сыгранных
-    const playedRef = ref(
+    const playedRef = databaseRef(
       database,
       `lobbies/${lobbyId}/playedCards/${uid}/${card.id}`
     );

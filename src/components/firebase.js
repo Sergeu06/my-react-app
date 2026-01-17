@@ -7,10 +7,13 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteField,
   onSnapshot,
   query,
   orderBy,
   limit,
+  arrayUnion,
+  runTransaction,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import {
@@ -21,6 +24,10 @@ import {
   get,
   update,
   onValue,
+  serverTimestamp,
+  runTransaction as runDatabaseTransaction,
+  off,
+  remove,
 } from "firebase/database"; // Renamed ref to databaseRef
 
 import {
@@ -83,6 +90,10 @@ export {
   get,
   update,
   onValue,
+  serverTimestamp,
+  runDatabaseTransaction,
+  off,
+  remove,
 
   // storage helpers
   storageRef,
@@ -96,10 +107,13 @@ export {
   getDoc,
   setDoc,
   updateDoc,
+  deleteField,
   onSnapshot,
   query,
   orderBy,
   limit,
+  arrayUnion,
+  runTransaction,
 
   // utils
   retryRequest,

@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ref, get } from "firebase/database";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { database, db } from "./firebase";
+import {
+  databaseRef,
+  get,
+  doc,
+  getDoc,
+  updateDoc,
+  database,
+  db,
+} from "./firebase";
 import { useUser } from "./UserContext";
 import "./ResultPage.css";
 
@@ -37,7 +43,7 @@ export default function ResultPage() {
     if (!lobbyId) return;
     (async () => {
       try {
-        const snap = await get(ref(database, `lobbies/${lobbyId}`));
+        const snap = await get(databaseRef(database, `lobbies/${lobbyId}`));
         if (snap.exists()) {
           const lobbyData = snap.val();
           setResult({
@@ -71,7 +77,7 @@ export default function ResultPage() {
     const fetchCardsFromRTDB = async (keys) => {
       const cards = [];
       for (const key of keys) {
-        const snap = await get(ref(database, `cards/${key}`));
+        const snap = await get(databaseRef(database, `cards/${key}`));
         if (snap.exists()) cards.push(snap.val());
       }
       return cards;

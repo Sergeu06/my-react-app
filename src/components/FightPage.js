@@ -1,20 +1,29 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
-  ref,
+  databaseRef,
   get,
   push,
   update,
   onValue,
   set as rtdbSet,
   serverTimestamp,
-} from "firebase/database"; // serverTimestamp можно импортировать отсюда
+} from "./firebase"; // serverTimestamp можно импортировать отсюда
 
 import { addMinutes, addHours, differenceInSeconds } from "date-fns";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 
-import { db, database } from "./firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import {
+  db,
+  database,
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  query,
+  orderBy,
+  limit,
+  getDocs,
+} from "./firebase";
 import { useNavigate } from "react-router-dom";
 import "./FightPage.css";
 import "./raid-boss/boss-container.css";
@@ -187,7 +196,7 @@ function FightPage({ uid, searchState, setSearchState }) {
 
     const initDailyTasks = async () => {
       await ensureDailyTasks(database, uid, dailyTaskIds);
-      const tasksRef = ref(database, `users/${uid}/settings/dailyTasks`);
+      const tasksRef = databaseRef(database, `users/${uid}/settings/dailyTasks`);
       unsubscribe = onValue(tasksRef, (snap) => {
         const data = snap.val() || {};
         setDailyTaskState(data.tasks || {});
@@ -206,7 +215,7 @@ function FightPage({ uid, searchState, setSearchState }) {
   useEffect(() => {
     if (!uid) return;
 
-    const claimRef = ref(database, `users/${uid}/settings/lastClaimAt`);
+    const claimRef = databaseRef(database, `users/${uid}/settings/lastClaimAt`);
 
     return onValue(claimRef, (snap) => {
       const val = snap.val();
@@ -221,7 +230,7 @@ function FightPage({ uid, searchState, setSearchState }) {
   useEffect(() => {
     if (!uid) return;
 
-    const dailyClaimRef = ref(
+    const dailyClaimRef = databaseRef(
       database,
       `users/${uid}/settings/lastDailyBoxClaimAt`
     );
@@ -237,7 +246,7 @@ function FightPage({ uid, searchState, setSearchState }) {
   useEffect(() => {
     if (!uid) return;
 
-    const dailyRewardRef = ref(
+    const dailyRewardRef = databaseRef(
       database,
       `users/${uid}/settings/dailyBoxReward`
     );
@@ -307,7 +316,7 @@ function FightPage({ uid, searchState, setSearchState }) {
     if (!canClaim || !type) return;
 
     // обновляем таймер
-    await update(ref(database, `users/${uid}/settings`), {
+    await update(databaseRef(database, `users/${uid}/settings`), {
       lastClaimAt: serverTimestamp(),
     });
 
@@ -335,7 +344,7 @@ function FightPage({ uid, searchState, setSearchState }) {
   const handleDailyBoxClaim = async () => {
     if (!canDailyBoxClaim || !selectedDailyBox) return;
 
-    await update(ref(database, `users/${uid}/settings`), {
+    await update(databaseRef(database, `users/${uid}/settings`), {
       lastDailyBoxClaimAt: serverTimestamp(),
       dailyBoxReward: {
         boxId: selectedDailyBox.id,
@@ -431,7 +440,7 @@ function FightPage({ uid, searchState, setSearchState }) {
   useEffect(() => {
     if (!showRaidConfirm) return;
 
-    const bossRef = ref(database, "Raid_BOSS");
+    const bossRef = databaseRef(database, "Raid_BOSS");
 
     get(bossRef).then((snap) => {
       if (!snap.exists()) {
@@ -594,7 +603,7 @@ function FightPage({ uid, searchState, setSearchState }) {
     isCancelled.current = false;
     await completeDailyTask(database, uid, dailyTaskIds, "daily_duel");
 
-    const lobbyRef = ref(database, "lobbies");
+    const lobbyRef = databaseRef(database, "lobbies");
     const snapshot = await get(lobbyRef);
     const lobbies = snapshot.val() || {};
     let joinedLobbyId = null;
@@ -608,7 +617,7 @@ function FightPage({ uid, searchState, setSearchState }) {
         !players.includes(uid)
       ) {
         const updatedPlayers = [...players, uid];
-        await update(ref(database, `lobbies/${id}`), {
+        await update(databaseRef(database, `lobbies/${id}`), {
           players: updatedPlayers,
         });
         joinedLobbyId = id;
@@ -646,7 +655,7 @@ function FightPage({ uid, searchState, setSearchState }) {
       return;
     }
 
-    const lobbyRef = ref(database, `lobbies/${lobbyId}`);
+    const lobbyRef = databaseRef(database, `lobbies/${lobbyId}`);
     const snapshot = await get(lobbyRef);
     const lobby = snapshot.val();
 
@@ -674,7 +683,7 @@ function FightPage({ uid, searchState, setSearchState }) {
   // --- подписка на изменения в лобби
   useEffect(() => {
     if (!lobbyId) return;
-    const lobbyRef = ref(database, `lobbies/${lobbyId}`);
+    const lobbyRef = databaseRef(database, `lobbies/${lobbyId}`);
     const unsubscribe = onValue(lobbyRef, async (snapshot) => {
       const lobby = snapshot.val();
       if (!lobby) {

@@ -1,9 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./Profile.css";
 import { useParams, useSearchParams } from "react-router-dom";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db, database, databaseRef } from "./firebase"; // db - Firestore, database - RealtimeDB
-import { get } from "firebase/database";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  db,
+  database,
+  databaseRef,
+  get,
+} from "./firebase"; // db - Firestore, database - RealtimeDB
 import { renderCardStats } from "../utils/renderCardStats";
 
 import FramedCard from "../utils/FramedCard";

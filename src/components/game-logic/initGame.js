@@ -1,6 +1,5 @@
 // game-logic/initGame.js
-import { doc, getDoc } from "firebase/firestore";
-import { db, database } from "../firebase";
+import { doc, getDoc, db, database } from "../firebase";
 import { setEnergy } from "./energyManager";
 export default async function initGame(uid, opponentUid, lobbyId) {
   console.log("[InitGame] start", { uid, opponentUid, lobbyId });

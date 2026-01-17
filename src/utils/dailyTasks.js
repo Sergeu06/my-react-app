@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { get, ref, set, update } from "firebase/database";
+import { get, databaseRef, set, update } from "../components/firebase";
 
 export const DAILY_TASK_IDS = [
   "daily_duel",
@@ -19,7 +19,7 @@ export const buildDailyTaskDefaults = (taskIds) =>
 
 export const ensureDailyTasks = async (database, uid, taskIds) => {
   const todayKey = getTodayKey();
-  const tasksRef = ref(database, `users/${uid}/settings/dailyTasks`);
+  const tasksRef = databaseRef(database, `users/${uid}/settings/dailyTasks`);
   const snapshot = await get(tasksRef);
   const defaultTasks = buildDailyTaskDefaults(taskIds);
 
@@ -48,7 +48,7 @@ export const completeDailyTask = async (database, uid, taskIds, taskId) => {
   const data = await ensureDailyTasks(database, uid, taskIds);
   if (!data.tasks?.[taskId]?.completed) {
     await update(
-      ref(database, `users/${uid}/settings/dailyTasks/tasks/${taskId}`),
+      databaseRef(database, `users/${uid}/settings/dailyTasks/tasks/${taskId}`),
       { completed: true }
     );
   }
@@ -58,7 +58,7 @@ export const claimDailyTask = async (database, uid, taskIds, taskId) => {
   const data = await ensureDailyTasks(database, uid, taskIds);
   if (!data.tasks?.[taskId]?.claimed) {
     await update(
-      ref(database, `users/${uid}/settings/dailyTasks/tasks/${taskId}`),
+      databaseRef(database, `users/${uid}/settings/dailyTasks/tasks/${taskId}`),
       { claimed: true }
     );
   }

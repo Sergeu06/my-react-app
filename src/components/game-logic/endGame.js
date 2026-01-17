@@ -1,13 +1,13 @@
 // game-logic/endGame.js
-import { ref, get, update } from "firebase/database";
+import { databaseRef, get, update } from "../firebase";
 
 export async function checkEndGame({ database, lobbyId, uid, opponentUid }) {
   try {
     const playerHpSnap = await get(
-      ref(database, `lobbies/${lobbyId}/hp/${uid}`)
+      databaseRef(database, `lobbies/${lobbyId}/hp/${uid}`)
     );
     const opponentHpSnap = await get(
-      ref(database, `lobbies/${lobbyId}/hp/${opponentUid}`)
+      databaseRef(database, `lobbies/${lobbyId}/hp/${opponentUid}`)
     );
 
     const playerHp = playerHpSnap.val() ?? 0;
@@ -25,7 +25,7 @@ export async function checkEndGame({ database, lobbyId, uid, opponentUid }) {
       const loser = playerHp > 0 ? opponentUid : uid;
 
       // Обновляем статус лобби и пишем результат в него
-      await update(ref(database, `lobbies/${lobbyId}`), {
+      await update(databaseRef(database, `lobbies/${lobbyId}`), {
         status: "end",
         winner,
         loser,
