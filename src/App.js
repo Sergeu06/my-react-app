@@ -19,6 +19,10 @@ import {
   db,
   collection,
   getDocs,
+  query,
+  orderBy,
+  limit,
+  startAfter,
   doc,
   getDoc,
   setDoc,
@@ -242,27 +246,22 @@ function App() {
       "/images/raidboss.png",
     ];
 
+    const CARD_BATCH_SIZE = 20;
+
+    const incrementAssetsProgress = (loadedDelta = 0, totalDelta = 0) => {
+      if (!isActive) return;
+      setAssetsProgress((prev) => {
+        const total = prev.total + totalDelta;
+        const loaded = Math.min(prev.loaded + loadedDelta, total);
+        return { loaded, total };
+      });
+    };
+
     const fetchRemoteImages = async () => {
       const urls = new Set();
-      const cardEntries = [];
       const boxEntries = [];
       try {
-        const [cardsSnapshot, boxesSnapshot] = await Promise.all([
-          getDocs(collection(db, "cards")),
-          getDocs(collection(db, "box")),
-        ]);
-
-        cardsSnapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          if (data?.name) {
-            cardEntries.push({
-              name: data.name,
-              image_url: data.image_url || "",
-            });
-          } else if (data?.image_url) {
-            urls.add(data.image_url);
-          }
-        });
+        const boxesSnapshot = await getDocs(collection(db, "box"));
 
         boxesSnapshot.forEach((docSnap) => {
           const data = docSnap.data();
@@ -273,7 +272,71 @@ function App() {
         console.warn("[GlobalLoader] remote image fetch failed", err);
       }
 
-      return { urls: Array.from(urls), cardEntries, boxEntries };
+      return { urls: Array.from(urls), boxEntries };
+    };
+
+    const fetchCardBatch = async (lastDoc) => {
+      const constraints = [orderBy("__name__"), limit(CARD_BATCH_SIZE)];
+      if (lastDoc) constraints.push(startAfter(lastDoc));
+      const cardsSnapshot = await getDocs(
+        query(collection(db, "cards"), ...constraints)
+      );
+
+      const cardEntries = [];
+      const fallbackUrls = [];
+
+      cardsSnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data?.name) {
+          cardEntries.push({
+            name: data.name,
+            image_url: data.image_url || "",
+          });
+        } else if (data?.image_url) {
+          fallbackUrls.push(data.image_url);
+        }
+      });
+
+      return {
+        cardEntries,
+        fallbackUrls,
+        lastDoc: cardsSnapshot.docs[cardsSnapshot.docs.length - 1] || null,
+        isLastBatch: cardsSnapshot.size < CARD_BATCH_SIZE,
+      };
+    };
+
+    const preloadCardBatches = async () => {
+      let lastDoc = null;
+      let reachedEnd = false;
+
+      while (!reachedEnd) {
+        const { cardEntries, fallbackUrls, lastDoc: nextDoc, isLastBatch } =
+          await fetchCardBatch(lastDoc);
+        const batchTotal = cardEntries.length + fallbackUrls.length;
+        if (batchTotal === 0) break;
+
+        incrementAssetsProgress(0, batchTotal);
+
+        await Promise.all([
+          ...cardEntries.map(async (card) => {
+            const result = await preloadCardImage(card.name, card.image_url);
+            console.info("[GlobalLoader] card image cached", {
+              name: card.name,
+              fallbackUrl: card.image_url,
+              ...result,
+            });
+            incrementAssetsProgress(1, 0);
+          }),
+          ...fallbackUrls.map(async (url) => {
+            const cached = await preloadImageToCache(url);
+            console.info("[GlobalLoader] asset cached", { src: url, cached });
+            incrementAssetsProgress(1, 0);
+          }),
+        ]);
+
+        lastDoc = nextDoc;
+        reachedEnd = isLastBatch;
+      }
     };
 
     const timeoutId = setTimeout(() => {
@@ -281,15 +344,14 @@ function App() {
     }, 7000);
 
     const preloadAssets = async () => {
-      const { urls: remoteAssets, cardEntries, boxEntries } =
-        await fetchRemoteImages();
+      const { urls: remoteAssets, boxEntries } = await fetchRemoteImages();
       const allAssets = [...staticAssets, ...remoteAssets];
       const lootboxCache = {};
 
       if (isActive) {
         setAssetsProgress({
           loaded: 0,
-          total: allAssets.length + cardEntries.length + boxEntries.length,
+          total: allAssets.length + boxEntries.length,
         });
       }
 
@@ -298,26 +360,7 @@ function App() {
           ...allAssets.map(async (src) => {
             const cached = await preloadImageToCache(src);
             console.info("[GlobalLoader] asset cached", { src, cached });
-            if (isActive) {
-              setAssetsProgress((prev) => ({
-                loaded: Math.min(prev.loaded + 1, prev.total),
-                total: prev.total,
-              }));
-            }
-          }),
-          ...cardEntries.map(async (card) => {
-            const result = await preloadCardImage(card.name, card.image_url);
-            console.info("[GlobalLoader] card image cached", {
-              name: card.name,
-              fallbackUrl: card.image_url,
-              ...result,
-            });
-            if (isActive) {
-              setAssetsProgress((prev) => ({
-                loaded: Math.min(prev.loaded + 1, prev.total),
-                total: prev.total,
-              }));
-            }
+            incrementAssetsProgress(1, 0);
           }),
           ...boxEntries.map(async (box) => {
             const cardIds = box.data?.cards || [];
@@ -356,15 +399,12 @@ function App() {
               rarityCountMap
             );
 
-            if (isActive) {
-              setAssetsProgress((prev) => ({
-                loaded: Math.min(prev.loaded + 1, prev.total),
-                total: prev.total,
-              }));
-            }
+            incrementAssetsProgress(1, 0);
           }),
         ]
       );
+
+      await preloadCardBatches();
 
       try {
         const cachedRaw = localStorage.getItem("lootboxChanceCache");
