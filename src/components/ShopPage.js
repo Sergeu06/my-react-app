@@ -48,6 +48,14 @@ function ShopPage({ uid }) {
   const [lockedTooltip, setLockedTooltip] = useState(null);
   const [dailyBoxReward, setDailyBoxReward] = useState(null);
 
+  const ensureFirestoreReady = () => {
+    if (!db || typeof db !== "object") {
+      console.warn("Firestore недоступен, пропускаем загрузку данных.");
+      return false;
+    }
+    return true;
+  };
+
   const navigate = useNavigate();
   const rarityAccessLevel = {
     обычная: 1,
@@ -102,6 +110,7 @@ function ShopPage({ uid }) {
 
   useEffect(() => {
     const fetchLootboxes = async () => {
+      if (!ensureFirestoreReady()) return;
       try {
         const snapshot = await getDocs(collection(db, "box"));
         const data = snapshot.docs.map((doc) => ({
@@ -212,6 +221,10 @@ function ShopPage({ uid }) {
       setBoxCardsDetails(boxContentsCache.current[boxId]);
       return;
     }
+    if (!ensureFirestoreReady()) {
+      setBoxCardsDetails([]);
+      return;
+    }
 
     setLoadingBoxCards(true);
     try {
@@ -283,6 +296,11 @@ function ShopPage({ uid }) {
   };
 
   const fetchCards = async () => {
+    if (!ensureFirestoreReady()) {
+      setError("Не удалось загрузить карты.");
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
       const shopSnapshot = await getDocs(collection(db, "shop"));
