@@ -1,12 +1,12 @@
 // game-logic/energyManager.js
-import { ref, get, set } from "firebase/database";
+import { databaseRef, get, set } from "../firebase";
 
 // Максимум энергии
 export const MAX_RECIPES = 25;
 
 // Получение текущей энергии игрока
 export async function getEnergy(database, lobbyId, uid) {
-  const energyRef = ref(database, `lobbies/${lobbyId}/energy/${uid}`);
+  const energyRef = databaseRef(database, `lobbies/${lobbyId}/energy/${uid}`);
   const snap = await get(energyRef);
   return snap.exists() ? snap.val() : 0;
 }
@@ -14,7 +14,10 @@ export async function getEnergy(database, lobbyId, uid) {
 // Установка энергии
 export async function setEnergy(database, lobbyId, uid, value) {
   const clamped = Math.min(MAX_RECIPES, Math.max(0, value));
-  await set(ref(database, `lobbies/${lobbyId}/energy/${uid}`), clamped);
+  await set(
+    databaseRef(database, `lobbies/${lobbyId}/energy/${uid}`),
+    clamped
+  );
   return clamped;
 }
 

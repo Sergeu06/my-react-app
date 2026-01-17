@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { doc, updateDoc, getDoc, db } from "../firebase";
 import { useUser } from "../UserContext";
 import CurrencyBalance from "../CurrencyBalance";
 

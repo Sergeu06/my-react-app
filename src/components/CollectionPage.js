@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
-import { doc, getDoc, updateDoc, deleteField } from "firebase/firestore";
 import {
+  doc,
+  getDoc,
+  updateDoc,
+  deleteField,
   get as dbGet,
   databaseRef,
   retryRequest,

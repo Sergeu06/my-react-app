@@ -1,6 +1,6 @@
 // useResolvingPhase.js
 import { useEffect, useRef } from "react";
-import { ref, set, onValue, get, update } from "firebase/database";
+import { databaseRef, set, onValue, get, update } from "../firebase";
 import { strikeSequence, showDamageNumber } from "../game/strikeAnimations";
 import {
   applyDamagePvP,
@@ -83,8 +83,8 @@ export default function useResolvingPhase(params) {
         const oppPath = `lobbies/${lobbyId}/playedCards/${gameData?.opponentUid}`;
 
         const [snapPlayer, snapOpp] = await Promise.all([
-          get(ref(database, playerPath)),
-          get(ref(database, oppPath)),
+          get(databaseRef(database, playerPath)),
+          get(databaseRef(database, oppPath)),
         ]);
 
         const playerData = snapPlayer.val() || {};
@@ -142,7 +142,7 @@ export default function useResolvingPhase(params) {
           }
 
           if (Object.keys(revealUpdates).length > 0) {
-            await update(ref(database, `lobbies/${lobbyId}`), revealUpdates);
+            await update(databaseRef(database, `lobbies/${lobbyId}`), revealUpdates);
           }
 
           setPlayedCards(syncedPlayerCards);
@@ -237,7 +237,7 @@ export default function useResolvingPhase(params) {
 
         if (isMultiplierCard && nextMult !== targetEffects.mult) {
           await set(
-            ref(
+            databaseRef(
               database,
               `lobbies/${lobbyId}/effects/${damageTargetUid}/multiplier`
             ),
@@ -274,7 +274,7 @@ export default function useResolvingPhase(params) {
         // Если это карта снятия множителя — снимаем эффект с владельца карты
         if (isRemoveMultiplierCard) {
           await set(
-            ref(database, `lobbies/${lobbyId}/effects/${attackerUid}/multiplier`),
+            databaseRef(database, `lobbies/${lobbyId}/effects/${attackerUid}/multiplier`),
             null
           );
           setEffectsByUid((prev) => ({
@@ -468,7 +468,7 @@ export default function useResolvingPhase(params) {
           card.raw.dotTurnsLeft = newTurnsLeft;
           if (newTurnsLeft <= 0) {
             await set(
-              ref(
+              databaseRef(
                 database,
                 `lobbies/${lobbyId}/playedCards/${card.owner}/${card.id}`
               ),
@@ -476,7 +476,7 @@ export default function useResolvingPhase(params) {
             );
           } else {
             await set(
-              ref(
+              databaseRef(
                 database,
                 `lobbies/${lobbyId}/playedCards/${card.owner}/${card.id}/dotTurnsLeft`
               ),
@@ -552,24 +552,24 @@ export default function useResolvingPhase(params) {
         });
       }
 
-      if (isHost) await set(ref(database, `lobbies/${lobbyId}/animAck`), null);
+      if (isHost) await set(databaseRef(database, `lobbies/${lobbyId}/animAck`), null);
       await new Promise((r) => setTimeout(r, 300));
 
       if (isHost && uid && gameData?.opponentUid && lobbyId) {
-        await set(ref(database, `lobbies/${lobbyId}/turns/${uid}`), null);
+        await set(databaseRef(database, `lobbies/${lobbyId}/turns/${uid}`), null);
         await set(
-          ref(database, `lobbies/${lobbyId}/turns/${gameData.opponentUid}`),
+          databaseRef(database, `lobbies/${lobbyId}/turns/${gameData.opponentUid}`),
           null
         );
         await set(
-          ref(database, `lobbies/${lobbyId}/resolvingDone`),
+          databaseRef(database, `lobbies/${lobbyId}/resolvingDone`),
           Date.now()
         );
         await startNewTurnTimer();
       }
 
       if (isHost) {
-        const roundRef = ref(database, `lobbies/${lobbyId}/round`);
+        const roundRef = databaseRef(database, `lobbies/${lobbyId}/round`);
         let currentRound = 0;
         await new Promise((resolve) => {
           onValue(
@@ -600,7 +600,7 @@ export default function useResolvingPhase(params) {
           currentRound % 2 === 0 ? uid : gameData?.opponentUid;
 
         await set(
-          ref(database, `lobbies/${lobbyId}/priority`),
+          databaseRef(database, `lobbies/${lobbyId}/priority`),
           nextPriorityUid
         );
       }
@@ -619,8 +619,8 @@ export default function useResolvingPhase(params) {
           const oppPath = `lobbies/${lobbyId}/playedCards/${gameData?.opponentUid}`;
 
           const [snapPlayer, snapOpp] = await Promise.all([
-            get(ref(database, playerPath)),
-            get(ref(database, oppPath)),
+            get(databaseRef(database, playerPath)),
+            get(databaseRef(database, oppPath)),
           ]);
 
           const playerData = snapPlayer.val() || {};
@@ -633,7 +633,7 @@ export default function useResolvingPhase(params) {
             const turnsLeft = raw?.dotTurnsLeft ?? 0;
             if (!isDot || turnsLeft <= 0) {
               removals.push(
-                set(ref(database, `${playerPath}/${cardId}`), null)
+                set(databaseRef(database, `${playerPath}/${cardId}`), null)
               );
             }
           }
@@ -642,7 +642,7 @@ export default function useResolvingPhase(params) {
             const isDot = Array.isArray(raw?.damage_over_time);
             const turnsLeft = raw?.dotTurnsLeft ?? 0;
             if (!isDot || turnsLeft <= 0) {
-              removals.push(set(ref(database, `${oppPath}/${cardId}`), null));
+              removals.push(set(databaseRef(database, `${oppPath}/${cardId}`), null));
             }
           }
 
@@ -657,7 +657,7 @@ export default function useResolvingPhase(params) {
       // в самом конце resolving, рядом с очисткой карт
       if (isHost && lobbyId) {
         try {
-          const effectsRef = ref(database, `lobbies/${lobbyId}/effects`);
+          const effectsRef = databaseRef(database, `lobbies/${lobbyId}/effects`);
           const snap = await get(effectsRef);
           const allEffects = snap.val() || {};
 

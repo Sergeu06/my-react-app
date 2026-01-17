@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from "react";
 import FramedCard from "../utils/FramedCard";
-import { collection, doc, getDoc, getDocs, updateDoc } from "firebase/firestore";
 import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  updateDoc,
   get as rtdbGet,
-  ref,
+  databaseRef,
   remove as rtdbRemove,
   set as rtdbSet,
   update as rtdbUpdate,
-} from "firebase/database";
-import { db, database } from "./firebase";
+  db,
+  database,
+} from "./firebase";
 import { useUser } from "./UserContext";
 import "./UpgradePage.css";
 import { DAILY_TASK_IDS, completeDailyTask } from "../utils/dailyTasks";
@@ -74,7 +79,9 @@ function UpgradePage() {
       const deckPvp = new Set(userData.deck_pvp || []);
 
       const cardPromises = cardIds.map(async (cardId) => {
-        const cardSnap = await rtdbGet(ref(database, `cards/${cardId}`));
+        const cardSnap = await rtdbGet(
+          databaseRef(database, `cards/${cardId}`)
+        );
         if (!cardSnap.exists()) return null;
         const cardData = cardSnap.val();
         const inRaid = deckRaid.has(cardId);
@@ -323,7 +330,7 @@ function UpgradePage() {
       const userDoc = userSnap.data();
 
       // 2. Получаем данные карты из RTDB
-      const cardRef = ref(database, `cards/${selectedCard.card_id}`);
+      const cardRef = databaseRef(database, `cards/${selectedCard.card_id}`);
       const cardSnap = await rtdbGet(cardRef);
       if (!cardSnap.exists()) throw new Error("Карта не найдена");
       const cardData = cardSnap.val();
@@ -591,7 +598,7 @@ function UpgradePage() {
 
       if (newCardPayload) {
         const { data, templateId, id } = newCardPayload;
-        await rtdbSet(ref(database, `cards/${id}`), {
+        await rtdbSet(databaseRef(database, `cards/${id}`), {
           ...data,
           lvl: 1,
           owner: uid,
@@ -613,7 +620,7 @@ function UpgradePage() {
 
       await Promise.all(
         consumedIds.map((cardId) =>
-          rtdbRemove(ref(database, `cards/${cardId}`))
+          rtdbRemove(databaseRef(database, `cards/${cardId}`))
         )
       );
 

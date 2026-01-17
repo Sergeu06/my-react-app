@@ -1,9 +1,17 @@
 import React, { useEffect, useState, useRef } from "react";
 import CardImage from "../../utils/CardImage";
 import { useSearchParams } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
-import { ref, onValue, get, off, runTransaction } from "firebase/database";
-import { db, database } from "../firebase";
+import {
+  doc,
+  getDoc,
+  databaseRef,
+  onValue,
+  get,
+  off,
+  runDatabaseTransaction,
+  db,
+  database,
+} from "../firebase";
 import RaidEndScreen from "./RaidEndScreen";
 import "./PlayerBottomBar.css";
 import "./player-hand.css";
@@ -128,7 +136,7 @@ function RaidPage() {
   }, [turn]);
 
   useEffect(() => {
-    const bossesRef = ref(database, "Raid_BOSS");
+    const bossesRef = databaseRef(database, "Raid_BOSS");
     get(bossesRef)
       .then((snapshot) => {
         if (!snapshot.exists()) {
@@ -162,7 +170,7 @@ function RaidPage() {
     setMaxHP(bossData.max_hp ?? 1000);
     setBossImageUrl(bossData.image_url || "/images/raidboss.png");
 
-    const hpRef = ref(database, `Raid_BOSS/${currentBossKey}/hp`);
+    const hpRef = databaseRef(database, `Raid_BOSS/${currentBossKey}/hp`);
     bossHpRef.current = hpRef;
 
     const listener = (snapshot) => {
@@ -193,7 +201,9 @@ function RaidPage() {
         const shuffledIds = [...deckRaid].sort(() => 0.5 - Math.random());
 
         const cardPromises = shuffledIds.map(async (cardId) => {
-          const snapshot = await get(ref(database, `cards/${cardId}`));
+          const snapshot = await get(
+            databaseRef(database, `cards/${cardId}`)
+          );
           return { id: cardId, ...snapshot.val() };
         });
 
@@ -234,10 +244,10 @@ function RaidPage() {
   async function applyDamageToBossInDatabase(bossKey, damage) {
     if (!bossKey || damage <= 0) return;
 
-    const bossHpRef = ref(database, `Raid_BOSS/${bossKey}/hp`);
+    const bossHpRef = databaseRef(database, `Raid_BOSS/${bossKey}/hp`);
 
     try {
-      await runTransaction(bossHpRef, (currentHp) => {
+      await runDatabaseTransaction(bossHpRef, (currentHp) => {
         if (currentHp === null) return 0;
         const newHp = currentHp - damage;
         return newHp < 0 ? 0 : newHp;

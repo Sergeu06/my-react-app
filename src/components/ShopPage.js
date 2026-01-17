@@ -6,8 +6,12 @@ import {
   getDoc,
   updateDoc,
   arrayUnion,
-} from "firebase/firestore";
-import { database, databaseRef, set, db, onValue } from "./firebase";
+  database,
+  databaseRef,
+  set,
+  db,
+  onValue,
+} from "./firebase";
 import Market from "./Market";
 import CardTooltip from "../utils/CardTooltip";
 import FramedCard from "../utils/FramedCard";
@@ -22,7 +26,6 @@ import InfoIcon from "@mui/icons-material/Info";
 import "./ShopPage.css";
 import { useNavigate } from "react-router-dom";
 import { getGlowColor } from "../utils/FramedCard";
-import { ref as realtimeRef } from "firebase/database";
 import { DAILY_TASK_IDS, completeDailyTask } from "../utils/dailyTasks";
 import { buildLootboxChances } from "../utils/lootboxChances";
 
@@ -99,7 +102,7 @@ function ShopPage({ uid }) {
 
   useEffect(() => {
     if (!uid) return;
-    const rewardRef = realtimeRef(
+    const rewardRef = databaseRef(
       database,
       `users/${uid}/settings/dailyBoxReward`
     );

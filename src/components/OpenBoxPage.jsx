@@ -1,8 +1,15 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { db, database } from "./firebase";
-import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
-import { set, ref as databaseRef } from "firebase/database";
+import {
+  db,
+  database,
+  doc,
+  getDoc,
+  updateDoc,
+  arrayUnion,
+  set,
+  databaseRef,
+} from "./firebase";
 import "./OpenBoxPage.css";
 import FramedCard from "../utils/FramedCard";
 import { preloadCardImage } from "../utils/imageCache";
