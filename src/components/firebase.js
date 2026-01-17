@@ -1,5 +1,16 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs } from "firebase/firestore"; // For Firestore
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  query,
+  orderBy,
+  limit,
+} from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import {
   getDatabase,
@@ -10,6 +21,7 @@ import {
   update,
   onValue,
 } from "firebase/database"; // Renamed ref to databaseRef
+
 import {
   getStorage,
   ref as storageRef,
@@ -57,20 +69,36 @@ const retryRequest = async (func, retries = 10, delay = 5000) => {
 
 // Export all necessary functions
 export {
+  // instances
   db,
   auth,
   database,
   storage,
-  databaseRef, // Renamed to databaseRef to avoid confusion
-  storageRef,
+
+  // realtime db helpers
+  databaseRef,
+  push,
   set,
   get,
-  push,
   update,
-  collection,
-  getDocs,
+  onValue,
+
+  // storage helpers
+  storageRef,
   listAll,
   getDownloadURL,
-  onValue,
-  retryRequest, // Добавляем функцию retryRequest для использования в других частях
+
+  // firestore helpers
+  collection,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  query,
+  orderBy,
+  limit,
+
+  // utils
+  retryRequest,
 };

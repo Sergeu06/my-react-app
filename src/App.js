@@ -17,8 +17,7 @@ import StoreIcon from "@mui/icons-material/Store";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import UpgradeIcon from "@mui/icons-material/ArrowCircleUpRounded";
 import CryptoJS from "crypto-js";
-import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
-import { db } from "./components/firebase"; // твой инициализированный Firestore
+import { db, collection, getDocs, doc, getDoc, setDoc } from "./components/firebase";
 import { DndProvider } from "react-dnd";
 import { TouchBackend } from "react-dnd-touch-backend";
 import { useSwipeable } from "react-swipeable";
