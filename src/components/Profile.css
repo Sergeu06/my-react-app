@@ -359,6 +359,12 @@
 .showcase-container {
   margin: 20px 0;
 }
+
+.showcase-title {
+  color: #ffa500;
+  margin-bottom: 12px;
+}
+
 .showcase-slots {
   display: flex;
   gap: 12px;
