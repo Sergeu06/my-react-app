@@ -725,6 +725,14 @@ function App() {
       <div>
         <div className="safe-container" {...handlers}>
           <div
+            className="page-bg-overlay"
+            style={{
+              backgroundColor: pageBackground || "transparent",
+              opacity: pageBackground ? 1 : 0,
+            }}
+            aria-hidden="true"
+          />
+          <div
             className={`background-container ${backgroundClass}`}
             ref={backgroundRef}
             style={{
