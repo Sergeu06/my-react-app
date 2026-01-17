@@ -12,6 +12,7 @@ import {
   query,
   orderBy,
   limit,
+  startAfter,
   arrayUnion,
   runTransaction,
 } from "firebase/firestore";
@@ -112,6 +113,7 @@ export {
   query,
   orderBy,
   limit,
+  startAfter,
   arrayUnion,
   runTransaction,
 
