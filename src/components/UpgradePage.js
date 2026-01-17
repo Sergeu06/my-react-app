@@ -31,6 +31,7 @@ function UpgradePage() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [showCardModal, setShowCardModal] = useState(false);
   const [loadingUpgrade, setLoadingUpgrade] = useState(false);
+  const [loadingCards, setLoadingCards] = useState(true);
   const [activeTab, setActiveTab] = useState("upgrade");
 
   const [fusionSlots, setFusionSlots] = useState(Array(5).fill(null));
@@ -63,70 +64,89 @@ function UpgradePage() {
   useEffect(() => {
     if (!uid) return;
     const fetchCards = async () => {
-      const userRef = doc(db, "users", uid);
-      const userSnap = await getDoc(userRef);
-      if (!userSnap.exists()) return;
+      setLoadingCards(true);
+      try {
+        const userRef = doc(db, "users", uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) return;
 
-      const userData = userSnap.data();
-      const allIds = new Set([
-        ...(userData.cards || []),
-        ...(userData.deck_raid || []),
-        ...(userData.deck_pvp || []),
-      ]);
-      const cardIds = Array.from(allIds);
+        const userData = userSnap.data();
+        const allIds = new Set([
+          ...(userData.cards || []),
+          ...(userData.deck_raid || []),
+          ...(userData.deck_pvp || []),
+        ]);
+        const cardIds = Array.from(allIds);
 
-      const deckRaid = new Set(userData.deck_raid || []);
-      const deckPvp = new Set(userData.deck_pvp || []);
+        const deckRaid = new Set(userData.deck_raid || []);
+        const deckPvp = new Set(userData.deck_pvp || []);
 
-      const cardPromises = cardIds.map(async (cardId) => {
-        const cardSnap = await rtdbGet(
-          databaseRef(database, `cards/${cardId}`)
+        const cardPromises = cardIds.map(async (cardId) => {
+          const cardSnap = await rtdbGet(
+            databaseRef(database, `cards/${cardId}`)
+          );
+          if (!cardSnap.exists()) return null;
+          const cardData = cardSnap.val();
+          const inRaid = deckRaid.has(cardId);
+          const inPvp = deckPvp.has(cardId);
+          return {
+            ...cardData,
+            card_id: cardId,
+            inRaid,
+            inPvp,
+          };
+        });
+
+        const allCards = await Promise.all(cardPromises);
+        const validCards = allCards.filter(Boolean);
+        const imageIds = [
+          ...new Set(
+            validCards
+              .map((card) => card.original_id || card.card_id || card.id)
+              .filter(Boolean)
+          ),
+        ];
+        const imageEntries = await Promise.all(
+          imageIds.map(async (cardId) => {
+            try {
+              const snap = await getDoc(doc(db, "cards", cardId));
+              return snap.exists()
+                ? [cardId, snap.data()?.image_url || ""]
+                : null;
+            } catch (error) {
+              console.warn("Не удалось загрузить изображение карты:", error);
+              return null;
+            }
+          })
         );
-        if (!cardSnap.exists()) return null;
-        const cardData = cardSnap.val();
-        const inRaid = deckRaid.has(cardId);
-        const inPvp = deckPvp.has(cardId);
-        return {
-          ...cardData,
-          card_id: cardId,
-          inRaid,
-          inPvp,
-        };
-      });
-
-      const allCards = await Promise.all(cardPromises);
-      const validCards = allCards.filter(Boolean);
-      const imageIds = [
-        ...new Set(
-          validCards
-            .map((card) => card.original_id || card.card_id || card.id)
-            .filter(Boolean)
-        ),
-      ];
-      const imageEntries = await Promise.all(
-        imageIds.map(async (cardId) => {
-          try {
-            const snap = await getDoc(doc(db, "cards", cardId));
-            return snap.exists() ? [cardId, snap.data()?.image_url || ""] : null;
-          } catch (error) {
-            console.warn("Не удалось загрузить изображение карты:", error);
-            return null;
-          }
-        })
-      );
-      const imageMap = new Map(imageEntries.filter(Boolean));
-      const hydratedCards = validCards.map((card) => ({
-        ...card,
-        image_url:
-          card.image_url ||
-          imageMap.get(card.original_id || card.card_id || card.id) ||
-          "",
-      }));
-      setPlayerCards(hydratedCards);
+        const imageMap = new Map(imageEntries.filter(Boolean));
+        const hydratedCards = validCards.map((card) => ({
+          ...card,
+          image_url:
+            card.image_url ||
+            imageMap.get(card.original_id || card.card_id || card.id) ||
+            "",
+        }));
+        setPlayerCards(hydratedCards);
+      } finally {
+        setLoadingCards(false);
+      }
     };
 
     fetchCards();
   }, [uid]);
+
+  const renderCardSkeletons = (count = 8) => (
+    <div className="card-list">
+      {Array.from({ length: count }).map((_, index) => (
+        <div key={`upgrade-skeleton-${index}`} className="skeleton-card">
+          <div className="skeleton skeleton-image" />
+          <div className="skeleton skeleton-text" />
+          <div className="skeleton skeleton-price" />
+        </div>
+      ))}
+    </div>
+  );
 
   const normalizeRarity = (rarity) => {
     if (!rarity) return "обычная";
@@ -1094,32 +1114,36 @@ function UpgradePage() {
               maxHeight: "80vh",
             }}
           >
-            <div className="card-list">
-              {playerCards.map((card) => (
-                <div
-                  className="card-style clickable"
-                  key={card.card_id}
-                  onClick={() => handleCardSelect(card)}
-                >
-                  <FramedCard card={card} showLevel={true} />
-                  {renderCardDetails(card)}
+            {loadingCards ? (
+              renderCardSkeletons()
+            ) : (
+              <div className="card-list">
+                {playerCards.map((card) => (
+                  <div
+                    className="card-style clickable"
+                    key={card.card_id}
+                    onClick={() => handleCardSelect(card)}
+                  >
+                    <FramedCard card={card} showLevel={true} />
+                    {renderCardDetails(card)}
 
-                  {(card.inRaid || card.inPvp) && (
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: "14px",
-                        color: "#ffa500",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      В колоде {card.inRaid ? "(Рейд)" : ""}{" "}
-                      {card.inPvp ? "(ПвП)" : ""}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                    {(card.inRaid || card.inPvp) && (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontSize: "14px",
+                          color: "#ffa500",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        В колоде {card.inRaid ? "(Рейд)" : ""}{" "}
+                        {card.inPvp ? "(ПвП)" : ""}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1162,37 +1186,41 @@ function UpgradePage() {
                 ✕
               </button>
             </div>
-            <div className="card-list">
-              {availableFusionCards.map((card) => (
-                <div
-                  className="card-style clickable"
-                  key={card.card_id}
-                  onClick={() => handleFusionCardSelect(card)}
-                >
-                  <FramedCard card={card} showLevel={true} />
-                  {renderCardDetails(card)}
+            {loadingCards ? (
+              renderCardSkeletons()
+            ) : (
+              <div className="card-list">
+                {availableFusionCards.map((card) => (
+                  <div
+                    className="card-style clickable"
+                    key={card.card_id}
+                    onClick={() => handleFusionCardSelect(card)}
+                  >
+                    <FramedCard card={card} showLevel={true} />
+                    {renderCardDetails(card)}
 
-                  {(card.inRaid || card.inPvp) && (
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: "14px",
-                        color: "#ffa500",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      В колоде {card.inRaid ? "(Рейд)" : ""}{" "}
-                      {card.inPvp ? "(ПвП)" : ""}
-                    </div>
-                  )}
-                </div>
-              ))}
-              {availableFusionCards.length === 0 && (
-                <div className="fusion-empty">
-                  Нет подходящих карт для слияния.
-                </div>
-              )}
-            </div>
+                    {(card.inRaid || card.inPvp) && (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontSize: "14px",
+                          color: "#ffa500",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        В колоде {card.inRaid ? "(Рейд)" : ""}{" "}
+                        {card.inPvp ? "(ПвП)" : ""}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {availableFusionCards.length === 0 && (
+                  <div className="fusion-empty">
+                    Нет подходящих карт для слияния.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1235,37 +1263,41 @@ function UpgradePage() {
                 ✕
               </button>
             </div>
-            <div className="card-list">
-              {availableFusionCards.map((card) => (
-                <div
-                  className="card-style clickable"
-                  key={card.card_id}
-                  onClick={() => handleFusionCardSelect(card)}
-                >
-                  <FramedCard card={card} showLevel={true} />
-                  {renderCardDetails(card)}
+            {loadingCards ? (
+              renderCardSkeletons()
+            ) : (
+              <div className="card-list">
+                {availableFusionCards.map((card) => (
+                  <div
+                    className="card-style clickable"
+                    key={card.card_id}
+                    onClick={() => handleFusionCardSelect(card)}
+                  >
+                    <FramedCard card={card} showLevel={true} />
+                    {renderCardDetails(card)}
 
-                  {(card.inRaid || card.inPvp) && (
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: "14px",
-                        color: "#ffa500",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      В колоде {card.inRaid ? "(Рейд)" : ""}{" "}
-                      {card.inPvp ? "(ПвП)" : ""}
-                    </div>
-                  )}
-                </div>
-              ))}
-              {availableFusionCards.length === 0 && (
-                <div className="fusion-empty">
-                  Нет подходящих карт для слияния.
-                </div>
-              )}
-            </div>
+                    {(card.inRaid || card.inPvp) && (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontSize: "14px",
+                          color: "#ffa500",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        В колоде {card.inRaid ? "(Рейд)" : ""}{" "}
+                        {card.inPvp ? "(ПвП)" : ""}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {availableFusionCards.length === 0 && (
+                  <div className="fusion-empty">
+                    Нет подходящих карт для слияния.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
