@@ -141,14 +141,14 @@ const pageTransition = {
 };
 
 function getPageBg(pathname) {
-  if (pathname.includes("/fight")) return "rgba(11, 15, 22, 0)";
-  if (pathname.includes("/shop")) return "rgba(43, 27, 18, 0.25)";
-  if (pathname.includes("/collection")) return "rgba(16, 38, 53, 0.25)";
-  if (pathname.includes("/upgrade")) return "rgba(26, 27, 51, 0.25)";
-  if (pathname.includes("/profile")) return "rgba(18, 49, 38, 0.25)";
-  if (pathname.includes("/raid")) return "rgba(55, 18, 14, 0)";
-  if (pathname.includes("/open-box")) return "rgba(10, 33, 41, 0)";
-  if (pathname.includes("/result")) return "rgba(28, 16, 38, 0)";
+  if (pathname.includes("/fight")) return "rgba(11, 15, 22, 0.45)";
+  if (pathname.includes("/shop")) return "rgba(43, 27, 18, 0.45)";
+  if (pathname.includes("/collection")) return "rgba(16, 38, 53, 0.45)";
+  if (pathname.includes("/upgrade")) return "rgba(26, 27, 51, 0.45)";
+  if (pathname.includes("/profile")) return "rgba(18, 49, 38, 0.45)";
+  if (pathname.includes("/raid")) return "rgba(55, 18, 14, 0.45)";
+  if (pathname.includes("/open-box")) return "rgba(10, 33, 41, 0.45)";
+  if (pathname.includes("/result")) return "rgba(28, 16, 38, 0.45)";
   return null;
 }
 
