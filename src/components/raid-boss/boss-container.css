@@ -423,12 +423,11 @@
 }
 
 .raid-event-banner {
-  margin: 12px auto 0;
+  margin: 12px auto;
   background: var(--modal-card-bg);
   border: var(--modal-card-border);
   border-radius: var(--modal-card-radius);
   padding: 12px 16px;
-  width: min(360px, 88vw);
   text-align: center;
   color: var(--text-primary);
   box-shadow: var(--modal-card-shadow);

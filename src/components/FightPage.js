@@ -746,6 +746,15 @@ function FightPage({ uid, searchState, setSearchState }) {
           setTimeout(() => setIntroStage("countdown"), 4500);
           setTimeout(() => {
             setIntroStage(null);
+              // ✅ поиск закончился — матч уже стартует
+            setSearchState((prev) => ({
+              ...prev,
+              isSearching: false,
+              searchStartPath: null,
+              secondsElapsed: 0,
+              startTimestamp: null,
+              // lobbyId оставляем — он нужен GamePage через URL и/или состояние
+            }));
             navigate(`/Game?start=${uid}&lobby=${lobbyId}`);
           }, 6500);
         } catch (error) {

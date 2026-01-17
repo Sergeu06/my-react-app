@@ -390,11 +390,7 @@ function UpgradePage() {
         }
         if (Array.isArray(updatedCard.damage_over_time)) {
           const dot = [...updatedCard.damage_over_time];
-          const baseSum = (originalDot || []).reduce(
-            (sum, val) => sum + val,
-            0
-          );
-          const dynamicInc = (baseSum / 100) * inc;
+          const dynamicInc = inc;
 
           if (dot.length < originalDotLength + 1) {
             dot.push(dynamicInc);
@@ -775,8 +771,7 @@ function UpgradePage() {
         ? selectedCard.templateDot
         : [];
       const templateLength = templateDot.length;
-      const baseSum = templateDot.reduce((sum, val) => sum + val, 0);
-      const dynamicInc = (baseSum / 100) * inc;
+      const dynamicInc = inc;
 
       if (dot.length < templateLength + 1) {
         dot.push(dynamicInc);

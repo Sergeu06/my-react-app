@@ -190,7 +190,7 @@ function App() {
   const [uid, setUid] = useState(startParam || "dev-user");
   const [direction, setDirection] = useState(0);
   const backgroundRef = useRef(null);
-
+  const [uiLocked, setUiLocked] = useState(false);
   const [, setTelegramUser] = useState(null);
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState(null);
@@ -573,7 +573,9 @@ function App() {
       ) {
         const currentPath = location.pathname.toLowerCase();
         if (!currentPath.includes("/fight")) {
+          setUiLocked(true);
           navigate(searchState.searchStartPath || `/fight?start=${uid}`);
+          setTimeout(() => setUiLocked(false), 1200); // достаточно, чтобы не тыкали во время переезда
         }
       }
     });
@@ -586,6 +588,23 @@ function App() {
     navigate,
     searchState.searchStartPath,
   ]);
+  useEffect(() => {
+    const reset = searchParams.get("resetSearch");
+    if (reset === "1") {
+      setSearchState({
+        isSearching: false,
+        searchStartPath: null,
+        secondsElapsed: 0,
+        lobbyId: null,
+        startTimestamp: null,
+      });
+
+      // чтобы не зацикливалось при любом ререндере
+      const url = new URL(window.location.href);
+      url.searchParams.delete("resetSearch");
+      window.history.replaceState(null, "", url.toString());
+    }
+  }, [searchParams, setSearchState]);
 
   useEffect(() => {
     const bg = backgroundRef.current;
@@ -826,6 +845,16 @@ function App() {
     <UserProvider>
       <div>
         <div className="safe-container" {...handlers}>
+          {uiLocked && (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 2000,
+                background: "transparent",
+              }}
+            />
+          )}
           <div
             className="page-bg-overlay"
             style={{
@@ -855,6 +884,7 @@ function App() {
               <BottomNavigation
                 value={tabIndex}
                 onChange={(event, newValue) => {
+                  if (uiLocked) return;
                   if (newValue !== tabIndex) {
                     updateTab(newValue);
                   }

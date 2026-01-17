@@ -8,6 +8,8 @@ import {
   updateDoc,
   database,
   db,
+  update,
+  set as rtdbSet
 } from "./firebase";
 import { useUser } from "./UserContext";
 import "./ResultPage.css";
@@ -185,7 +187,29 @@ export default function ResultPage() {
   if (!result) return <div className="loading">Загрузка результата...</div>;
 
   const isWin = result.winner === start;
+  const handleBackToMenu = async () => {
+    try {
+      if (lobbyId && start) {
+        const lobbyRef = databaseRef(database, `lobbies/${lobbyId}`);
+        const snap = await get(lobbyRef);
+        const lobby = snap.val();
 
+        if (lobby?.players?.length) {
+          const updatedPlayers = lobby.players.filter((p) => p !== start);
+
+          if (updatedPlayers.length === 0) {
+            await rtdbSet(lobbyRef, null); // ✅ удалить лобби полностью
+          } else {
+            await update(lobbyRef, { players: updatedPlayers });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[ResultPage] lobby cleanup failed:", e);
+    }
+
+    navigate(`/fight?start=${start}&resetSearch=1`);
+  };
   return (
     <div className="result-page-new">
       <div className="result-card">
@@ -212,10 +236,7 @@ export default function ResultPage() {
             </span>
           </div>
         </div>
-        <button
-          className="back-button"
-          onClick={() => navigate(`/fight?start=${start}`)}
-        >
+        <button className="back-button" onClick={handleBackToMenu}>
           Вернуться в меню
         </button>
       </div>

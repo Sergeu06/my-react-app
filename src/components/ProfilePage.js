@@ -674,12 +674,6 @@ const ProfilePage = () => {
               className="modal-window achievement-modal"
               onClick={(event) => event.stopPropagation()}
             >
-              <button
-                className="close-button"
-                onClick={() => setShowAchievementModal(false)}
-              >
-                ✕
-              </button>
               <h3>Выберите ачивку</h3>
               <div className="achievement-modal-list">
                 {ACHIEVEMENTS.map((achievement) => {
