@@ -9,6 +9,7 @@ import { renderCardStats } from "../utils/renderCardStats";
 import FramedCard from "../utils/FramedCard";
 
 const SHOWCASE_SLOTS = 4;
+const MAX_LEVEL = 100;
 const ACHIEVEMENT_SLOTS = 3;
 
 const ACHIEVEMENTS = [
@@ -419,6 +420,34 @@ const ProfilePage = () => {
         <p className="uid">
           <span>ID : </span> {idToLoad}
         </p>
+      </div>
+
+      {/* Шкала уровней и наград */}
+      <div className="level-reward-wrapper">
+        <h3>Награды за уровень</h3>
+        <div className="level-reward-scroll-container">
+          <div className="level-reward-bar">
+            {Array.from({ length: MAX_LEVEL }, (_, i) => {
+              const level = i + 1;
+              const isSpecial = level % 10 === 0;
+              const earned = currentLevel >= level;
+              return (
+                <div
+                  key={level}
+                  className={`level-marker ${earned ? "earned" : ""} ${
+                    isSpecial ? "special" : ""
+                  }`}
+                  ref={level === currentLevel ? currentLevelRef : null}
+                >
+                  {level}
+                  {level === currentLevel && isOwnProfile && (
+                    <button className="claim-reward">Забрать</button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Витрина из 4 слотов */}

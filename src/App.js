@@ -420,6 +420,8 @@ function App() {
 
   const handlers = useSwipeable({
     onSwipedLeft: (eventData) => {
+      if (eventData.event.target.closest(".level-reward-scroll-container"))
+        return;
       if (eventData.event.target.closest(".fusion-slider")) return;
 
       if (
@@ -431,6 +433,8 @@ function App() {
       }
     },
     onSwipedRight: (eventData) => {
+      if (eventData.event.target.closest(".level-reward-scroll-container"))
+        return;
       if (eventData.event.target.closest(".fusion-slider")) return;
 
       if (!path.includes("/raid") && !path.includes("/game") && tabIndex > 0) {
