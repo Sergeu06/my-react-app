@@ -1109,9 +1109,9 @@ function FightPage({ uid, searchState, setSearchState }) {
                   ? "В режиме PvP вы сражаетесь против других игроков. Для начала матча необходимо минимум 10 карт в колоде PvP. Победа дает награды и повышает ваш рейтинг."
                   : "В режиме Рейд вы сражаетесь против могущественных боссов. Используйте особые стратегии, чтобы нанести как можно больше урона. Требуется минимум 7 карт в колоде Raid. "}
               </p>
-              {showInfoModal === "raid" && (
+              {(showInfoModal === "raid" || showInfoModal === "pvp") && (
                 <div className="boss-effect-info">
-                  <h4>Эффекты босса</h4>
+                  <h4>Эффекты карт</h4>
                   <table className="boss-effect-table">
                     <thead>
                       <tr>
@@ -1137,8 +1137,9 @@ function FightPage({ uid, searchState, setSearchState }) {
                     </tbody>
                   </table>
                   <p className="boss-effect-note">
-                    На странице босса отображается краткое название активного
-                    эффекта и его действие.
+                    {showInfoModal === "raid"
+                      ? "На странице босса отображается краткое название активного эффекта и его действие."
+                      : "В PvP активные эффекты отображаются рядом с картами."}
                   </p>
                 </div>
               )}
