@@ -142,6 +142,7 @@ a {
   display: flex;
   flex-direction: column;
 }
+
 /* Контейнер для фонового изображения */
 .background-container {
   position: fixed; /* ✅ Фиксировано — не влияет на прокрутку */
@@ -154,7 +155,9 @@ a {
   background-repeat: no-repeat;
   background-size: cover;
   z-index: -2;
-  will-change: background-position;
+  pointer-events: none;
+  transition: background-color 600ms ease, opacity 600ms ease;
+  will-change: background-position, background-color, opacity;
 }
 
 .background-container.bg-fight {

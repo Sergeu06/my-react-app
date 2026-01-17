@@ -140,6 +140,18 @@ const pageTransition = {
   default: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
 };
 
+function getBackgroundTint(pathname) {
+  if (pathname.includes("/fight")) return "rgba(11, 15, 22, 0.45)";
+  if (pathname.includes("/shop")) return "rgba(43, 27, 18, 0.45)";
+  if (pathname.includes("/collection")) return "rgba(16, 38, 53, 0.45)";
+  if (pathname.includes("/upgrade")) return "rgba(26, 27, 51, 0.45)";
+  if (pathname.includes("/profile")) return "rgba(18, 49, 38, 0.45)";
+  if (pathname.includes("/raid")) return "rgba(55, 18, 14, 0.45)";
+  if (pathname.includes("/open-box")) return "rgba(10, 33, 41, 0.45)";
+  if (pathname.includes("/result")) return "rgba(28, 16, 38, 0.45)";
+  return null;
+}
+
 function collectDeviceInfo() {
   return {
     userAgent: navigator.userAgent,
@@ -693,6 +705,8 @@ function App() {
   const path = location.pathname.toLowerCase();
   const isGameOrProfile = path === "/game";
   const isRaid = path === "/raid";
+  const tint = getBackgroundTint(path);
+  const showTint = tint !== null;
   const backgroundClass = (() => {
     if (path.includes("/fight")) return "bg-fight";
     if (path.includes("/shop")) return "bg-shop";
@@ -713,6 +727,11 @@ function App() {
           <div
             className={`background-container ${backgroundClass}`}
             ref={backgroundRef}
+            style={{
+              backgroundColor: tint ?? "transparent",
+              opacity: showTint ? 1 : 0,
+            }}
+            aria-hidden="true"
           />
           <div className="game-version">v0.9.88.41</div>
 
