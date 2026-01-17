@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { doc, onSnapshot, updateDoc } from "firebase/firestore";
-import { db } from "./firebase";
+import { db, doc, onSnapshot, updateDoc } from "./firebase";
 import { useSearchParams } from "react-router-dom";
 
 const UserContext = createContext(null);

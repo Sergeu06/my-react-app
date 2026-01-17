@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { ref, onValue } from "firebase/database";
-import { database } from "./components/firebase";
 import {
   Routes,
   Route,
@@ -17,7 +16,7 @@ import StoreIcon from "@mui/icons-material/Store";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import UpgradeIcon from "@mui/icons-material/ArrowCircleUpRounded";
 import CryptoJS from "crypto-js";
-import { db, collection, getDocs, doc, getDoc, setDoc } from "./components/firebase";
+import { db, collection, getDocs, doc, getDoc, setDoc, database} from "./components/firebase";
 import { DndProvider } from "react-dnd";
 import { TouchBackend } from "react-dnd-touch-backend";
 import { useSwipeable } from "react-swipeable";
