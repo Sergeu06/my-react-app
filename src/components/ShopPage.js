@@ -24,6 +24,7 @@ import { useNavigate } from "react-router-dom";
 import { getGlowColor } from "../utils/FramedCard";
 import { ref as realtimeRef } from "firebase/database";
 import { DAILY_TASK_IDS, completeDailyTask } from "../utils/dailyTasks";
+import { buildLootboxChances } from "../utils/lootboxChances";
 
 function ShopPage({ uid }) {
   const [activeTab, setActiveTab] = useState("shop");
@@ -176,6 +177,19 @@ function ShopPage({ uid }) {
     if (activeTab === "shop") fetchCards();
   }, [activeTab]);
 
+  useEffect(() => {
+    const cachedRaw = localStorage.getItem("lootboxChanceCache");
+    if (!cachedRaw) return;
+    try {
+      const cached = JSON.parse(cachedRaw);
+      if (cached && typeof cached === "object") {
+        boxContentsCache.current = cached;
+      }
+    } catch (err) {
+      console.warn("Не удалось прочитать кеш ланчбоксов:", err);
+    }
+  }, []);
+
   const handleTabChange = (tab) => setActiveTab(tab);
 
   const handlePurchaseClick = () => {
@@ -238,20 +252,27 @@ function ShopPage({ uid }) {
         rarityCountMap[c.rarity] = (rarityCountMap[c.rarity] || 0) + 1;
       });
 
-      const boxCardsWithChance = boxCards.map((card) => {
-        const rarityKey =
-          card.rarity.charAt(0).toUpperCase() +
-          card.rarity.slice(1).toLowerCase();
-
-        const totalChance = rarityChances[rarityKey] || 0;
-        const count = rarityCountMap[card.rarity] || 1;
-        const chance = (totalChance / count).toFixed(2);
-
-        return { ...card, chance };
-      });
+      const boxCardsWithChance = buildLootboxChances(
+        boxCards,
+        rarityChances,
+        rarityCountMap
+      );
 
       // ⬅️ Сохраняем в кеш
       boxContentsCache.current[boxId] = boxCardsWithChance;
+      try {
+        const cachedRaw = localStorage.getItem("lootboxChanceCache");
+        const cached = cachedRaw ? JSON.parse(cachedRaw) : {};
+        localStorage.setItem(
+          "lootboxChanceCache",
+          JSON.stringify({
+            ...cached,
+            [boxId]: boxCardsWithChance,
+          })
+        );
+      } catch (err) {
+        console.warn("Не удалось сохранить кеш ланчбоксов:", err);
+      }
       setBoxCardsDetails(boxCardsWithChance);
     } catch (err) {
       console.error("Ошибка загрузки содержимого коробки:", err);
