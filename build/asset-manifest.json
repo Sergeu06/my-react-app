@@ -1,14 +1,14 @@
 {
   "files": {
-    "main.css": "/static/css/main.d569c728.css",
-    "main.js": "/static/js/main.c932bc29.js",
+    "main.css": "/static/css/main.b8cf3623.css",
+    "main.js": "/static/js/main.85b8f5ed.js",
     "static/media/озеро3.png": "/static/media/озеро3.9bf35eb785727d526143.png",
     "index.html": "/index.html",
-    "main.d569c728.css.map": "/static/css/main.d569c728.css.map",
-    "main.c932bc29.js.map": "/static/js/main.c932bc29.js.map"
+    "main.b8cf3623.css.map": "/static/css/main.b8cf3623.css.map",
+    "main.85b8f5ed.js.map": "/static/js/main.85b8f5ed.js.map"
   },
   "entrypoints": [
-    "static/css/main.d569c728.css",
-    "static/js/main.c932bc29.js"
+    "static/css/main.b8cf3623.css",
+    "static/js/main.85b8f5ed.js"
   ]
 }

@@ -2,7 +2,7 @@
 .raid-result-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: rgba(0, 0, 0, 0.25);
   color: #ffa500;
   display: flex;
   flex-direction: column;
