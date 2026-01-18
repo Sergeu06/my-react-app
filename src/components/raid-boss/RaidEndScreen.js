@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   arrayUnion,
@@ -50,6 +50,7 @@ const ROULETTE_CONFIG = {
   itemHeight: 64,
   visibleItems: 5,
   reelItems: 30,
+  itemGap: 6,
   rewardTable: [
     {
       type: "coins",
@@ -93,6 +94,14 @@ const pickWeightedReward = (table) => {
 const randomInt = (min, max) =>
   Math.floor(Math.random() * (max - min + 1)) + min;
 
+const rewardIcons = {
+  coins: "/moneta.png",
+  recipes: "/666666.png",
+  tickets: "/ticket.png",
+};
+
+const fallbackCardImage = "/CARDB.jpg";
+
 function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
   const navigate = useNavigate();
   const { userData } = useUser();
@@ -112,16 +121,17 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
   const [roulettePhase, setRoulettePhase] = useState("spinning");
   const [rouletteSummary, setRouletteSummary] = useState(null);
   const [winningIndex, setWinningIndex] = useState(0);
+  const [rewardPreview, setRewardPreview] = useState(null);
+  const userSnapshotRef = useRef(null);
 
   const rouletteWindowHeight = useMemo(
     () => ROULETTE_CONFIG.itemHeight * ROULETTE_CONFIG.visibleItems,
     []
   );
-  const rouletteCenterOffset = useMemo(
-    () =>
-      (ROULETTE_CONFIG.visibleItems / 2 - 0.5) * ROULETTE_CONFIG.itemHeight,
-    []
-  );
+  const rouletteCenterOffset = useMemo(() => {
+    const halfVisible = ROULETTE_CONFIG.visibleItems / 2 - 0.5;
+    return halfVisible * (ROULETTE_CONFIG.itemHeight + ROULETTE_CONFIG.itemGap);
+  }, []);
 
   useEffect(() => {
     if (!uid) return;
@@ -129,12 +139,17 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
     const userRef = doc(db, "users", uid);
     const timeouts = [];
 
-    const buildDisplayItem = (reward, isWinner = false) => {
+    const buildDisplayItem = (reward, cardTemplates, isWinner = false) => {
       if (reward.type === "card") {
+        const pickedTemplate = cardTemplates.length
+          ? cardTemplates[Math.floor(Math.random() * cardTemplates.length)]
+          : null;
         return {
           type: reward.type,
           label: reward.label,
-          value: "Любая",
+          value: pickedTemplate?.data?.name || "Любая",
+          imageUrl: pickedTemplate?.data?.image_url || fallbackCardImage,
+          cardTemplate: pickedTemplate,
           isWinner,
         };
       }
@@ -144,6 +159,7 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
         type: reward.type,
         label: reward.label,
         value: amount,
+        imageUrl: rewardIcons[reward.type] || null,
         isWinner,
       };
     };
@@ -155,12 +171,30 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
       const oldBalance = data.balance || 0;
       const oldSecret = data.SecretRecipes || 0;
       const oldXp = data.stats?.xp || 0;
+      const oldTickets = data.tickets ?? 0;
+
+      const cardsSnapshot = await getDocs(collection(db, "cards"));
+      const cardTemplates = cardsSnapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        data: docSnap.data(),
+      }));
+
+      userSnapshotRef.current = {
+        oldBalance,
+        oldSecret,
+        oldXp,
+        oldTickets,
+        stats: data.stats || {},
+      };
 
       const baseReward = pickWeightedReward(ROULETTE_CONFIG.rewardTable);
-      const resultReward = buildDisplayItem(baseReward, true);
+      const resultReward = buildDisplayItem(baseReward, cardTemplates, true);
 
       const items = Array.from({ length: ROULETTE_CONFIG.reelItems }, () =>
-        buildDisplayItem(pickWeightedReward(ROULETTE_CONFIG.rewardTable))
+        buildDisplayItem(
+          pickWeightedReward(ROULETTE_CONFIG.rewardTable),
+          cardTemplates
+        )
       );
       const targetIndex = Math.max(0, ROULETTE_CONFIG.reelItems - 3);
       items[targetIndex] = resultReward;
@@ -169,101 +203,17 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
       setWinningIndex(targetIndex);
       requestAnimationFrame(() => {
         setRouletteOffset(
-          targetIndex * ROULETTE_CONFIG.itemHeight - rouletteCenterOffset
+          targetIndex *
+            (ROULETTE_CONFIG.itemHeight + ROULETTE_CONFIG.itemGap) -
+            rouletteCenterOffset
         );
       });
 
       timeouts.push(
-        setTimeout(async () => {
+        setTimeout(() => {
           if (!isActive) return;
-          const summary = {
-            coins: 0,
-            recipes: 0,
-            tickets: 0,
-            cardName: null,
-          };
-          let cardRewardTemplate = null;
-
-          if (resultReward.type === "coins") {
-            summary.coins = resultReward.value;
-          }
-          if (resultReward.type === "recipes") {
-            summary.recipes = resultReward.value;
-          }
-          if (resultReward.type === "tickets") {
-            summary.tickets = resultReward.value;
-          }
-          if (resultReward.type === "card") {
-            const cardsSnapshot = await getDocs(collection(db, "cards"));
-            const templates = cardsSnapshot.docs;
-            if (templates.length) {
-              const picked =
-                templates[Math.floor(Math.random() * templates.length)];
-              cardRewardTemplate = {
-                id: picked.id,
-                data: picked.data(),
-              };
-              summary.cardName = picked.data()?.name || "Без имени";
-            }
-          }
-
-          const totalCoins = moneyEarned + summary.coins;
-          const totalRecipes = extraCurrency + summary.recipes;
-          const totalTickets = summary.tickets;
-          const newXp = oldXp + xpGained;
-          const newLvl = calculateLevel(newXp);
-
-          const updates = {
-            balance: oldBalance + totalCoins,
-            SecretRecipes: oldSecret + totalRecipes,
-            tickets: (data.tickets ?? 0) + totalTickets,
-            stats: {
-              ...(data.stats || {}),
-              xp: newXp,
-              lvl: newLvl,
-              raid_count: (data.stats?.raid_count || 0) + 1,
-              total_damage_raid:
-                (data.stats?.total_damage_raid || 0) + totalDamage,
-              total_cards_used: (data.stats?.total_cards_used || 0) + cardsUsed,
-            },
-          };
-
-          if (cardRewardTemplate) {
-            const newId = crypto.randomUUID();
-            await rtdbSet(databaseRef(database, `cards/${newId}`), {
-              ...cardRewardTemplate.data,
-              lvl: 1,
-              owner: uid,
-              fleet: parseFloat(Math.random().toFixed(10)),
-              sell: false,
-              original_id: cardRewardTemplate.id,
-              upgradeBonus: 0,
-              increase: cardRewardTemplate.data?.increase ?? 1,
-            });
-            updates.cards = arrayUnion(newId);
-          }
-
-          await updateDoc(userRef, updates);
-
-          animateValue(
-            setAnimatedMoney,
-            oldBalance,
-            oldBalance + totalCoins,
-            1000
-          );
-          animateValue(
-            setAnimatedSecret,
-            oldSecret,
-            oldSecret + totalRecipes,
-            1000
-          );
-          setXpData({ oldXp, newXp });
-          setRouletteSummary(summary);
-          setRoulettePhase("results");
-          setShowBonus(true);
-
-          timeouts.push(setTimeout(() => setShowBonus(false), 3000));
-          timeouts.push(setTimeout(() => setXpVisible(false), 4000));
+          setRewardPreview(resultReward);
+          setRoulettePhase("confirm");
         }, ROULETTE_CONFIG.spinDurationMs)
       );
     };
@@ -274,7 +224,15 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
       isActive = false;
       timeouts.forEach((timeoutId) => clearTimeout(timeoutId));
     };
-  }, [uid, moneyEarned, extraCurrency, cardsUsed, totalDamage, xpGained]);
+  }, [
+    uid,
+    moneyEarned,
+    extraCurrency,
+    cardsUsed,
+    totalDamage,
+    xpGained,
+    rouletteCenterOffset,
+  ]);
 
   function animateValue(setter, start, end, duration) {
     const startTime = performance.now();
@@ -301,6 +259,92 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
   function handleExit() {
     navigate(`/fight?start=${uid}`);
   }
+
+  const handleConfirmReward = async () => {
+    if (!uid || !rewardPreview) return;
+    const snapshot = userSnapshotRef.current;
+    if (!snapshot) return;
+
+    const summary = {
+      coins: 0,
+      recipes: 0,
+      tickets: 0,
+      cardName: null,
+    };
+    let cardRewardTemplate = null;
+
+    if (rewardPreview.type === "coins") {
+      summary.coins = rewardPreview.value || 0;
+    }
+    if (rewardPreview.type === "recipes") {
+      summary.recipes = rewardPreview.value || 0;
+    }
+    if (rewardPreview.type === "tickets") {
+      summary.tickets = rewardPreview.value || 0;
+    }
+    if (rewardPreview.type === "card" && rewardPreview.cardTemplate) {
+      cardRewardTemplate = rewardPreview.cardTemplate;
+      summary.cardName = rewardPreview.value || "Без имени";
+    }
+
+    const totalCoins = moneyEarned + summary.coins;
+    const totalRecipes = extraCurrency + summary.recipes;
+    const totalTickets = summary.tickets;
+    const newXp = snapshot.oldXp + xpGained;
+    const newLvl = calculateLevel(newXp);
+
+    const updates = {
+      balance: snapshot.oldBalance + totalCoins,
+      SecretRecipes: snapshot.oldSecret + totalRecipes,
+      tickets: snapshot.oldTickets + totalTickets,
+      stats: {
+        ...(snapshot.stats || {}),
+        xp: newXp,
+        lvl: newLvl,
+        raid_count: (snapshot.stats?.raid_count || 0) + 1,
+        total_damage_raid:
+          (snapshot.stats?.total_damage_raid || 0) + totalDamage,
+        total_cards_used: (snapshot.stats?.total_cards_used || 0) + cardsUsed,
+      },
+    };
+
+    if (cardRewardTemplate) {
+      const newId = crypto.randomUUID();
+      await rtdbSet(databaseRef(database, `cards/${newId}`), {
+        ...cardRewardTemplate.data,
+        lvl: 1,
+        owner: uid,
+        fleet: parseFloat(Math.random().toFixed(10)),
+        sell: false,
+        original_id: cardRewardTemplate.id,
+        upgradeBonus: 0,
+        increase: cardRewardTemplate.data?.increase ?? 1,
+      });
+      updates.cards = arrayUnion(newId);
+    }
+
+    await updateDoc(doc(db, "users", uid), updates);
+
+    animateValue(
+      setAnimatedMoney,
+      snapshot.oldBalance,
+      snapshot.oldBalance + totalCoins,
+      1000
+    );
+    animateValue(
+      setAnimatedSecret,
+      snapshot.oldSecret,
+      snapshot.oldSecret + totalRecipes,
+      1000
+    );
+    setXpData({ oldXp: snapshot.oldXp, newXp });
+    setRouletteSummary(summary);
+    setRoulettePhase("results");
+    setShowBonus(true);
+
+    setTimeout(() => setShowBonus(false), 3000);
+    setTimeout(() => setXpVisible(false), 4000);
+  };
 
   return (
     <>
@@ -395,6 +439,7 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
               className="raid-roulette-reel"
               style={{
                 transform: `translateY(-${rouletteOffset}px)`,
+                gap: `${ROULETTE_CONFIG.itemGap}px`,
                 transition: `transform ${ROULETTE_CONFIG.spinDurationMs}ms cubic-bezier(0.17, 0.84, 0.44, 1)`,
               }}
             >
@@ -406,12 +451,23 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
                   key={`${item.type}-${index}`}
                   style={{ height: ROULETTE_CONFIG.itemHeight }}
                 >
-                  <span className="raid-roulette-item-label">
-                    {item.label}
-                  </span>
-                  <span className="raid-roulette-item-value">
-                    {item.value ?? "?"}
-                  </span>
+                  <div className="raid-roulette-item-content">
+                    {item.imageUrl && (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.label}
+                        className="raid-roulette-item-icon"
+                      />
+                    )}
+                    <div className="raid-roulette-item-text">
+                      <span className="raid-roulette-item-label">
+                        {item.label}
+                      </span>
+                      <span className="raid-roulette-item-value">
+                        {item.value ?? "?"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -419,6 +475,30 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
           <p className="raid-roulette-note">
             Шансы можно настроить в ROULETTE_CONFIG в коде.
           </p>
+        </div>
+      )}
+
+      {roulettePhase === "confirm" && rewardPreview && (
+        <div className="raid-confirm-overlay">
+          <h2 className="raid-confirm-title">Ваша награда</h2>
+          <div className="raid-confirm-card">
+            {rewardPreview.imageUrl && (
+              <img
+                src={rewardPreview.imageUrl}
+                alt={rewardPreview.label}
+                className="raid-confirm-image"
+              />
+            )}
+            <div className="raid-confirm-info">
+              <span className="raid-confirm-label">{rewardPreview.label}</span>
+              <span className="raid-confirm-value">
+                {rewardPreview.value || "—"}
+              </span>
+            </div>
+          </div>
+          <button className="raid-confirm-btn" onClick={handleConfirmReward}>
+            Получить
+          </button>
         </div>
       )}
 
