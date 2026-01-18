@@ -112,6 +112,12 @@
     gap: 2px;
   }
 
+  .currency-dock.collapsed {
+    max-width: min(96px, 55vw);
+    padding: 2px;
+    gap: 2px;
+  }
+
   .currency-dock-toggle {
     height: 32px;
     padding: 0 8px;
