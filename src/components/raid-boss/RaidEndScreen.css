@@ -15,6 +15,20 @@
   text-align: center;
 }
 
+.raid-roulette-overlay--reveal .raid-roulette-item:not(.winner) {
+  opacity: 0.4;
+  filter: blur(1px);
+}
+
+.raid-roulette-overlay--reveal .raid-roulette-item.winner {
+  animation: winner-pulse 700ms ease-out;
+  box-shadow: 0 0 18px rgba(255, 209, 128, 0.5);
+}
+
+.raid-roulette-overlay--reveal .raid-roulette-highlight {
+  animation: highlight-flash 350ms ease-out;
+}
+
 .raid-roulette-title {
   margin-bottom: 6px;
   font-size: 28px;
@@ -113,6 +127,17 @@
   color: rgba(255, 165, 0, 0.7);
 }
 
+.raid-result-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.raid-result-card {
+  color: #ffe0a6;
+  text-shadow: 0 0 12px rgba(255, 214, 140, 0.45);
+}
+
 .raid-result-exit {
   margin-top: 30px;
   padding: 10px 30px;
@@ -207,4 +232,203 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     inset 0 -2px 0 rgba(0, 0, 0, 0.45);
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.bonus-amount {
+  font-size: 14px;
+  color: #0f0;
+  font-weight: bold;
+  margin-left: 4px;
+  opacity: 0;
+  animation-duration: 3s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+.bonus-amount--coins {
+  animation-name: bonus-coins;
+}
+
+.bonus-amount--recipes {
+  animation-name: bonus-recipes;
+}
+
+.bonus-amount--tickets {
+  animation-name: bonus-tickets;
+}
+
+.xp-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 6px;
+  width: 100%;
+  background: rgba(0, 191, 255, 0.1);
+  z-index: 10000;
+  transition: opacity 1s ease 3s;
+}
+
+.xp-bar-inner {
+  position: relative;
+  height: 100%;
+  background: linear-gradient(to right, #00bfff, #87cefa);
+  transition: width 1s ease;
+  overflow: hidden;
+}
+
+.xp-bar--levelup .xp-bar-inner {
+  filter: brightness(1.2);
+}
+
+.xp-bar-flash {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0) 10%,
+    rgba(255, 255, 255, 0.65) 45%,
+    rgba(255, 255, 255, 0) 80%
+  );
+  animation: xp-flash 650ms ease-out;
+}
+
+.xp-label {
+  position: fixed;
+  top: 8px;
+  font-size: 12px;
+  color: white;
+  z-index: 10001;
+}
+
+.xp-label--levelup {
+  animation: xp-bounce 500ms ease-out;
+}
+
+.raid-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.raid-confetti-piece {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 2px;
+  background: hsl(var(--hue), 85%, 70%);
+  animation: raid-confetti 1.2s ease-out var(--delay) forwards;
+  transform: translate(0, 0) rotate(0deg);
+}
+
+@keyframes winner-pulse {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes highlight-flash {
+  0% {
+    background: rgba(255, 165, 0, 0.1);
+  }
+  50% {
+    background: rgba(255, 210, 140, 0.35);
+  }
+  100% {
+    background: rgba(255, 165, 0, 0.1);
+  }
+}
+
+@keyframes bonus-coins {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.9);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-18px) scale(1);
+  }
+}
+
+@keyframes bonus-recipes {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(6px, -6px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(18px, -20px);
+  }
+}
+
+@keyframes bonus-tickets {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.9);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-16px) scale(1.08);
+  }
+}
+
+@keyframes xp-flash {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes xp-bounce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes raid-confetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--x), var(--y)) rotate(var(--rotation));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bonus-amount,
+  .raid-roulette-overlay--reveal .raid-roulette-item.winner,
+  .raid-roulette-overlay--reveal .raid-roulette-highlight,
+  .xp-bar-flash,
+  .xp-label--levelup,
+  .raid-confetti-piece {
+    animation: none !important;
+  }
 }
