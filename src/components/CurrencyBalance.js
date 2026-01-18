@@ -3,9 +3,8 @@ import { useLocation } from "react-router-dom";
 import { useUser } from "./UserContext";
 import "./CurrencyBalance.css";
 
-const BALANCE_POSITIONS = {
-  panelTop: "21vh",
-  secondaryOffset: "5vh",
+const BALANCE_DOCK = {
+  offset: "12px",
 };
 
 function CurrencyBalance({
@@ -15,18 +14,22 @@ function CurrencyBalance({
 }) {
   const { userData } = useUser();
   const location = useLocation();
-  const [showHint, setShowHint] = useState(false);
-  const [showHintRecipes, setShowHintRecipes] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const hintRef = useRef(null);
   const hintRecipesRef = useRef(null);
   const balanceRef = useRef(null);
 
   const path = location.pathname.toLowerCase();
+  const [showHint, setShowHint] = useState(false);
+  const [showHintRecipes, setShowHintRecipes] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(path !== "/upgrade");
   const hiddenPaths = ["/raid", "/game", "/profile", "/open-box"];
   const showMystery = path === "/upgrade" || forceShow;
   const [showHintTickets, setShowHintTickets] = useState(false);
   const hintTicketsRef = useRef(null);
+
+  useEffect(() => {
+    setIsExpanded(path !== "/upgrade");
+  }, [path]);
 
   useEffect(() => {
     if (!showHint) return;
@@ -104,17 +107,10 @@ function CurrencyBalance({
   return (
     <>
       {/* Монеты */}
-      <div
-        className="currency-balance"
-        ref={balanceRef}
-        style={{
-          "--panel-top": BALANCE_POSITIONS.panelTop,
-          "--secondary-offset": BALANCE_POSITIONS.secondaryOffset,
-        }}
-      >
+      <div className="currency-dock" ref={balanceRef}>
         <button
           type="button"
-          className="currency-balance-toggle"
+          className="currency-dock-toggle"
           aria-expanded={isExpanded}
           onClick={(event) => {
             event.stopPropagation();
@@ -122,14 +118,19 @@ function CurrencyBalance({
           }}
         >
           <img src="/moneta.png" alt="Баланс" />
+          {!isExpanded && (
+            <span className="currency-dock-toggle-value">
+              {(displayedBalance ?? 0).toFixed(0)}
+            </span>
+          )}
         </button>
         <div
-          className={`currency-balance-panel ${
+          className={`currency-dock-panel ${
             isExpanded ? "expanded" : "collapsed"
           }`}
         >
           <div
-            className="currency-balance-item"
+            className="currency-dock-item"
             onClick={(e) => {
               e.stopPropagation();
               setShowHint(true);
@@ -141,7 +142,7 @@ function CurrencyBalance({
           {/* Билеты (Tickets) */}
           {path === "/fight" && (
             <div
-              className="currency-balance-item"
+              className="currency-dock-item"
               onClick={(e) => {
                 e.stopPropagation();
                 setShowHintTickets(true);
@@ -155,7 +156,7 @@ function CurrencyBalance({
           {/* Secret Recipes */}
           {showMystery && (
             <div
-              className="currency-balance-item"
+              className="currency-dock-item"
               onClick={(e) => {
                 e.stopPropagation();
                 setShowHintRecipes(true);
@@ -174,9 +175,9 @@ function CurrencyBalance({
           ref={hintRef}
           style={{
             position: "fixed",
-            top: BALANCE_POSITIONS.panelTop,
-            right: "5%",
-            left: "auto",
+            top: `calc(env(safe-area-inset-top, 0px) + ${BALANCE_DOCK.offset})`,
+            left: `calc(env(safe-area-inset-left, 0px) + ${BALANCE_DOCK.offset})`,
+            right: "auto",
             backgroundColor: "#1e1e1e",
             color: "#fff",
             padding: "12px 16px",
@@ -202,9 +203,9 @@ function CurrencyBalance({
           ref={hintTicketsRef}
           style={{
             position: "fixed",
-            top: `calc(${BALANCE_POSITIONS.panelTop} + ${BALANCE_POSITIONS.secondaryOffset})`,
-            right: "5%",
-            left: "auto",
+            top: `calc(env(safe-area-inset-top, 0px) + ${BALANCE_DOCK.offset} + 56px)`,
+            left: `calc(env(safe-area-inset-left, 0px) + ${BALANCE_DOCK.offset})`,
+            right: "auto",
             backgroundColor: "#1e1e1e",
             color: "#fff",
             padding: "12px 16px",
@@ -230,9 +231,9 @@ function CurrencyBalance({
           ref={hintRecipesRef}
           style={{
             position: "fixed",
-            top: `calc(${BALANCE_POSITIONS.panelTop} + ${BALANCE_POSITIONS.secondaryOffset})`,
-            right: "5%",
-            left: "auto",
+            top: `calc(env(safe-area-inset-top, 0px) + ${BALANCE_DOCK.offset} + 56px)`,
+            left: `calc(env(safe-area-inset-left, 0px) + ${BALANCE_DOCK.offset})`,
+            right: "auto",
             backgroundColor: "#1e1e1e",
             color: "#fff",
             padding: "12px 16px",

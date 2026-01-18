@@ -1,100 +1,107 @@
-.currency-balance {
+.currency-dock {
   position: fixed;
-  top: var(--panel-top, 21vh);
-  left: 0;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: calc(env(safe-area-inset-left, 0px) + 12px);
   z-index: 10001;
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
   pointer-events: auto;
-  --toggle-size: 36px;
-  --balance-item-height: 40px;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(20, 20, 22, 0.7);
+  border: 1px solid rgba(255, 165, 0, 0.35);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  max-width: min(220px, 70vw);
 }
 
-.currency-balance-toggle {
-  width: var(--toggle-size);
-  height: var(--toggle-size);
+.currency-dock-toggle {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
   justify-content: center;
   background-color: #282c34;
   border: 2px solid #ffa500;
-  border-left: none;
-  border-radius: 0 10px 10px 0;
+  border-radius: 999px;
   cursor: pointer;
-  padding: 0;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
 }
 
-.currency-balance-toggle img {
+.currency-dock-toggle img {
   width: 20px;
   height: 20px;
 }
 
-.currency-balance-panel {
+.currency-dock-toggle-value {
+  line-height: 1;
+}
+
+.currency-dock-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   transition: opacity 0.2s ease, transform 0.2s ease;
   transform-origin: left center;
 }
 
-.currency-balance-panel.collapsed {
+.currency-dock-panel.collapsed {
   opacity: 0;
-  transform: translateX(-6px) scale(0.98);
+  transform: translateY(-4px) scale(0.98);
   pointer-events: none;
 }
 
-.currency-balance-panel.expanded {
+.currency-dock-panel.expanded {
   opacity: 1;
-  transform: translateX(0) scale(1);
+  transform: translateY(0) scale(1);
   pointer-events: auto;
 }
 
-.currency-balance-item {
-  background-color: #282c34;
+.currency-dock-item {
+  background: rgba(40, 44, 52, 0.9);
   color: white;
-  padding: 8px 24px 8px 20px;
-  border-top: 2px solid #ffa500;
-  border-bottom: 2px solid #ffa500;
-  border-right: 2px solid #ffa500;
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 165, 0, 0.35);
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-weight: bold;
   font-size: clamp(12px, 1.4vw, 14px);
   white-space: nowrap;
-  min-height: var(--balance-item-height);
-  clip-path: polygon(
-    0 0,
-    100% 0,
-    100% calc(50% - 20px),
-    calc(100% - 20px) 50%,
-    100% calc(50% + 20px),
-    100% 100%,
-    0 100%
-  );
+  min-height: 34px;
+  border-radius: 10px;
   cursor: pointer;
 }
 
-.currency-balance-item img {
+.currency-dock-item img {
   width: 20px;
   height: 20px;
 }
 
 @media (max-width: 720px) {
-  .currency-balance {
-    --toggle-size: 32px;
-    --balance-item-height: 36px;
+  .currency-dock {
+    padding: 6px;
     gap: 8px;
+    max-width: min(200px, 74vw);
   }
 
-  .currency-balance-item {
-    padding: 6px 18px 6px 16px;
+  .currency-dock-toggle {
+    height: 32px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .currency-dock-item {
+    padding: 6px 12px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .currency-balance-panel {
+  .currency-dock-panel {
     transition: none;
   }
 }
