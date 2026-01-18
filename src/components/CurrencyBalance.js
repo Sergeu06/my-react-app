@@ -107,7 +107,10 @@ function CurrencyBalance({
   return (
     <>
       {/* Монеты */}
-      <div className="currency-dock" ref={balanceRef}>
+      <div
+        className={`currency-dock ${isExpanded ? "expanded" : "collapsed"}`}
+        ref={balanceRef}
+      >
         <button
           type="button"
           className="currency-dock-toggle"
