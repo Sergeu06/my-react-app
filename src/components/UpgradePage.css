@@ -202,6 +202,49 @@ h1 {
   gap: 6px;
 }
 
+.fusion-possible {
+  width: 100%;
+  background: rgba(30, 30, 30, 0.7);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fusion-possible-title {
+  font-weight: 600;
+  color: #ffa500;
+}
+
+.fusion-possible-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.fusion-possible-card {
+  width: 86px;
+  min-height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(15, 15, 15, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.fusion-possible-card .card-frame-wrapper {
+  transform: scale(0.62);
+}
+
+.fusion-possible-empty {
+  font-size: 0.9rem;
+  color: #bbb;
+}
+
 .fusion-slider input[type="range"] {
   width: 100%;
 }
@@ -227,6 +270,30 @@ h1 {
   border-radius: 10px;
   padding: 10px;
   font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+}
+
+.fusion-reward {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.fusion-reward-title {
+  font-size: 0.9rem;
+  color: #f8d57e;
+}
+
+.fusion-reward-card {
+  width: 140px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(12, 12, 12, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .fusion-result.success {
