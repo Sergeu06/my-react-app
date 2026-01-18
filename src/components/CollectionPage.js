@@ -464,7 +464,8 @@ function Collection({ uid }) {
         ) : playerCards.length === 0 ? (
           <div className="empty-inventory">Инвентарь пуст.</div>
         ) : (
-          <div className="grid">
+          <div className="card-grid-panel inventory-grid-panel">
+            <div className="grid">
             {sortInventoryCards(playerCards).map((card, index) => (
               <div
                 key={`inventory-${card.id}-${index}`}
@@ -478,6 +479,7 @@ function Collection({ uid }) {
                 <FramedCard card={card} showLevel={true} />
               </div>
             ))}
+            </div>
           </div>
         )}
 
