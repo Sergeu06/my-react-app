@@ -46,6 +46,16 @@
   padding: 0.5em 0;
 }
 
+.card-grid-panel {
+  width: 100%;
+  margin: 12px 0 20px;
+  background: rgba(10, 14, 22, 0.65);
+  border-radius: 22px;
+  padding: 18px 20px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+
 /* =======================
    Уведомления
 ======================= */

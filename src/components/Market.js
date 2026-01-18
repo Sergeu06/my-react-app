@@ -341,21 +341,23 @@ function Market({ setError }) {
         </IconButton>
       </div>
 
-      <div className="grid">
-        {isLoading
-          ? Array.from({ length: cardsPerPage }).map((_, index) => (
-              <SkeletonCard key={index} />
-            ))
-          : allCards.map((card) => (
-              <div key={card.key} onClick={() => openPurchaseModal(card)}>
-                <FramedCard card={card.cardDetails} showLevel={true} />
-                <div className="price-row" style={{ marginTop: "8px" }}>
-                  <span>Цена: {card.price}</span>
-                  <img src="/moneta.png" alt="coin" />
+      <div className="card-grid-panel market-grid-panel">
+        <div className="grid">
+          {isLoading
+            ? Array.from({ length: cardsPerPage }).map((_, index) => (
+                <SkeletonCard key={index} />
+              ))
+            : allCards.map((card) => (
+                <div key={card.key} onClick={() => openPurchaseModal(card)}>
+                  <FramedCard card={card.cardDetails} showLevel={true} />
+                  <div className="price-row" style={{ marginTop: "8px" }}>
+                    <span>Цена: {card.price}</span>
+                    <img src="/moneta.png" alt="coin" />
+                  </div>
+                  <div>Продавец: {card.sellerName || "Неизвестный"}</div>
                 </div>
-                <div>Продавец: {card.sellerName || "Неизвестный"}</div>
-              </div>
-            ))}
+              ))}
+        </div>
       </div>
 
       <div className="pagination">

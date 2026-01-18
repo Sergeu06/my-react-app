@@ -391,19 +391,21 @@ function Collection({ uid }) {
           </div>
         )}
 
-        <div className="grid">
-          {getCurrentDeck().map((card, index) => (
-            <div
-              key={`deck-${card.id}-${index}`}
-              onClick={() => {
-                if (isEditMode) handleRemoveFromDeck(card);
-                else setSelectedCard(card);
-              }}
-              style={{ cursor: "pointer" }}
-            >
-              <FramedCard card={card} showLevel={true} />
-            </div>
-          ))}
+        <div className="card-grid-panel deck-grid-panel">
+          <div className="grid">
+            {getCurrentDeck().map((card, index) => (
+              <div
+                key={`deck-${card.id}-${index}`}
+                onClick={() => {
+                  if (isEditMode) handleRemoveFromDeck(card);
+                  else setSelectedCard(card);
+                }}
+                style={{ cursor: "pointer" }}
+              >
+                <FramedCard card={card} showLevel={true} />
+              </div>
+            ))}
+          </div>
         </div>
         <div className="sort-refresh-container">
           <Select
@@ -464,7 +466,8 @@ function Collection({ uid }) {
         ) : playerCards.length === 0 ? (
           <div className="empty-inventory">Инвентарь пуст.</div>
         ) : (
-          <div className="grid">
+          <div className="card-grid-panel inventory-grid-panel">
+            <div className="grid">
             {sortInventoryCards(playerCards).map((card, index) => (
               <div
                 key={`inventory-${card.id}-${index}`}
@@ -478,6 +481,7 @@ function Collection({ uid }) {
                 <FramedCard card={card} showLevel={true} />
               </div>
             ))}
+            </div>
           </div>
         )}
 
