@@ -79,9 +79,26 @@ export const getLocalCardImageUrl = (name) => {
   return `${LOCAL_CARD_PATH}${encodeURIComponent(fileName)}`;
 };
 
+const getLocalCardImageUrlFromFallback = (fallbackUrl) => {
+  if (!fallbackUrl) return null;
+  try {
+    const url = new URL(fallbackUrl);
+    const parts = url.pathname.split("/");
+    const fileName = parts[parts.length - 1];
+    if (!fileName) return null;
+    return getLocalCardImageUrl(decodeURIComponent(fileName));
+  } catch (error) {
+    return null;
+  }
+};
+
 export const preloadCardImage = async (name, fallbackUrl) => {
-  const localUrl = getLocalCardImageUrl(name);
-  if (localUrl) {
+  const localCandidates = [
+    getLocalCardImageUrl(name),
+    getLocalCardImageUrlFromFallback(fallbackUrl),
+  ].filter(Boolean);
+
+  for (const localUrl of Array.from(new Set(localCandidates))) {
     const cached = await preloadImageToCache(localUrl);
     if (cached) {
       return { success: true, source: "local", url: localUrl };
@@ -98,15 +115,20 @@ export const preloadCardImage = async (name, fallbackUrl) => {
     };
   }
 
-  return { success: false, source: "none", url: localUrl };
+  return { success: false, source: "none", url: localCandidates[0] || null };
 };
 
 export const getCardImageUrl = async ({ name, fallbackUrl }) => {
-  const localUrl = getLocalCardImageUrl(name);
-  const requestMode = localUrl ? getRequestMode(localUrl) : null;
+  const localCandidates = [
+    getLocalCardImageUrl(name),
+    getLocalCardImageUrlFromFallback(fallbackUrl),
+  ].filter(Boolean);
+
   const canUseCache = "caches" in window;
 
-  if (localUrl && !localCardMisses.has(localUrl)) {
+  for (const localUrl of Array.from(new Set(localCandidates))) {
+    if (!localUrl || localCardMisses.has(localUrl)) continue;
+    const requestMode = getRequestMode(localUrl);
     try {
       const cache = canUseCache ? await caches.open(CARD_IMAGE_CACHE) : null;
       let response = cache ? await cache.match(localUrl) : null;
@@ -117,7 +139,7 @@ export const getCardImageUrl = async ({ name, fallbackUrl }) => {
         });
         if (response.ok) {
           if (cache) {
-          await cache.put(localUrl, response.clone());
+            await cache.put(localUrl, response.clone());
           }
           return localUrl;
         }
@@ -136,7 +158,7 @@ export const getCardImageUrl = async ({ name, fallbackUrl }) => {
     return fallbackUrl;
   }
 
-  return localUrl;
+  return localCandidates[0] || null;
 };
 
 export const getCachedImageUrl = async (src) => {

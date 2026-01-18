@@ -328,8 +328,13 @@ function App() {
             incrementAssetsProgress(1, 0);
           }),
           ...fallbackUrls.map(async (url) => {
-            const cached = await preloadImageToCache(url);
-            console.info("[GlobalLoader] asset cached", { src: url, cached });
+            const result = await preloadCardImage(null, url);
+            console.info("[GlobalLoader] asset cached", {
+              src: url,
+              cached: result.success,
+              source: result.source,
+              url: result.url,
+            });
             incrementAssetsProgress(1, 0);
           }),
         ]);
