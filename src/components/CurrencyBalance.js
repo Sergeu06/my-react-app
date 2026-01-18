@@ -1,14 +1,26 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useUser } from "./UserContext";
+import "./CurrencyBalance.css";
 
-function CurrencyBalance({ forceShow = false }) {
+const BALANCE_POSITIONS = {
+  panelTop: "21vh",
+  secondaryOffset: "5vh",
+};
+
+function CurrencyBalance({
+  forceShow = false,
+  balanceOverride,
+  secretOverride,
+}) {
   const { userData } = useUser();
   const location = useLocation();
   const [showHint, setShowHint] = useState(false);
   const [showHintRecipes, setShowHintRecipes] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const hintRef = useRef(null);
   const hintRecipesRef = useRef(null);
+  const balanceRef = useRef(null);
 
   const path = location.pathname.toLowerCase();
   const hiddenPaths = ["/raid", "/game", "/profile", "/open-box"];
@@ -63,45 +75,97 @@ function CurrencyBalance({ forceShow = false }) {
     };
   }, [showHintRecipes]);
 
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    const handleClickOutside = (event) => {
+      if (balanceRef.current?.contains(event.target)) return;
+      setIsExpanded(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [isExpanded]);
+
   if (!userData) return null;
   if (!forceShow && hiddenPaths.includes(path)) return null;
-
-  const balanceStyle = {
-    position: "fixed",
-    top: 7,
-    left: 0,
-    backgroundColor: "#282c34",
-    color: "white",
-    padding: "8px 24px 8px 20px",
-    borderTop: "2px solid #ffa500",
-    borderBottom: "2px solid #ffa500",
-    borderRight: "2px solid #ffa500",
-    zIndex: 10001,
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "8px",
-    fontWeight: "bold",
-    fontSize: "14px",
-    whiteSpace: "nowrap",
-    minHeight: "40px",
-    clipPath:
-      "polygon(0 0, 100% 0, 100% calc(50% - 20px), calc(100% - 20px) 50%, 100% calc(50% + 20px), 100% 100%, 0 100%)",
-  };
-
-  const iconStyle = { width: 20, height: 20 };
+  const displayedBalance =
+    typeof balanceOverride === "number" ? balanceOverride : userData.balance;
+  const displayedRecipes =
+    typeof secretOverride === "number"
+      ? secretOverride
+      : userData.SecretRecipes;
 
   return (
     <>
       {/* Монеты */}
       <div
-        style={{ ...balanceStyle, top: "21vh", cursor: "pointer" }}
-        onClick={(e) => {
-          e.stopPropagation();
-          setShowHint(true);
+        className="currency-balance"
+        ref={balanceRef}
+        style={{
+          "--panel-top": BALANCE_POSITIONS.panelTop,
+          "--secondary-offset": BALANCE_POSITIONS.secondaryOffset,
         }}
       >
-        <img src="/moneta.png" alt="coin" style={iconStyle} />
-        <span>{(userData.balance ?? 0).toFixed(2)}</span>
+        <button
+          type="button"
+          className="currency-balance-toggle"
+          aria-expanded={isExpanded}
+          onClick={(event) => {
+            event.stopPropagation();
+            setIsExpanded((prev) => !prev);
+          }}
+        >
+          <img src="/moneta.png" alt="Баланс" />
+        </button>
+        <div
+          className={`currency-balance-panel ${
+            isExpanded ? "expanded" : "collapsed"
+          }`}
+        >
+          <div
+            className="currency-balance-item"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowHint(true);
+            }}
+          >
+            <img src="/moneta.png" alt="coin" />
+            <span>{(displayedBalance ?? 0).toFixed(2)}</span>
+          </div>
+          {/* Билеты (Tickets) */}
+          {path === "/fight" && (
+            <div
+              className="currency-balance-item"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowHintTickets(true);
+              }}
+            >
+              <img src="/ticket.png" alt="Tickets" />
+              <span>{userData.tickets ?? 0}</span>
+            </div>
+          )}
+
+          {/* Secret Recipes */}
+          {showMystery && (
+            <div
+              className="currency-balance-item"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowHintRecipes(true);
+              }}
+            >
+              <img src="/666666.png" alt="Secret Recipes" />
+              <span>{displayedRecipes ?? 0}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Подсказка по монетам */}
@@ -110,7 +174,7 @@ function CurrencyBalance({ forceShow = false }) {
           ref={hintRef}
           style={{
             position: "fixed",
-            top: "21vh",
+            top: BALANCE_POSITIONS.panelTop,
             right: "5%",
             left: "auto",
             backgroundColor: "#1e1e1e",
@@ -132,27 +196,13 @@ function CurrencyBalance({ forceShow = false }) {
           Нажмите в любом месте, чтобы скрыть.
         </div>
       )}
-      {/* Билеты (Tickets) */}
-      {path === "/fight" && (
-        <div
-          style={{ ...balanceStyle, top: "26vh", cursor: "pointer" }}
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowHintTickets(true);
-          }}
-        >
-          <img src="/ticket.png" alt="Tickets" style={iconStyle} />
-          <span>{userData.tickets ?? 0}</span>
-        </div>
-      )}
-
       {/* Подсказка по Tickets */}
       {path === "/fight" && showHintTickets && (
         <div
           ref={hintTicketsRef}
           style={{
             position: "fixed",
-            top: "26vh",
+            top: `calc(${BALANCE_POSITIONS.panelTop} + ${BALANCE_POSITIONS.secondaryOffset})`,
             right: "5%",
             left: "auto",
             backgroundColor: "#1e1e1e",
@@ -174,27 +224,13 @@ function CurrencyBalance({ forceShow = false }) {
         </div>
       )}
 
-      {/* Secret Recipes */}
-      {showMystery && (
-        <div
-          style={{ ...balanceStyle, top: "26vh", cursor: "pointer" }}
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowHintRecipes(true);
-          }}
-        >
-          <img src="/666666.png" alt="Secret Recipes" style={iconStyle} />
-          <span>{userData.SecretRecipes ?? 0}</span>
-        </div>
-      )}
-
       {/* Подсказка по Secret Recipes */}
       {showHintRecipes && (
         <div
           ref={hintRecipesRef}
           style={{
             position: "fixed",
-            top: "26vh",
+            top: `calc(${BALANCE_POSITIONS.panelTop} + ${BALANCE_POSITIONS.secondaryOffset})`,
             right: "5%",
             left: "auto",
             backgroundColor: "#1e1e1e",
