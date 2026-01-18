@@ -193,6 +193,19 @@
   will-change: width;
 }
 
+.hp-bar-damage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 14px 0 0 14px;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+  transition: width 1s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .hp-bar-fill.pulse {
   animation: pulseGlow 1.2s infinite alternate ease-in-out;
 }

@@ -235,9 +235,13 @@
 }
 
 .bonus-amount {
+  display: inline-flex;
+  align-items: center;
   font-size: 14px;
   color: #0f0;
   font-weight: bold;
+  height: 40px;
+  line-height: 40px;
   margin-left: 4px;
   opacity: 0;
   animation-duration: 3s;
