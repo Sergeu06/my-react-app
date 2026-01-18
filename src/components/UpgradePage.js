@@ -1146,7 +1146,23 @@ function UpgradePage() {
           {fusionError && <div className="fusion-error">{fusionError}</div>}
           {fusionResult === "success" && (
             <div className="fusion-result success">
-              Слияние успешно! Карта стала более редкой.
+              <div className="fusion-result-text">
+                Слияние успешно! Карта стала более редкой.
+              </div>
+              {fusionRewardCard && (
+                <div className="fusion-reward">
+                  <div className="fusion-reward-title">
+                    Полученная карта
+                  </div>
+                  <div className="fusion-reward-card">
+                    <FramedCard
+                      card={fusionRewardCard}
+                      showLevel={true}
+                      showName={false}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {fusionResult === "fail" && (
