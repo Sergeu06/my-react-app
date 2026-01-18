@@ -32,6 +32,7 @@ import {
   ensureDailyTasks,
   completeDailyTask,
   claimDailyTask,
+  claimDailyTaskBonus,
 } from "../utils/dailyTasks";
 import { formatRaidCountdown, getRaidEventInfo } from "../utils/raidEvents";
 
@@ -84,7 +85,9 @@ function FightPage({ uid, searchState, setSearchState }) {
   const [dailyBoxesLoading, setDailyBoxesLoading] = useState(false);
   const [showDailyTasksModal, setShowDailyTasksModal] = useState(false);
   const [dailyTaskState, setDailyTaskState] = useState({});
+  const [dailyBonusState, setDailyBonusState] = useState({});
   const [dailyTasksLoaded, setDailyTasksLoaded] = useState(false);
+  const [dailyResetRemaining, setDailyResetRemaining] = useState(0);
 
   const dailyTasks = useMemo(
     () => [
@@ -122,6 +125,23 @@ function FightPage({ uid, searchState, setSearchState }) {
         description: "Откройте коллекцию карт.",
         reward: { tickets: 1 },
         rewardLabel: "+1 билет",
+      },
+    ],
+    []
+  );
+  const dailyTaskBonuses = useMemo(
+    () => [
+      {
+        id: "bonus3",
+        threshold: 3,
+        reward: { coins: 150, SecretRecipes: 5 },
+        label: "Бонус за 3 задания",
+      },
+      {
+        id: "bonus5",
+        threshold: 5,
+        reward: { coins: 300, SecretRecipes: 10, tickets: 1 },
+        label: "Бонус за 5 заданий",
       },
     ],
     []
@@ -200,6 +220,7 @@ function FightPage({ uid, searchState, setSearchState }) {
       unsubscribe = onValue(tasksRef, (snap) => {
         const data = snap.val() || {};
         setDailyTaskState(data.tasks || {});
+        setDailyBonusState(data.bonus || {});
         setDailyTasksLoaded(true);
       });
     };
@@ -311,6 +332,43 @@ function FightPage({ uid, searchState, setSearchState }) {
     return () => clearInterval(interval);
   }, [dailyBoxLoaded, dailyBoxReward, lastDailyBoxClaimAt]);
 
+  useEffect(() => {
+    const updateResetTimer = () => {
+      const now = new Date();
+      const nextReset = new Date(now);
+      nextReset.setHours(24, 0, 0, 0);
+      const diffSeconds = differenceInSeconds(nextReset, now);
+      setDailyResetRemaining(diffSeconds > 0 ? diffSeconds : 0);
+    };
+
+    updateResetTimer();
+    const interval = setInterval(updateResetTimer, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const completedDailyCount = useMemo(
+    () =>
+      dailyTasks.reduce(
+        (count, task) =>
+          dailyTaskState?.[task.id]?.completed ? count + 1 : count,
+        0
+      ),
+    [dailyTaskState, dailyTasks]
+  );
+
+  const hasDailyTaskClaim = useMemo(
+    () =>
+      dailyTasks.some((task) => {
+        const state = dailyTaskState?.[task.id];
+        return state?.completed && !state?.claimed;
+      }) ||
+      dailyTaskBonuses.some((bonus) => {
+        const isClaimed = dailyBonusState?.[bonus.id]?.claimed;
+        return completedDailyCount >= bonus.threshold && !isClaimed;
+      }),
+    [dailyTasks, dailyTaskState, dailyTaskBonuses, dailyBonusState, completedDailyCount]
+  );
+
   // обработчик claim
   const handleClaim = async (type) => {
     if (!canClaim || !type) return;
@@ -384,6 +442,35 @@ function FightPage({ uid, searchState, setSearchState }) {
     }
 
     await claimDailyTask(database, uid, dailyTaskIds, task.id);
+  };
+
+  const handleDailyBonusClaim = async (bonus) => {
+    if (!uid) return;
+    const isClaimed = dailyBonusState?.[bonus.id]?.claimed;
+    if (completedDailyCount < bonus.threshold || isClaimed) return;
+
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return;
+    const userDoc = userSnap.data();
+
+    const updates = {};
+    if (bonus.reward?.coins) {
+      updates.balance = (userDoc.balance ?? 0) + bonus.reward.coins;
+    }
+    if (bonus.reward?.tickets) {
+      updates.tickets = (userDoc.tickets ?? 0) + bonus.reward.tickets;
+    }
+    if (bonus.reward?.SecretRecipes) {
+      updates.SecretRecipes =
+        (userDoc.SecretRecipes ?? 0) + bonus.reward.SecretRecipes;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await updateDoc(userRef, updates);
+    }
+
+    await claimDailyTaskBonus(database, uid, dailyTaskIds, bonus.id);
   };
 
   useEffect(() => {
@@ -880,6 +967,11 @@ function FightPage({ uid, searchState, setSearchState }) {
           onClick={() => setShowDailyTasksModal(true)}
         >
           <img src="/pngegg.png" alt="tasks" />
+          {dailyTasksLoaded && hasDailyTaskClaim && (
+            <div className="claim-alert_FightPage claim-alert_FightPage--blue">
+              !
+            </div>
+          )}
         </div>
         {showClaimModal && (
           <div
@@ -1067,6 +1159,80 @@ function FightPage({ uid, searchState, setSearchState }) {
               <p className="daily-tasks-subtitle_FightPage">
                 Выполни все задания за несколько минут и собери награды.
               </p>
+              <div className="daily-tasks-progress_FightPage">
+                <div className="daily-tasks-progress-header_FightPage">
+                  <span>Прогресс дня</span>
+                  <span>
+                    {completedDailyCount}/{dailyTasks.length}
+                  </span>
+                </div>
+                <div className="daily-tasks-progress-bar_FightPage">
+                  <div
+                    className="daily-tasks-progress-fill_FightPage"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        (completedDailyCount / dailyTasks.length) * 100
+                      )}%`,
+                    }}
+                  />
+                </div>
+                <div className="daily-tasks-bonuses_FightPage">
+                  {dailyTaskBonuses.map((bonus) => {
+                    const isClaimed = dailyBonusState?.[bonus.id]?.claimed;
+                    const isReady = completedDailyCount >= bonus.threshold;
+                    return (
+                      <div
+                        key={bonus.id}
+                        className={`daily-tasks-bonus-card_FightPage ${
+                          isReady ? "ready" : ""
+                        }`}
+                      >
+                        <div className="daily-tasks-bonus-title_FightPage">
+                          {bonus.label}
+                        </div>
+                        <div className="daily-tasks-bonus-reward_FightPage">
+                          Награда:{" "}
+                          {[
+                            bonus.reward.coins
+                              ? `${bonus.reward.coins} монет`
+                              : null,
+                            bonus.reward.SecretRecipes
+                              ? `${bonus.reward.SecretRecipes} рецептов`
+                              : null,
+                            bonus.reward.tickets
+                              ? `${bonus.reward.tickets} билетов`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </div>
+                        <button
+                          className="daily-task-claim-button_FightPage"
+                          disabled={!isReady || isClaimed}
+                          onClick={() => handleDailyBonusClaim(bonus)}
+                        >
+                          {isClaimed
+                            ? "Получено"
+                            : isReady
+                              ? "Получить награду"
+                              : `Нужно ${bonus.threshold}`}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="daily-tasks-reset_FightPage">
+                  Сброс наград через:{" "}
+                  <span className="daily-tasks-reset-time_FightPage">
+                    {Math.floor(dailyResetRemaining / 3600)}:
+                    {Math.floor((dailyResetRemaining % 3600) / 60)
+                      .toString()
+                      .padStart(2, "0")}
+                    :{(dailyResetRemaining % 60).toString().padStart(2, "0")}
+                  </span>
+                </div>
+              </div>
               <div className="daily-tasks-list_FightPage">
                 {dailyTasks.map((task) => {
                   const state = dailyTaskState?.[task.id];
