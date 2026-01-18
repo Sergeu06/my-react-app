@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import FramedCard from "../utils/FramedCard";
 import {
   collection,
@@ -41,6 +41,10 @@ function UpgradePage() {
   const [fusionResult, setFusionResult] = useState(null);
   const [fusionError, setFusionError] = useState("");
   const [fusionInProgress, setFusionInProgress] = useState(false);
+  const [fusionPossibleCards, setFusionPossibleCards] = useState([]);
+  const [fusionRewardCard, setFusionRewardCard] = useState(null);
+  const [showFusionRewardModal, setShowFusionRewardModal] = useState(false);
+  const [fusionTemplatesLoading, setFusionTemplatesLoading] = useState(false);
   const [secretBalance, setSecretBalance] = useState(
     userData?.SecretRecipes ?? 0
   );
@@ -464,6 +468,80 @@ function UpgradePage() {
     Math.min(100 - fusionBaseChance, secretBalance)
   );
   const fusionTotalChance = Math.min(100, fusionBaseChance + fusionBonus);
+  const rarityOrder = ["обычная", "редкая", "эпическая", "легендарная"];
+  const fusionRarityIndex = fusionRarity ? rarityOrder.indexOf(fusionRarity) : -1;
+  const fusionNextRarity =
+    fusionRarityIndex >= 0 && fusionRarityIndex < rarityOrder.length - 1
+      ? rarityOrder[fusionRarityIndex + 1]
+      : null;
+
+  const fetchFusionTemplates = useCallback(
+    async (targetRarity, targetCharacteristic) => {
+      setFusionTemplatesLoading(true);
+      try {
+        const shopSnapshot = await getDocs(collection(db, "shop"));
+        if (shopSnapshot.empty) {
+          setFusionPossibleCards([]);
+          return [];
+        }
+
+        const shopCardsMap = {};
+        shopSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          shopCardsMap[docSnap.id] = {
+            increase: data.increase,
+          };
+        });
+
+        const cardIds = new Set(Object.keys(shopCardsMap));
+        const templatesSnap = await getDocs(collection(db, "cards"));
+        const availableTemplates = [];
+        templatesSnap.forEach((docSnap) => {
+          const templateData = docSnap.data();
+          if (!cardIds.has(docSnap.id)) return;
+          const templateRarity = normalizeRarity(templateData.rarity);
+          const templateType = getCardCharacteristicType(templateData);
+          if (
+            templateRarity === targetRarity &&
+            templateType === targetCharacteristic
+          ) {
+            availableTemplates.push({
+              id: docSnap.id,
+              data: {
+                ...templateData,
+                increase:
+                  shopCardsMap[docSnap.id]?.increase ?? templateData.increase,
+              },
+            });
+          }
+        });
+
+        setFusionPossibleCards(availableTemplates);
+        return availableTemplates;
+      } catch (error) {
+        console.error("Ошибка загрузки вариантов слияния:", error);
+        setFusionPossibleCards([]);
+        return [];
+      } finally {
+        setFusionTemplatesLoading(false);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!fusionCharacteristic || !fusionNextRarity || fusionCards.length === 0) {
+      setFusionPossibleCards([]);
+      return;
+    }
+
+    fetchFusionTemplates(fusionNextRarity, fusionCharacteristic);
+  }, [
+    fetchFusionTemplates,
+    fusionCards.length,
+    fusionCharacteristic,
+    fusionNextRarity,
+  ]);
 
   useEffect(() => {
     if (fusionBonus > fusionMaxBonus) {
@@ -485,7 +563,7 @@ function UpgradePage() {
     });
   };
 
-  const handleFusionCardSelect = (card) => {
+  const handleFusionCardSelect = async (card) => {
     if (fusionSlotIndex === null) return;
     const cardType = getCardCharacteristicType(card);
     if (fusionCharacteristic && cardType !== fusionCharacteristic) {
@@ -493,6 +571,15 @@ function UpgradePage() {
       return;
     }
     const cardRarity = normalizeRarity(card.rarity);
+    const cardRarityIndex = rarityOrder.indexOf(cardRarity);
+    const nextRarity =
+      cardRarityIndex >= 0 && cardRarityIndex < rarityOrder.length - 1
+        ? rarityOrder[cardRarityIndex + 1]
+        : null;
+    if (!nextRarity) {
+      setFusionError("Для слияния нужна карта не выше эпической редкости.");
+      return;
+    }
     if (fusionRarity && cardRarity !== fusionRarity) {
       setFusionError("Можно выбирать карты только одной редкости.");
       return;
@@ -500,6 +587,22 @@ function UpgradePage() {
     if (fusionSlots.some((slot) => slot?.card_id === card.card_id)) {
       setFusionError("Эта карта уже выбрана.");
       return;
+    }
+
+    if (fusionCharacteristic && fusionPossibleCards.length === 0) {
+      setFusionError("Для выбранного типа нет доступных карт для слияния.");
+      return;
+    }
+
+    if (!fusionCharacteristic) {
+      const availableTemplates = await fetchFusionTemplates(
+        nextRarity,
+        cardType
+      );
+      if (!availableTemplates.length) {
+        setFusionError("Для выбранного типа нет доступных карт для слияния.");
+        return;
+      }
     }
 
     setFusionSlots((prev) => {
@@ -515,18 +618,13 @@ function UpgradePage() {
 
     setFusionError("");
     setFusionResult(null);
+    setFusionRewardCard(null);
+    setShowFusionRewardModal(false);
     setFusionInProgress(true);
 
     const baseChance = fusionCards.length * 20;
     const totalChance = Math.min(100, baseChance + fusionBonus);
-    const firstCard = fusionCards[0];
-    const currentRarity = normalizeRarity(firstCard.rarity);
-    const rarityOrder = ["обычная", "редкая", "эпическая", "легендарная"];
-    const currentIndex = rarityOrder.indexOf(currentRarity);
-    const nextRarity =
-      currentIndex >= 0 && currentIndex < rarityOrder.length - 1
-        ? rarityOrder[currentIndex + 1]
-        : null;
+    const nextRarity = fusionNextRarity;
 
     if (!nextRarity) {
       setFusionError("Для слияния нужна карта не выше эпической редкости.");
@@ -550,40 +648,10 @@ function UpgradePage() {
       let newCardPayload = null;
 
       if (success) {
-        const shopSnapshot = await getDocs(collection(db, "shop"));
-        if (shopSnapshot.empty) {
-          throw new Error("Магазин пуст.");
-        }
-        const shopCardsMap = {};
-        shopSnapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          shopCardsMap[docSnap.id] = {
-            increase: data.increase,
-          };
-        });
-
-        const cardIds = new Set(Object.keys(shopCardsMap));
-        const templatesSnap = await getDocs(collection(db, "cards"));
-        const availableTemplates = [];
-        templatesSnap.forEach((docSnap) => {
-          const templateData = docSnap.data();
-          if (!cardIds.has(docSnap.id)) return;
-          const templateRarity = normalizeRarity(templateData.rarity);
-          const templateType = getCardCharacteristicType(templateData);
-          if (
-            templateRarity === nextRarity &&
-            templateType === fusionCharacteristic
-          ) {
-            availableTemplates.push({
-              id: docSnap.id,
-              data: {
-                ...templateData,
-                increase:
-                  shopCardsMap[docSnap.id]?.increase ?? templateData.increase,
-              },
-            });
-          }
-        });
+        const availableTemplates =
+          fusionPossibleCards.length > 0
+            ? fusionPossibleCards
+            : await fetchFusionTemplates(nextRarity, fusionCharacteristic);
 
         if (!availableTemplates.length) {
           throw new Error("Не найдено подходящих карт для слияния.");
@@ -599,6 +667,13 @@ function UpgradePage() {
           data: selectedTemplate.data,
           templateId: selectedTemplate.id,
         };
+        setFusionRewardCard({
+          ...selectedTemplate.data,
+          card_id: newId,
+          original_id: selectedTemplate.id,
+          lvl: 1,
+        });
+        setShowFusionRewardModal(true);
       }
 
       const consumedIds = fusionCards.map((card) => card.card_id);
@@ -680,6 +755,11 @@ function UpgradePage() {
 
   const availableFusionCards = playerCards.filter((card) => {
     if (fusionSlots.some((slot) => slot?.card_id === card.card_id)) {
+      return false;
+    }
+    const cardRarity = normalizeRarity(card.rarity);
+    const cardRarityIndex = rarityOrder.indexOf(cardRarity);
+    if (cardRarityIndex === -1 || cardRarityIndex >= rarityOrder.length - 1) {
       return false;
     }
     const matchesCharacteristic = fusionCharacteristic
@@ -1009,6 +1089,42 @@ function UpgradePage() {
             </div>
           </div>
 
+          <div className="fusion-possible">
+            <div className="fusion-possible-title">Возможные карты</div>
+            {fusionTemplatesLoading ? (
+              <div className="fusion-possible-empty">Загрузка...</div>
+            ) : fusionPossibleCards.length > 0 ? (
+              <div className="fusion-possible-list">
+                {fusionPossibleCards.map((template) => {
+                  const displayCard = {
+                    ...template.data,
+                    card_id: template.id,
+                    original_id: template.id,
+                    lvl: 1,
+                  };
+                  return (
+                    <div
+                      key={template.id}
+                      className="fusion-possible-card"
+                    >
+                      <FramedCard
+                        card={displayCard}
+                        showLevel={true}
+                        showName={false}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="fusion-possible-empty">
+                {fusionCharacteristic && fusionNextRarity
+                  ? "Нет подходящих карт для выбранного типа."
+                  : "Выберите карты для слияния."}
+              </div>
+            )}
+          </div>
+
           <div className="fusion-slider">
             <div className="fusion-slider-label">
               Бонус SecretRecipes: <strong>{fusionBonus}%</strong>
@@ -1046,6 +1162,33 @@ function UpgradePage() {
           >
             {fusionInProgress ? "Попытка..." : "Попытать удачу"}
           </button>
+        </div>
+      )}
+
+      {showFusionRewardModal && fusionRewardCard && (
+        <div
+          className="fusion-reward-modal"
+          onClick={() => setShowFusionRewardModal(false)}
+        >
+          <div
+            className="fusion-reward-modal-content"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="fusion-reward-modal-title">Поздравляем!</div>
+            <p className="fusion-reward-modal-subtitle">
+              Вы получили новую карту за успешное слияние.
+            </p>
+            <div className="fusion-reward-modal-card">
+              <FramedCard card={fusionRewardCard} showLevel={true} />
+            </div>
+            <button
+              className="fusion-reward-modal-button"
+              onClick={() => setShowFusionRewardModal(false)}
+              type="button"
+            >
+              Добавить в коллекцию
+            </button>
+          </div>
         </div>
       )}
       {showInfo && (
