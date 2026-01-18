@@ -1,8 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { doc, updateDoc, getDoc, db } from "../firebase";
+import {
+  arrayUnion,
+  collection,
+  database,
+  databaseRef,
+  db,
+  doc,
+  getDoc,
+  getDocs,
+  set as rtdbSet,
+  updateDoc,
+} from "../firebase";
 import { useUser } from "../UserContext";
 import CurrencyBalance from "../CurrencyBalance";
+import "./RaidEndScreen.css";
 
 function calculateLevel(xp) {
   const baseXp = 100;
@@ -33,6 +45,63 @@ function calculateXpToNextLevel(currentXp) {
   return { level, xpInLevel: currentXp, xpNeeded };
 }
 
+const ROULETTE_CONFIG = {
+  spinDurationMs: 2600,
+  itemHeight: 64,
+  visibleItems: 5,
+  reelItems: 30,
+  itemGap: 6,
+  rewardTable: [
+    {
+      type: "coins",
+      label: "Монеты",
+      min: 10,
+      max: 500,
+      weight: 40,
+    },
+    {
+      type: "recipes",
+      label: "Рецепты",
+      min: 1,
+      max: 10,
+      weight: 25,
+    },
+    {
+      type: "tickets",
+      label: "Билеты",
+      min: 1,
+      max: 5,
+      weight: 20,
+    },
+    {
+      type: "card",
+      label: "Случайная карта",
+      weight: 15,
+    },
+  ],
+};
+
+const pickWeightedReward = (table) => {
+  const totalWeight = table.reduce((sum, item) => sum + item.weight, 0);
+  let roll = Math.random() * totalWeight;
+  for (const item of table) {
+    roll -= item.weight;
+    if (roll <= 0) return item;
+  }
+  return table[table.length - 1];
+};
+
+const randomInt = (min, max) =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
+
+const rewardIcons = {
+  coins: "/moneta.png",
+  recipes: "/666666.png",
+  tickets: "/ticket.png",
+};
+
+const fallbackCardImage = "/CARDB.jpg";
+
 function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
   const navigate = useNavigate();
   const { userData } = useUser();
@@ -44,54 +113,126 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
 
   const [animatedMoney, setAnimatedMoney] = useState(0);
   const [animatedSecret, setAnimatedSecret] = useState(0);
-  const [showBonus, setShowBonus] = useState(true);
+  const [showBonus, setShowBonus] = useState(false);
   const [xpData, setXpData] = useState(null);
   const [xpVisible, setXpVisible] = useState(true);
+  const [rouletteItems, setRouletteItems] = useState([]);
+  const [rouletteOffset, setRouletteOffset] = useState(0);
+  const [roulettePhase, setRoulettePhase] = useState("spinning");
+  const [rouletteSummary, setRouletteSummary] = useState(null);
+  const [winningIndex, setWinningIndex] = useState(0);
+  const [rewardPreview, setRewardPreview] = useState(null);
+  const userSnapshotRef = useRef(null);
+
+  const rouletteWindowHeight = useMemo(
+    () => ROULETTE_CONFIG.itemHeight * ROULETTE_CONFIG.visibleItems,
+    []
+  );
+  const rouletteCenterOffset = useMemo(() => {
+    const halfVisible = ROULETTE_CONFIG.visibleItems / 2 - 0.5;
+    return halfVisible * (ROULETTE_CONFIG.itemHeight + ROULETTE_CONFIG.itemGap);
+  }, []);
 
   useEffect(() => {
     if (!uid) return;
+    let isActive = true;
     const userRef = doc(db, "users", uid);
+    const timeouts = [];
 
-    getDoc(userRef).then((userSnap) => {
-      if (!userSnap.exists()) return;
+    const buildDisplayItem = (reward, cardTemplates, isWinner = false) => {
+      if (reward.type === "card") {
+        const pickedTemplate = cardTemplates.length
+          ? cardTemplates[Math.floor(Math.random() * cardTemplates.length)]
+          : null;
+        return {
+          type: reward.type,
+          label: reward.label,
+          value: pickedTemplate?.data?.name || "Любая",
+          imageUrl: pickedTemplate?.data?.image_url || fallbackCardImage,
+          cardTemplate: pickedTemplate,
+          isWinner,
+        };
+      }
+      const amount =
+        reward.min && reward.max ? randomInt(reward.min, reward.max) : null;
+      return {
+        type: reward.type,
+        label: reward.label,
+        value: amount,
+        imageUrl: rewardIcons[reward.type] || null,
+        isWinner,
+      };
+    };
+
+    const spinRoulette = async () => {
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists() || !isActive) return;
       const data = userSnap.data();
       const oldBalance = data.balance || 0;
       const oldSecret = data.SecretRecipes || 0;
       const oldXp = data.stats?.xp || 0;
-      const newXp = oldXp + xpGained;
-      const newLvl = calculateLevel(newXp);
+      const oldTickets = data.tickets ?? 0;
 
-      updateDoc(userRef, {
-        balance: oldBalance + moneyEarned,
-        SecretRecipes: oldSecret + extraCurrency,
-        stats: {
-          ...(data.stats || {}),
-          xp: newXp,
-          lvl: newLvl,
-          raid_count: (data.stats?.raid_count || 0) + 1,
-          total_damage_raid: (data.stats?.total_damage_raid || 0) + totalDamage,
-          total_cards_used: (data.stats?.total_cards_used || 0) + cardsUsed,
-        },
+      const cardsSnapshot = await getDocs(collection(db, "cards"));
+      const cardTemplates = cardsSnapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        data: docSnap.data(),
+      }));
+
+      userSnapshotRef.current = {
+        oldBalance,
+        oldSecret,
+        oldXp,
+        oldTickets,
+        stats: data.stats || {},
+      };
+
+      const baseReward = pickWeightedReward(ROULETTE_CONFIG.rewardTable);
+      const resultReward = buildDisplayItem(baseReward, cardTemplates, true);
+
+      const items = Array.from({ length: ROULETTE_CONFIG.reelItems }, () =>
+        buildDisplayItem(
+          pickWeightedReward(ROULETTE_CONFIG.rewardTable),
+          cardTemplates
+        )
+      );
+      const targetIndex = Math.max(0, ROULETTE_CONFIG.reelItems - 3);
+      items[targetIndex] = resultReward;
+
+      setRouletteItems(items);
+      setWinningIndex(targetIndex);
+      requestAnimationFrame(() => {
+        setRouletteOffset(
+          targetIndex *
+            (ROULETTE_CONFIG.itemHeight + ROULETTE_CONFIG.itemGap) -
+            rouletteCenterOffset
+        );
       });
 
-      animateValue(
-        setAnimatedMoney,
-        oldBalance,
-        oldBalance + moneyEarned,
-        1000
+      timeouts.push(
+        setTimeout(() => {
+          if (!isActive) return;
+          setRewardPreview(resultReward);
+          setRoulettePhase("confirm");
+        }, ROULETTE_CONFIG.spinDurationMs)
       );
-      animateValue(
-        setAnimatedSecret,
-        oldSecret,
-        oldSecret + extraCurrency,
-        1000
-      );
-      setXpData({ oldXp, newXp });
+    };
 
-      setTimeout(() => setShowBonus(false), 3000);
-      setTimeout(() => setXpVisible(false), 4000);
-    });
-  }, []);
+    spinRoulette();
+
+    return () => {
+      isActive = false;
+      timeouts.forEach((timeoutId) => clearTimeout(timeoutId));
+    };
+  }, [
+    uid,
+    moneyEarned,
+    extraCurrency,
+    cardsUsed,
+    totalDamage,
+    xpGained,
+    rouletteCenterOffset,
+  ]);
 
   function animateValue(setter, start, end, duration) {
     const startTime = performance.now();
@@ -118,6 +259,92 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
   function handleExit() {
     navigate(`/fight?start=${uid}`);
   }
+
+  const handleConfirmReward = async () => {
+    if (!uid || !rewardPreview) return;
+    const snapshot = userSnapshotRef.current;
+    if (!snapshot) return;
+
+    const summary = {
+      coins: 0,
+      recipes: 0,
+      tickets: 0,
+      cardName: null,
+    };
+    let cardRewardTemplate = null;
+
+    if (rewardPreview.type === "coins") {
+      summary.coins = rewardPreview.value || 0;
+    }
+    if (rewardPreview.type === "recipes") {
+      summary.recipes = rewardPreview.value || 0;
+    }
+    if (rewardPreview.type === "tickets") {
+      summary.tickets = rewardPreview.value || 0;
+    }
+    if (rewardPreview.type === "card" && rewardPreview.cardTemplate) {
+      cardRewardTemplate = rewardPreview.cardTemplate;
+      summary.cardName = rewardPreview.value || "Без имени";
+    }
+
+    const totalCoins = moneyEarned + summary.coins;
+    const totalRecipes = extraCurrency + summary.recipes;
+    const totalTickets = summary.tickets;
+    const newXp = snapshot.oldXp + xpGained;
+    const newLvl = calculateLevel(newXp);
+
+    const updates = {
+      balance: snapshot.oldBalance + totalCoins,
+      SecretRecipes: snapshot.oldSecret + totalRecipes,
+      tickets: snapshot.oldTickets + totalTickets,
+      stats: {
+        ...(snapshot.stats || {}),
+        xp: newXp,
+        lvl: newLvl,
+        raid_count: (snapshot.stats?.raid_count || 0) + 1,
+        total_damage_raid:
+          (snapshot.stats?.total_damage_raid || 0) + totalDamage,
+        total_cards_used: (snapshot.stats?.total_cards_used || 0) + cardsUsed,
+      },
+    };
+
+    if (cardRewardTemplate) {
+      const newId = crypto.randomUUID();
+      await rtdbSet(databaseRef(database, `cards/${newId}`), {
+        ...cardRewardTemplate.data,
+        lvl: 1,
+        owner: uid,
+        fleet: parseFloat(Math.random().toFixed(10)),
+        sell: false,
+        original_id: cardRewardTemplate.id,
+        upgradeBonus: 0,
+        increase: cardRewardTemplate.data?.increase ?? 1,
+      });
+      updates.cards = arrayUnion(newId);
+    }
+
+    await updateDoc(doc(db, "users", uid), updates);
+
+    animateValue(
+      setAnimatedMoney,
+      snapshot.oldBalance,
+      snapshot.oldBalance + totalCoins,
+      1000
+    );
+    animateValue(
+      setAnimatedSecret,
+      snapshot.oldSecret,
+      snapshot.oldSecret + totalRecipes,
+      1000
+    );
+    setXpData({ oldXp: snapshot.oldXp, newXp });
+    setRouletteSummary(summary);
+    setRoulettePhase("results");
+    setShowBonus(true);
+
+    setTimeout(() => setShowBonus(false), 3000);
+    setTimeout(() => setXpVisible(false), 4000);
+  };
 
   return (
     <>
@@ -168,10 +395,14 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
       {showBonus && (
         <>
           <div style={{ position: "fixed", top: 15, left: 100, zIndex: 10001 }}>
-            <span className="bonus-amount">+{moneyEarned}</span>
+            <span className="bonus-amount">
+              +{moneyEarned + (rouletteSummary?.coins || 0)}
+            </span>
           </div>
           <div style={{ position: "fixed", top: 67, left: 100, zIndex: 10001 }}>
-            <span className="bonus-amount">+{extraCurrency}</span>
+            <span className="bonus-amount">
+              +{extraCurrency + (rouletteSummary?.recipes || 0)}
+            </span>
           </div>
         </>
       )}
@@ -193,71 +424,133 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
         </>
       )}
 
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(0,0,0,0.85)",
-          color: "#ffa500",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          fontFamily: "Arial, sans-serif",
-          fontSize: 20,
-          padding: 20,
-          zIndex: 9999,
-          textAlign: "center",
-        }}
-      >
-        <h2>Бой завершён</h2>
-        <p>
-          Общий нанесённый урон: <strong>{totalDamage}</strong>
-        </p>
-        <p>
-          Разыграно карт: <strong>{cardsUsed}</strong>
-        </p>
-        <p>
-          Получено золота: <strong>{moneyEarned}</strong>
-        </p>
-        <p>
-          Получено рецептов: <strong>{extraCurrency}</strong>
-        </p>
-        <p>
-          Получено XP: <strong>{xpGained}</strong>
-        </p>
+      {roulettePhase === "spinning" && (
+        <div className="raid-roulette-overlay">
+          <h2 className="raid-roulette-title">Награда рейда</h2>
+          <p className="raid-roulette-subtitle">
+            Рулетка определяет бонусную награду
+          </p>
+          <div
+            className="raid-roulette-window"
+            style={{ height: rouletteWindowHeight }}
+          >
+            <div className="raid-roulette-highlight" />
+            <div
+              className="raid-roulette-reel"
+              style={{
+                transform: `translateY(-${rouletteOffset}px)`,
+                gap: `${ROULETTE_CONFIG.itemGap}px`,
+                transition: `transform ${ROULETTE_CONFIG.spinDurationMs}ms cubic-bezier(0.17, 0.84, 0.44, 1)`,
+              }}
+            >
+              {rouletteItems.map((item, index) => (
+                <div
+                  className={`raid-roulette-item${
+                    index === winningIndex ? " winner" : ""
+                  }`}
+                  key={`${item.type}-${index}`}
+                  style={{ height: ROULETTE_CONFIG.itemHeight }}
+                >
+                  <div className="raid-roulette-item-content">
+                    {item.imageUrl && (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.label}
+                        className="raid-roulette-item-icon"
+                      />
+                    )}
+                    <div className="raid-roulette-item-text">
+                      <span className="raid-roulette-item-label">
+                        {item.label}
+                      </span>
+                      <span className="raid-roulette-item-value">
+                        {item.value ?? "?"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="raid-roulette-note">
+            Шансы можно настроить в ROULETTE_CONFIG в коде.
+          </p>
+        </div>
+      )}
 
-        <button
-          onClick={handleExit}
-          style={{
-            marginTop: 30,
-            padding: "10px 30px",
-            fontSize: 18,
-            background: "linear-gradient(160deg, #3a3a3a, #2a2a2a)",
-            border: "1px solid rgba(255, 165, 0, 0.2)",
-            borderRadius: 8,
-            cursor: "pointer",
-            fontWeight: "bold",
-            color: "#f5f5f5",
-            boxShadow:
-              "0 12px 22px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 0 rgba(0, 0, 0, 0.45)",
-            transition: "background-color 0.3s ease, box-shadow 0.3s ease",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.background =
-              "linear-gradient(160deg, #444, #2f2f2f)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.background =
-              "linear-gradient(160deg, #3a3a3a, #2a2a2a)")
-          }
-        >
-          Выйти
-        </button>
-      </div>
+      {roulettePhase === "confirm" && rewardPreview && (
+        <div className="raid-confirm-overlay">
+          <h2 className="raid-confirm-title">Ваша награда</h2>
+          <div className="raid-confirm-card">
+            {rewardPreview.imageUrl && (
+              <img
+                src={rewardPreview.imageUrl}
+                alt={rewardPreview.label}
+                className="raid-confirm-image"
+              />
+            )}
+            <div className="raid-confirm-info">
+              <span className="raid-confirm-label">{rewardPreview.label}</span>
+              <span className="raid-confirm-value">
+                {rewardPreview.value || "—"}
+              </span>
+            </div>
+          </div>
+          <button className="raid-confirm-btn" onClick={handleConfirmReward}>
+            Получить
+          </button>
+        </div>
+      )}
+
+      {roulettePhase === "results" && (
+        <div className="raid-result-overlay">
+          <h2>Бой завершён</h2>
+          <p>
+            Общий нанесённый урон: <strong>{totalDamage}</strong>
+          </p>
+          <p>
+            Разыграно карт: <strong>{cardsUsed}</strong>
+          </p>
+          <p>
+            Получено золота:{" "}
+            <strong>
+              {moneyEarned + (rouletteSummary?.coins || 0)}
+            </strong>
+          </p>
+          <p>
+            Получено рецептов:{" "}
+            <strong>
+              {extraCurrency + (rouletteSummary?.recipes || 0)}
+            </strong>
+          </p>
+          <p>
+            Получено билетов: <strong>{rouletteSummary?.tickets || 0}</strong>
+          </p>
+          <p>
+            Получено XP: <strong>{xpGained}</strong>
+          </p>
+          {rouletteSummary?.cardName && (
+            <p>
+              Карта из рулетки: <strong>{rouletteSummary.cardName}</strong>
+            </p>
+          )}
+
+          <button
+            onClick={handleExit}
+            className="raid-result-exit"
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background =
+                "linear-gradient(160deg, #444, #2f2f2f)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background =
+                "linear-gradient(160deg, #3a3a3a, #2a2a2a)")
+            }
+          >
+            Выйти
+          </button>
+        </div>
+      )}
     </>
   );
 }
