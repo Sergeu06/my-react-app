@@ -114,7 +114,7 @@
   }
 
   .currency-dock.collapsed {
-    max-width: min(100px, 55vw);
+    max-width: min(106px, 55vw);
     padding: 2px;
     gap: 2px;
   }
