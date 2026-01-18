@@ -471,6 +471,7 @@ function Collection({ uid }) {
             {sortInventoryCards(playerCards).map((card, index) => (
               <div
                 key={`inventory-${card.id}-${index}`}
+                className="inventory-card-slot"
                 onClick={() => {
                   if (isEditMode)
                     handleAddToDeck({ stopPropagation: () => {} }, card);
