@@ -605,6 +605,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  position: relative;
 }
 
 .daily-tasks-progress-header_FightPage {
@@ -619,7 +620,8 @@
   height: 8px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
 }
 
 .daily-tasks-progress-fill_FightPage {
@@ -627,27 +629,6 @@
   border-radius: inherit;
   background: linear-gradient(90deg, #ffb347, #ffa500);
   box-shadow: 0 0 10px rgba(255, 179, 71, 0.4);
-}
-
-.daily-tasks-bonuses_FightPage {
-  display: grid;
-  gap: 8px;
-}
-
-.daily-tasks-bonus-card_FightPage {
-  background: rgba(20, 20, 20, 0.7);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 10px 12px;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.daily-tasks-bonus-card_FightPage.ready {
-  border-color: rgba(0, 255, 136, 0.4);
-  box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
 }
 
 .daily-tasks-bonus-title_FightPage {
@@ -658,6 +639,74 @@
 .daily-tasks-bonus-reward_FightPage {
   font-size: 12px;
   color: #a5f3fc;
+}
+
+.daily-tasks-checkpoint_FightPage {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(10, 10, 10, 0.9);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  padding: 0;
+}
+
+.daily-tasks-checkpoint_FightPage.is-ready {
+  border-color: rgba(255, 179, 71, 0.9);
+  box-shadow: 0 0 10px rgba(255, 179, 71, 0.4);
+}
+
+.daily-tasks-checkpoint_FightPage.is-claimed {
+  border-color: rgba(0, 255, 136, 0.7);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.35);
+}
+
+.daily-tasks-checkpoint_FightPage:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+.daily-tasks-checkpoint_FightPage:not(:disabled):hover {
+  transform: translateY(-50%) scale(1.05);
+}
+
+.daily-tasks-checkpoint-label_FightPage {
+  pointer-events: none;
+}
+
+.daily-tasks-bonus-overlay_FightPage {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+}
+
+.daily-tasks-bonus-modal_FightPage {
+  background: rgba(20, 20, 20, 0.95);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 260px;
+  text-align: center;
 }
 
 .daily-tasks-reset_FightPage {
