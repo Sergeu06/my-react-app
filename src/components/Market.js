@@ -347,7 +347,11 @@ function Market({ setError }) {
               <SkeletonCard key={index} />
             ))
           : allCards.map((card) => (
-              <div key={card.key} onClick={() => openPurchaseModal(card)}>
+              <div
+                key={card.key}
+                className="market-card-slot"
+                onClick={() => openPurchaseModal(card)}
+              >
                 <FramedCard card={card.cardDetails} showLevel={true} />
                 <div className="price-row" style={{ marginTop: "8px" }}>
                   <span>Цена: {card.price}</span>

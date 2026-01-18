@@ -88,6 +88,8 @@ function FightPage({ uid, searchState, setSearchState }) {
   const [dailyBonusState, setDailyBonusState] = useState({});
   const [dailyTasksLoaded, setDailyTasksLoaded] = useState(false);
   const [dailyResetRemaining, setDailyResetRemaining] = useState(0);
+  const [showDailyBonusModal, setShowDailyBonusModal] = useState(false);
+  const [selectedDailyBonus, setSelectedDailyBonus] = useState(null);
 
   const dailyTasks = useMemo(
     () => [
@@ -1149,7 +1151,11 @@ function FightPage({ uid, searchState, setSearchState }) {
         {showDailyTasksModal && (
           <div
             className="claim-overlay_FightPage"
-            onClick={() => setShowDailyTasksModal(false)}
+            onClick={() => {
+              setShowDailyTasksModal(false);
+              setShowDailyBonusModal(false);
+              setSelectedDailyBonus(null);
+            }}
           >
             <div
               className="claim-window_FightPage daily-tasks-window_FightPage"
@@ -1176,49 +1182,33 @@ function FightPage({ uid, searchState, setSearchState }) {
                       )}%`,
                     }}
                   />
-                </div>
-                <div className="daily-tasks-bonuses_FightPage">
                   {dailyTaskBonuses.map((bonus) => {
+                    const isReached = completedDailyCount >= bonus.threshold;
                     const isClaimed = dailyBonusState?.[bonus.id]?.claimed;
-                    const isReady = completedDailyCount >= bonus.threshold;
+                    const position =
+                      (bonus.threshold / dailyTasks.length) * 100;
                     return (
-                      <div
+                      <button
                         key={bonus.id}
-                        className={`daily-tasks-bonus-card_FightPage ${
-                          isReady ? "ready" : ""
-                        }`}
+                        type="button"
+                        className={`daily-tasks-checkpoint_FightPage ${
+                          isReached ? "is-ready" : ""
+                        } ${isClaimed ? "is-claimed" : ""}`}
+                        style={{
+                          left: `calc(${position}% - 10px)`,
+                        }}
+                        aria-label={bonus.label}
+                        disabled={!isReached}
+                        onClick={() => {
+                          if (!isReached) return;
+                          setSelectedDailyBonus(bonus);
+                          setShowDailyBonusModal(true);
+                        }}
                       >
-                        <div className="daily-tasks-bonus-title_FightPage">
-                          {bonus.label}
-                        </div>
-                        <div className="daily-tasks-bonus-reward_FightPage">
-                          Награда:{" "}
-                          {[
-                            bonus.reward.coins
-                              ? `${bonus.reward.coins} монет`
-                              : null,
-                            bonus.reward.SecretRecipes
-                              ? `${bonus.reward.SecretRecipes} рецептов`
-                              : null,
-                            bonus.reward.tickets
-                              ? `${bonus.reward.tickets} билетов`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </div>
-                        <button
-                          className="daily-task-claim-button_FightPage"
-                          disabled={!isReady || isClaimed}
-                          onClick={() => handleDailyBonusClaim(bonus)}
-                        >
-                          {isClaimed
-                            ? "Получено"
-                            : isReady
-                              ? "Получить награду"
-                              : `Нужно ${bonus.threshold}`}
-                        </button>
-                      </div>
+                        <span className="daily-tasks-checkpoint-label_FightPage">
+                          {bonus.threshold}
+                        </span>
+                      </button>
                     );
                   })}
                 </div>
@@ -1232,6 +1222,53 @@ function FightPage({ uid, searchState, setSearchState }) {
                     :{(dailyResetRemaining % 60).toString().padStart(2, "0")}
                   </span>
                 </div>
+                {showDailyBonusModal && selectedDailyBonus && (
+                  <div
+                    className="daily-tasks-bonus-overlay_FightPage"
+                    onClick={() => {
+                      setShowDailyBonusModal(false);
+                      setSelectedDailyBonus(null);
+                    }}
+                  >
+                    <div
+                      className="daily-tasks-bonus-modal_FightPage"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <div className="daily-tasks-bonus-title_FightPage">
+                        {selectedDailyBonus.label}
+                      </div>
+                      <div className="daily-tasks-bonus-reward_FightPage">
+                        Награда:{" "}
+                        {[
+                          selectedDailyBonus.reward.coins
+                            ? `${selectedDailyBonus.reward.coins} монет`
+                            : null,
+                          selectedDailyBonus.reward.SecretRecipes
+                            ? `${selectedDailyBonus.reward.SecretRecipes} рецептов`
+                            : null,
+                          selectedDailyBonus.reward.tickets
+                            ? `${selectedDailyBonus.reward.tickets} билетов`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </div>
+                      <button
+                        className="daily-task-claim-button_FightPage"
+                        disabled={
+                          dailyBonusState?.[selectedDailyBonus.id]?.claimed
+                        }
+                        onClick={() => {
+                          handleDailyBonusClaim(selectedDailyBonus);
+                          setShowDailyBonusModal(false);
+                          setSelectedDailyBonus(null);
+                        }}
+                      >
+                        Принять
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="daily-tasks-list_FightPage">
                 {dailyTasks.map((task) => {

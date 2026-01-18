@@ -46,6 +46,19 @@
   padding: 0.5em 0;
 }
 
+.inventory-card-slot {
+  width: 100%;
+  max-width: 170px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  background: rgba(18, 22, 32, 0.85);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* =======================
    Уведомления
 ======================= */
