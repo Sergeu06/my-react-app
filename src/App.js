@@ -802,7 +802,6 @@ function App() {
           style={{
             width: 220,
             height: 220,
-            background: "white",
             padding: 10,
             borderRadius: 12,
           }}
