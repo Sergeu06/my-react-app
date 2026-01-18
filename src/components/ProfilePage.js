@@ -408,28 +408,92 @@ const ProfilePage = () => {
 
   return (
     <div className="profile-container">
-      <div
-        className={`profile-avatar ${isOwnProfile ? "clickable" : ""}`}
-        onClick={() => isOwnProfile && setShowModal(true)}
-        title={isOwnProfile ? "Кликните для смены аватара" : undefined}
-      >
-        <img
-          src={profileData.avatar_url || "/default-avatar.png"}
-          alt="Avatar"
-        />
-        <div className="avatar-level">{currentLevel}</div>
+      <div className="profile-hero">
+        <div className="profile-identity-card">
+          <div
+            className={`profile-avatar ${isOwnProfile ? "clickable" : ""}`}
+            onClick={() => isOwnProfile && setShowModal(true)}
+            title={isOwnProfile ? "Кликните для смены аватара" : undefined}
+          >
+            <img
+              src={profileData.avatar_url || "/default-avatar.png"}
+              alt="Avatar"
+            />
+            <div className="avatar-level">{currentLevel}</div>
+          </div>
+
+          <div className="profile-info">
+            <div className="profile-name-row">
+              <h2>{profileData.nickname || "Без имени"}</h2>
+              {isOwnProfile && <span className="profile-badge">Это вы</span>}
+            </div>
+            <p className="uid">
+              <span>ID : </span> {idToLoad}
+            </p>
+            <div className="profile-meta">
+              <span className="profile-meta-item">
+                Уровень {currentLevel}
+              </span>
+              <span className="profile-meta-item">XP {currentXp}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="profile-stats">
+          <div className="stat-card">
+            <span className="stat-label">Золото</span>
+            <span className="stat-value">
+              {(profileData.balance ?? 0).toFixed(2)}
+            </span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Тайные рецепты</span>
+            <span className="stat-value">
+              {profileData.SecretRecipes ?? 0}
+            </span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Победы</span>
+            <span className="stat-value">
+              {profileData.stats?.wins ?? 0}
+            </span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Поражения</span>
+            <span className="stat-value">
+              {profileData.stats?.losses ?? 0}
+            </span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">РИ</span>
+            <span className="stat-value">
+              {profileData.stats?.RI ?? 1000}
+            </span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Рейдов сыграно</span>
+            <span className="stat-value">
+              {profileData.stats?.raid_count ?? 0}
+            </span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Урон боссу</span>
+            <span className="stat-value">
+              {profileData.stats?.total_damage_raid ?? 0}
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div className="profile-info">
-        <h2>{profileData.nickname || "Без имени"}</h2>
-        <p className="uid">
-          <span>ID : </span> {idToLoad}
-        </p>
-      </div>
-
-      {/* Витрина из 4 слотов */}
       <div className="showcase-container">
-        <h3 className="showcase-title">Витрина</h3>
+        <div className="showcase-header">
+          <div>
+            <h3 className="showcase-title">Витрина</h3>
+            <p className="showcase-subtitle">
+              Любимые карты, которые показывают ваш стиль игры.
+            </p>
+          </div>
+        </div>
         <div className="showcase-slots">
           {showcase.map((cardId, index) => {
             const card = userCards.find((c) => c.id === cardId) || null;
@@ -543,27 +607,6 @@ const ProfilePage = () => {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Статистика */}
-      <div className="profile-stats">
-        <div className="stat">XP: {currentXp}</div>
-        <div className="stat">
-          Золото: {(profileData.balance ?? 0).toFixed(2)}
-        </div>
-        <div className="stat">
-          Тайные рецепты: {profileData.SecretRecipes ?? 0}
-        </div>
-        <div className="stat">Победы: {profileData.stats?.wins ?? 0}</div>
-        <div className="stat">Поражения: {profileData.stats?.losses ?? 0}</div>
-        <div className="stat">РИ: {profileData.stats?.RI ?? 1000}</div>
-
-        <div className="stat">
-          Рейдов сыграно: {profileData.stats?.raid_count ?? 0}
-        </div>
-        <div className="stat">
-          Всего урона боссу: {profileData.stats?.total_damage_raid ?? 0}
-        </div>
       </div>
 
       <div className="achievements-section">
