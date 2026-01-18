@@ -1,6 +1,6 @@
 .currency-dock {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  top: calc(env(safe-area-inset-top, 0px) + 110px);
   left: calc(env(safe-area-inset-left, 0px) + 12px);
   z-index: 10001;
   display: flex;

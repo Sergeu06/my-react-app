@@ -73,26 +73,26 @@ const ROULETTE_CONFIG = {
       label: "Монеты",
       min: 10,
       max: 500,
-      weight: 40,
+      weight: 46,
     },
     {
       type: "recipes",
       label: "Рецепты",
       min: 1,
       max: 10,
-      weight: 25,
+      weight: 30,
     },
     {
       type: "tickets",
       label: "Билеты",
       min: 1,
       max: 5,
-      weight: 20,
+      weight: 25,
     },
     {
       type: "card",
       label: "Случайная карта",
-      weight: 15,
+      weight: 1,
     },
   ],
 };
@@ -542,7 +542,7 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
           <div
             style={{
               position: "fixed",
-              top: 67 + bonusJitter.recipes.y,
+              top: 167 + bonusJitter.recipes.y,
               left: 100 + bonusJitter.recipes.x,
               zIndex: 10001,
             }}

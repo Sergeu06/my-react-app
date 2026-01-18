@@ -872,7 +872,7 @@ function App() {
             className={`background-container ${backgroundClass}`}
             ref={backgroundRef}
           />
-          <div className="game-version">v0.9.95.10</div>
+          <div className="game-version">v0.9.96.14</div>
 
           <CurrencyBalance />
 
