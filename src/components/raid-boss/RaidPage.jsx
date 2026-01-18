@@ -58,6 +58,8 @@ function RaidPage() {
 
   const bossHpRef = useRef(null);
   const hpFillRef = useRef(null);
+  const hpDamageRef = useRef(null);
+  const previousHpPercentRef = useRef(100);
   const [damageThisTurn, setDamageThisTurn] = useState(null);
   const [totalDamageDealt, setTotalDamageDealt] = useState(0);
   const [totalCardsPlayed, setTotalCardsPlayed] = useState(0);
@@ -225,6 +227,20 @@ function RaidPage() {
   useEffect(() => {
     if (hpFillRef.current) {
       hpFillRef.current.style.width = `${currentHpPercent}%`;
+    }
+    if (hpDamageRef.current) {
+      const previousHpPercent = previousHpPercentRef.current;
+      if (currentHpPercent < previousHpPercent) {
+        hpDamageRef.current.style.width = `${previousHpPercent}%`;
+        requestAnimationFrame(() => {
+          if (hpDamageRef.current) {
+            hpDamageRef.current.style.width = `${currentHpPercent}%`;
+          }
+        });
+      } else {
+        hpDamageRef.current.style.width = `${currentHpPercent}%`;
+      }
+      previousHpPercentRef.current = currentHpPercent;
     }
   }, [currentHpPercent]);
 
@@ -447,6 +463,7 @@ function RaidPage() {
             aria-valuemax={maxHP}
             aria-valuenow={bossHP}
           >
+            <div className="hp-bar-damage" ref={hpDamageRef} />
             <div className="hp-bar-fill" ref={hpFillRef} />
             <div className="hp-label">
               {Math.max(0, Math.floor(bossHP)).toLocaleString()} /{" "}

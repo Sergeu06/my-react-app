@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   arrayUnion,
@@ -45,8 +46,23 @@ function calculateXpToNextLevel(currentXp) {
   return { level, xpInLevel: currentXp, xpNeeded };
 }
 
+const ROULETTE_PHASES = {
+  spinning: "spinning",
+  reveal: "reveal",
+  confirm: "confirm",
+  results: "results",
+};
+
+const SPIN_STAGES = {
+  kick: "kick",
+  main: "main",
+};
+
 const ROULETTE_CONFIG = {
   spinDurationMs: 2600,
+  kickDurationMs: 240,
+  revealMinMs: 500,
+  revealMaxMs: 900,
   itemHeight: 64,
   visibleItems: 5,
   reelItems: 30,
@@ -102,10 +118,91 @@ const rewardIcons = {
 
 const fallbackCardImage = "/CARDB.jpg";
 
+const buildOverlayVariants = (prefersReducedMotion) => ({
+  initial: {
+    opacity: 0,
+    scale: prefersReducedMotion ? 1 : 0.98,
+    filter: prefersReducedMotion ? "none" : "blur(6px)",
+  },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: { duration: prefersReducedMotion ? 0.15 : 0.25 },
+  },
+  exit: {
+    opacity: 0,
+    scale: prefersReducedMotion ? 1 : 1.02,
+    filter: prefersReducedMotion ? "none" : "blur(4px)",
+    transition: { duration: prefersReducedMotion ? 0.15 : 0.2 },
+  },
+});
+
+const buildResultsVariants = (prefersReducedMotion) => ({
+  container: {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        duration: prefersReducedMotion ? 0.1 : 0.2,
+        staggerChildren: prefersReducedMotion ? 0 : 0.08,
+      },
+    },
+  },
+  item: {
+    hidden: { opacity: 0, y: prefersReducedMotion ? 0 : 6 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: prefersReducedMotion ? 0.1 : 0.25 },
+    },
+  },
+});
+
+const RaidConfetti = ({ active }) => {
+  const prefersReducedMotion = useReducedMotion();
+  const pieces = useMemo(() => {
+    return Array.from({ length: 16 }, (_, index) => ({
+      id: `confetti-${index}-${Math.random().toString(16).slice(2)}`,
+      x: randomInt(-120, 120),
+      y: randomInt(-160, -60),
+      delay: randomInt(0, 200),
+      duration: randomInt(900, 1400),
+      size: randomInt(6, 10),
+      rotation: randomInt(-180, 180),
+      hue: randomInt(40, 60),
+    }));
+  }, []);
+
+  if (!active || prefersReducedMotion) return null;
+
+  return (
+    <div className="raid-confetti" aria-hidden="true">
+      {pieces.map((piece) => (
+        <span
+          key={piece.id}
+          className="raid-confetti-piece"
+          style={{
+            "--x": `${piece.x}px`,
+            "--y": `${piece.y}px`,
+            "--delay": `${piece.delay}ms`,
+            "--duration": `${piece.duration}ms`,
+            "--rotation": `${piece.rotation}deg`,
+            "--hue": piece.hue,
+            width: `${piece.size}px`,
+            height: `${piece.size * 1.5}px`,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
 function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
   const navigate = useNavigate();
   const { userData } = useUser();
   const uid = userData?.uid || null;
+  const prefersReducedMotion = useReducedMotion();
 
   const moneyEarned = Math.floor(totalDamage * 0.23);
   const extraCurrency = Math.max(0, Math.floor(cardsUsed / 5) - 2);
@@ -118,10 +215,17 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
   const [xpVisible, setXpVisible] = useState(true);
   const [rouletteItems, setRouletteItems] = useState([]);
   const [rouletteOffset, setRouletteOffset] = useState(0);
-  const [roulettePhase, setRoulettePhase] = useState("spinning");
+  const [roulettePhase, setRoulettePhase] = useState(ROULETTE_PHASES.spinning);
   const [rouletteSummary, setRouletteSummary] = useState(null);
   const [winningIndex, setWinningIndex] = useState(0);
   const [rewardPreview, setRewardPreview] = useState(null);
+  const [spinStage, setSpinStage] = useState(SPIN_STAGES.main);
+  const [bonusJitter, setBonusJitter] = useState({
+    coins: { x: 0, y: 0 },
+    recipes: { x: 0, y: 0 },
+    tickets: { x: 0, y: 0 },
+  });
+  const [showConfetti, setShowConfetti] = useState(false);
   const userSnapshotRef = useRef(null);
 
   const rouletteWindowHeight = useMemo(
@@ -199,22 +303,58 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
       const targetIndex = Math.max(0, ROULETTE_CONFIG.reelItems - 3);
       items[targetIndex] = resultReward;
 
+      const targetOffset =
+        targetIndex *
+          (ROULETTE_CONFIG.itemHeight + ROULETTE_CONFIG.itemGap) -
+        rouletteCenterOffset;
+      const kickDistance = Math.min(
+        targetOffset,
+        (ROULETTE_CONFIG.itemHeight + ROULETTE_CONFIG.itemGap) * 2
+      );
+
       setRouletteItems(items);
       setWinningIndex(targetIndex);
-      requestAnimationFrame(() => {
-        setRouletteOffset(
-          targetIndex *
-            (ROULETTE_CONFIG.itemHeight + ROULETTE_CONFIG.itemGap) -
-            rouletteCenterOffset
+      setRouletteOffset(0);
+
+      if (prefersReducedMotion) {
+        setSpinStage(SPIN_STAGES.main);
+        setRouletteOffset(targetOffset);
+      } else {
+        requestAnimationFrame(() => {
+          setSpinStage(SPIN_STAGES.kick);
+          setRouletteOffset(kickDistance);
+        });
+
+        timeouts.push(
+          setTimeout(() => {
+            if (!isActive) return;
+            setSpinStage(SPIN_STAGES.main);
+            setRouletteOffset(targetOffset);
+          }, ROULETTE_CONFIG.kickDurationMs)
         );
-      });
+      }
+
+      const totalSpinDuration = prefersReducedMotion
+        ? 0
+        : ROULETTE_CONFIG.spinDurationMs + ROULETTE_CONFIG.kickDurationMs;
+      const revealDuration = randomInt(
+        ROULETTE_CONFIG.revealMinMs,
+        ROULETTE_CONFIG.revealMaxMs
+      );
 
       timeouts.push(
         setTimeout(() => {
           if (!isActive) return;
           setRewardPreview(resultReward);
-          setRoulettePhase("confirm");
-        }, ROULETTE_CONFIG.spinDurationMs)
+          setRoulettePhase(ROULETTE_PHASES.reveal);
+        }, totalSpinDuration)
+      );
+
+      timeouts.push(
+        setTimeout(() => {
+          if (!isActive) return;
+          setRoulettePhase(ROULETTE_PHASES.confirm);
+        }, totalSpinDuration + revealDuration)
       );
     };
 
@@ -232,6 +372,7 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
     totalDamage,
     xpGained,
     rouletteCenterOffset,
+    prefersReducedMotion,
   ]);
 
   function animateValue(setter, start, end, duration) {
@@ -291,6 +432,7 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
     const totalRecipes = extraCurrency + summary.recipes;
     const totalTickets = summary.tickets;
     const newXp = snapshot.oldXp + xpGained;
+    const oldLevel = calculateLevel(snapshot.oldXp);
     const newLvl = calculateLevel(newXp);
 
     const updates = {
@@ -337,55 +479,46 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
       snapshot.oldSecret + totalRecipes,
       1000
     );
-    setXpData({ oldXp: snapshot.oldXp, newXp });
+    setXpData({ oldXp: snapshot.oldXp, newXp, oldLevel, newLevel: newLvl });
     setRouletteSummary(summary);
-    setRoulettePhase("results");
+    setRoulettePhase(ROULETTE_PHASES.results);
     setShowBonus(true);
+    setBonusJitter({
+      coins: { x: randomInt(-4, 4), y: randomInt(-4, 4) },
+      recipes: { x: randomInt(-4, 4), y: randomInt(-4, 4) },
+      tickets: { x: randomInt(-4, 4), y: randomInt(-4, 4) },
+    });
 
     setTimeout(() => setShowBonus(false), 3000);
     setTimeout(() => setXpVisible(false), 4000);
   };
 
+  useEffect(() => {
+    if (!rouletteSummary?.cardName || prefersReducedMotion) return;
+    setShowConfetti(true);
+    const confettiTimer = setTimeout(() => {
+      setShowConfetti(false);
+    }, 1200);
+    return () => clearTimeout(confettiTimer);
+  }, [rouletteSummary?.cardName, prefersReducedMotion]);
+
+  const isRevealPhase = roulettePhase === ROULETTE_PHASES.reveal;
+  const overlayVariants = useMemo(
+    () => buildOverlayVariants(prefersReducedMotion),
+    [prefersReducedMotion]
+  );
+  const resultsVariants = useMemo(
+    () => buildResultsVariants(prefersReducedMotion),
+    [prefersReducedMotion]
+  );
+  const xpLevelUp =
+    xpData && typeof xpData.oldLevel === "number"
+      ? xpData.newLevel > xpData.oldLevel
+      : false;
+  const showLevelUpEffects = xpLevelUp && !prefersReducedMotion;
+
   return (
     <>
-      <style>{`
-        @keyframes fade-move {
-          0% { opacity: 0; transform: translateX(0); }
-          20% { opacity: 1; transform: translateX(5px); }
-          80% { opacity: 1; transform: translateX(10px); }
-          100% { opacity: 0; transform: translateX(20px); }
-        }
-        .bonus-amount {
-          font-size: 14px;
-          color: #0f0;
-          font-weight: bold;
-          margin-left: 4px;
-          animation: fade-move 3s ease-out forwards;
-        }
-        .xp-bar {
-          position: fixed;
-          top: 0;
-          left: 0;
-          height: 6px;
-          width: 100%;
-          background: rgba(0, 191, 255, 0.1);
-          z-index: 10000;
-          transition: opacity 1s ease 3s;
-        }
-        .xp-bar-inner {
-          height: 100%;
-          background: linear-gradient(to right, #00bfff, #87cefa);
-          transition: width 1s ease;
-        }
-        .xp-label {
-          position: fixed;
-          top: 8px;
-          font-size: 12px;
-          color: white;
-          z-index: 10001;
-        }
-      `}</style>
-
       <CurrencyBalance
         forceShow
         balanceOverride={animatedMoney}
@@ -394,13 +527,27 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
 
       {showBonus && (
         <>
-          <div style={{ position: "fixed", top: 15, left: 100, zIndex: 10001 }}>
-            <span className="bonus-amount">
+          <div
+            style={{
+              position: "fixed",
+              top: 15 + bonusJitter.coins.y,
+              left: 100 + bonusJitter.coins.x,
+              zIndex: 10001,
+            }}
+          >
+            <span className="bonus-amount bonus-amount--coins">
               +{moneyEarned + (rouletteSummary?.coins || 0)}
             </span>
           </div>
-          <div style={{ position: "fixed", top: 67, left: 100, zIndex: 10001 }}>
-            <span className="bonus-amount">
+          <div
+            style={{
+              position: "fixed",
+              top: 67 + bonusJitter.recipes.y,
+              left: 100 + bonusJitter.recipes.x,
+              zIndex: 10001,
+            }}
+          >
+            <span className="bonus-amount bonus-amount--recipes">
               +{extraCurrency + (rouletteSummary?.recipes || 0)}
             </span>
           </div>
@@ -409,13 +556,25 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
 
       {xpVisible && xpProgress && (
         <>
-          <div className="xp-bar" style={{ opacity: xpVisible ? 1 : 0 }}>
+          <div
+            className={`xp-bar${showLevelUpEffects ? " xp-bar--levelup" : ""}`}
+            style={{ opacity: xpVisible ? 1 : 0 }}
+          >
             <div
-              className="xp-bar-inner"
+              className={`xp-bar-inner${
+                showLevelUpEffects ? " xp-bar-inner--levelup" : ""
+              }`}
               style={{ width: `${xpProgress.percent}%` }}
-            />
+            >
+              {showLevelUpEffects && <span className="xp-bar-flash" />}
+            </div>
           </div>
-          <div className="xp-label" style={{ left: 10 }}>
+          <div
+            className={`xp-label${
+              showLevelUpEffects ? " xp-label--levelup" : ""
+            }`}
+            style={{ left: 10 }}
+          >
             Ур. {xpProgress.level}
           </div>
           <div className="xp-label" style={{ right: 10 }}>
@@ -424,133 +583,184 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
         </>
       )}
 
-      {roulettePhase === "spinning" && (
-        <div className="raid-roulette-overlay">
-          <h2 className="raid-roulette-title">Награда рейда</h2>
-          <p className="raid-roulette-subtitle">
-            Рулетка определяет бонусную награду
-          </p>
-          <div
-            className="raid-roulette-window"
-            style={{ height: rouletteWindowHeight }}
+      <AnimatePresence mode="wait">
+        {(roulettePhase === ROULETTE_PHASES.spinning ||
+          roulettePhase === ROULETTE_PHASES.reveal) && (
+          <motion.div
+            key="roulette"
+            className={`raid-roulette-overlay${
+              isRevealPhase ? " raid-roulette-overlay--reveal" : ""
+            }`}
+            variants={overlayVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
           >
-            <div className="raid-roulette-highlight" />
+            <h2 className="raid-roulette-title">Награда рейда</h2>
+            <p className="raid-roulette-subtitle">
+              Рулетка определяет бонусную награду
+            </p>
             <div
-              className="raid-roulette-reel"
-              style={{
-                transform: `translateY(-${rouletteOffset}px)`,
-                gap: `${ROULETTE_CONFIG.itemGap}px`,
-                transition: `transform ${ROULETTE_CONFIG.spinDurationMs}ms cubic-bezier(0.17, 0.84, 0.44, 1)`,
-              }}
+              className="raid-roulette-window"
+              style={{ height: rouletteWindowHeight }}
             >
-              {rouletteItems.map((item, index) => (
-                <div
-                  className={`raid-roulette-item${
-                    index === winningIndex ? " winner" : ""
-                  }`}
-                  key={`${item.type}-${index}`}
-                  style={{ height: ROULETTE_CONFIG.itemHeight }}
-                >
-                  <div className="raid-roulette-item-content">
-                    {item.imageUrl && (
-                      <img
-                        src={item.imageUrl}
-                        alt={item.label}
-                        className="raid-roulette-item-icon"
-                      />
-                    )}
-                    <div className="raid-roulette-item-text">
-                      <span className="raid-roulette-item-label">
-                        {item.label}
-                      </span>
-                      <span className="raid-roulette-item-value">
-                        {item.value ?? "?"}
-                      </span>
+              <div className="raid-roulette-highlight" />
+              <div
+                className="raid-roulette-reel"
+                style={{
+                  transform: `translateY(-${rouletteOffset}px)`,
+                  gap: `${ROULETTE_CONFIG.itemGap}px`,
+                  transition: `transform ${
+                    spinStage === SPIN_STAGES.kick
+                      ? ROULETTE_CONFIG.kickDurationMs
+                      : ROULETTE_CONFIG.spinDurationMs
+                  }ms cubic-bezier(0.17, 0.84, 0.44, 1)`,
+                }}
+              >
+                {rouletteItems.map((item, index) => (
+                  <div
+                    className={`raid-roulette-item${
+                      index === winningIndex ? " winner" : ""
+                    }`}
+                    key={`${item.type}-${index}`}
+                    style={{ height: ROULETTE_CONFIG.itemHeight }}
+                  >
+                    <div className="raid-roulette-item-content">
+                      {item.imageUrl && (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.label}
+                          className="raid-roulette-item-icon"
+                        />
+                      )}
+                      <div className="raid-roulette-item-text">
+                        <span className="raid-roulette-item-label">
+                          {item.label}
+                        </span>
+                        <span className="raid-roulette-item-value">
+                          {item.value ?? "?"}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-          <p className="raid-roulette-note">
-            Шансы можно настроить в ROULETTE_CONFIG в коде.
-          </p>
-        </div>
-      )}
-
-      {roulettePhase === "confirm" && rewardPreview && (
-        <div className="raid-confirm-overlay">
-          <h2 className="raid-confirm-title">Ваша награда</h2>
-          <div className="raid-confirm-card">
-            {rewardPreview.imageUrl && (
-              <img
-                src={rewardPreview.imageUrl}
-                alt={rewardPreview.label}
-                className="raid-confirm-image"
-              />
-            )}
-            <div className="raid-confirm-info">
-              <span className="raid-confirm-label">{rewardPreview.label}</span>
-              <span className="raid-confirm-value">
-                {rewardPreview.value || "—"}
-              </span>
-            </div>
-          </div>
-          <button className="raid-confirm-btn" onClick={handleConfirmReward}>
-            Получить
-          </button>
-        </div>
-      )}
-
-      {roulettePhase === "results" && (
-        <div className="raid-result-overlay">
-          <h2>Бой завершён</h2>
-          <p>
-            Общий нанесённый урон: <strong>{totalDamage}</strong>
-          </p>
-          <p>
-            Разыграно карт: <strong>{cardsUsed}</strong>
-          </p>
-          <p>
-            Получено золота:{" "}
-            <strong>
-              {moneyEarned + (rouletteSummary?.coins || 0)}
-            </strong>
-          </p>
-          <p>
-            Получено рецептов:{" "}
-            <strong>
-              {extraCurrency + (rouletteSummary?.recipes || 0)}
-            </strong>
-          </p>
-          <p>
-            Получено билетов: <strong>{rouletteSummary?.tickets || 0}</strong>
-          </p>
-          <p>
-            Получено XP: <strong>{xpGained}</strong>
-          </p>
-          {rouletteSummary?.cardName && (
-            <p>
-              Карта из рулетки: <strong>{rouletteSummary.cardName}</strong>
+            <p className="raid-roulette-note">
+              Шансы можно настроить в ROULETTE_CONFIG в коде.
             </p>
-          )}
+          </motion.div>
+        )}
 
-          <button
-            onClick={handleExit}
-            className="raid-result-exit"
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background =
-                "linear-gradient(160deg, #444, #2f2f2f)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background =
-                "linear-gradient(160deg, #3a3a3a, #2a2a2a)")
-            }
+        {roulettePhase === ROULETTE_PHASES.confirm && rewardPreview && (
+          <motion.div
+            key="confirm"
+            className="raid-confirm-overlay"
+            variants={overlayVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
           >
-            Выйти
-          </button>
-        </div>
-      )}
+            <h2 className="raid-confirm-title">Ваша награда</h2>
+            <div className="raid-confirm-card">
+              {rewardPreview.imageUrl && (
+                <img
+                  src={rewardPreview.imageUrl}
+                  alt={rewardPreview.label}
+                  className="raid-confirm-image"
+                />
+              )}
+              <div className="raid-confirm-info">
+                <span className="raid-confirm-label">
+                  {rewardPreview.label}
+                </span>
+                <span className="raid-confirm-value">
+                  {rewardPreview.value || "—"}
+                </span>
+              </div>
+            </div>
+            <button className="raid-confirm-btn" onClick={handleConfirmReward}>
+              Получить
+            </button>
+          </motion.div>
+        )}
+
+        {roulettePhase === ROULETTE_PHASES.results && (
+          <motion.div
+            key="results"
+            className="raid-result-overlay"
+            variants={overlayVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <RaidConfetti active={showConfetti} />
+            <motion.h2
+              variants={resultsVariants.item}
+              initial="hidden"
+              animate="show"
+            >
+              Бой завершён
+            </motion.h2>
+            <motion.div
+              className="raid-result-stats"
+              variants={resultsVariants.container}
+              initial="hidden"
+              animate="show"
+            >
+              <motion.p variants={resultsVariants.item}>
+                Общий нанесённый урон: <strong>{totalDamage}</strong>
+              </motion.p>
+              <motion.p variants={resultsVariants.item}>
+                Разыграно карт: <strong>{cardsUsed}</strong>
+              </motion.p>
+              <motion.p variants={resultsVariants.item}>
+                Получено золота:{" "}
+                <strong>
+                  {moneyEarned + (rouletteSummary?.coins || 0)}
+                </strong>
+              </motion.p>
+              <motion.p variants={resultsVariants.item}>
+                Получено рецептов:{" "}
+                <strong>
+                  {extraCurrency + (rouletteSummary?.recipes || 0)}
+                </strong>
+              </motion.p>
+              <motion.p variants={resultsVariants.item}>
+                Получено билетов:{" "}
+                <strong>{rouletteSummary?.tickets || 0}</strong>
+              </motion.p>
+              <motion.p variants={resultsVariants.item}>
+                Получено XP: <strong>{xpGained}</strong>
+              </motion.p>
+              {rouletteSummary?.cardName && (
+                <motion.p
+                  className="raid-result-card"
+                  variants={resultsVariants.item}
+                >
+                  Карта из рулетки:{" "}
+                  <strong>{rouletteSummary.cardName}</strong>
+                </motion.p>
+              )}
+            </motion.div>
+
+            <button
+              onClick={handleExit}
+              className="raid-result-exit"
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background =
+                  "linear-gradient(160deg, #444, #2f2f2f)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background =
+                  "linear-gradient(160deg, #3a3a3a, #2a2a2a)")
+              }
+            >
+              Выйти
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
