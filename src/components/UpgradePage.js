@@ -43,6 +43,7 @@ function UpgradePage() {
   const [fusionInProgress, setFusionInProgress] = useState(false);
   const [fusionPossibleCards, setFusionPossibleCards] = useState([]);
   const [fusionRewardCard, setFusionRewardCard] = useState(null);
+  const [showFusionRewardModal, setShowFusionRewardModal] = useState(false);
   const [fusionTemplatesLoading, setFusionTemplatesLoading] = useState(false);
   const [secretBalance, setSecretBalance] = useState(
     userData?.SecretRecipes ?? 0
@@ -562,7 +563,7 @@ function UpgradePage() {
     });
   };
 
-  const handleFusionCardSelect = (card) => {
+  const handleFusionCardSelect = async (card) => {
     if (fusionSlotIndex === null) return;
     const cardType = getCardCharacteristicType(card);
     if (fusionCharacteristic && cardType !== fusionCharacteristic) {
@@ -570,6 +571,15 @@ function UpgradePage() {
       return;
     }
     const cardRarity = normalizeRarity(card.rarity);
+    const cardRarityIndex = rarityOrder.indexOf(cardRarity);
+    const nextRarity =
+      cardRarityIndex >= 0 && cardRarityIndex < rarityOrder.length - 1
+        ? rarityOrder[cardRarityIndex + 1]
+        : null;
+    if (!nextRarity) {
+      setFusionError("Для слияния нужна карта не выше эпической редкости.");
+      return;
+    }
     if (fusionRarity && cardRarity !== fusionRarity) {
       setFusionError("Можно выбирать карты только одной редкости.");
       return;
@@ -577,6 +587,22 @@ function UpgradePage() {
     if (fusionSlots.some((slot) => slot?.card_id === card.card_id)) {
       setFusionError("Эта карта уже выбрана.");
       return;
+    }
+
+    if (fusionCharacteristic && fusionPossibleCards.length === 0) {
+      setFusionError("Для выбранного типа нет доступных карт для слияния.");
+      return;
+    }
+
+    if (!fusionCharacteristic) {
+      const availableTemplates = await fetchFusionTemplates(
+        nextRarity,
+        cardType
+      );
+      if (!availableTemplates.length) {
+        setFusionError("Для выбранного типа нет доступных карт для слияния.");
+        return;
+      }
     }
 
     setFusionSlots((prev) => {
@@ -593,6 +619,7 @@ function UpgradePage() {
     setFusionError("");
     setFusionResult(null);
     setFusionRewardCard(null);
+    setShowFusionRewardModal(false);
     setFusionInProgress(true);
 
     const baseChance = fusionCards.length * 20;
@@ -646,6 +673,7 @@ function UpgradePage() {
           original_id: selectedTemplate.id,
           lvl: 1,
         });
+        setShowFusionRewardModal(true);
       }
 
       const consumedIds = fusionCards.map((card) => card.card_id);
@@ -727,6 +755,11 @@ function UpgradePage() {
 
   const availableFusionCards = playerCards.filter((card) => {
     if (fusionSlots.some((slot) => slot?.card_id === card.card_id)) {
+      return false;
+    }
+    const cardRarity = normalizeRarity(card.rarity);
+    const cardRarityIndex = rarityOrder.indexOf(cardRarity);
+    if (cardRarityIndex === -1 || cardRarityIndex >= rarityOrder.length - 1) {
       return false;
     }
     const matchesCharacteristic = fusionCharacteristic
@@ -1145,6 +1178,33 @@ function UpgradePage() {
           >
             {fusionInProgress ? "Попытка..." : "Попытать удачу"}
           </button>
+        </div>
+      )}
+
+      {showFusionRewardModal && fusionRewardCard && (
+        <div
+          className="fusion-reward-modal"
+          onClick={() => setShowFusionRewardModal(false)}
+        >
+          <div
+            className="fusion-reward-modal-content"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="fusion-reward-modal-title">Поздравляем!</div>
+            <p className="fusion-reward-modal-subtitle">
+              Вы получили новую карту за успешное слияние.
+            </p>
+            <div className="fusion-reward-modal-card">
+              <FramedCard card={fusionRewardCard} showLevel={true} />
+            </div>
+            <button
+              className="fusion-reward-modal-button"
+              onClick={() => setShowFusionRewardModal(false)}
+              type="button"
+            >
+              Добавить в коллекцию
+            </button>
+          </div>
         </div>
       )}
       {showInfo && (
