@@ -431,9 +431,6 @@ const ProfilePage = () => {
               <span>ID : </span> {idToLoad}
             </p>
             <div className="profile-meta">
-              <span className="profile-meta-item">
-                Уровень {currentLevel}
-              </span>
               <span className="profile-meta-item">XP {currentXp}</span>
             </div>
           </div>
