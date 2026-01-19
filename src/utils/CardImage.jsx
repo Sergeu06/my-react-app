@@ -59,7 +59,6 @@ function CardImage({
       ? getCardImageUrl({
           name,
           fallbackUrl: fallbackSrc,
-          preferredSize,
         })
       : getCachedImageUrl(fallbackSrc);
 

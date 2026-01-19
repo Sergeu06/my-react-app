@@ -10,6 +10,32 @@ const CARD_IMAGE_SIZES = [256, 512, 1024];
 const inFlightRequests = new Map();
 const failedUrls = new Set();
 const localCardMisses = new Set();
+const blobUrlCache = new Map();
+const blobUrlInFlight = new Map();
+
+const getBlobUrlFromResponse = async (cacheKey, response) => {
+  if (!response || response.type === "opaque") return null;
+  if (blobUrlCache.has(cacheKey)) {
+    return blobUrlCache.get(cacheKey);
+  }
+  if (blobUrlInFlight.has(cacheKey)) {
+    return await blobUrlInFlight.get(cacheKey);
+  }
+
+  const promise = response
+    .blob()
+    .then((blob) => {
+      const objectUrl = URL.createObjectURL(blob);
+      blobUrlCache.set(cacheKey, objectUrl);
+      return objectUrl;
+    })
+    .finally(() => {
+      blobUrlInFlight.delete(cacheKey);
+    });
+
+  blobUrlInFlight.set(cacheKey, promise);
+  return await promise;
+};
 
 const getRequestMode = (src) => {
   try {
@@ -111,20 +137,6 @@ const getConnectionInfo = () => {
   );
 };
 
-const getDisplayPreferredCardSize = () => {
-  if (typeof window === "undefined") return null;
-  const viewportWidth = window.innerWidth || 0;
-  const viewportHeight = window.innerHeight || 0;
-  const minDimension = Math.min(viewportWidth, viewportHeight) || viewportWidth;
-  if (!minDimension) return null;
-  const dpr = window.devicePixelRatio || 1;
-  const scaledDimension = minDimension * dpr;
-
-  if (scaledDimension <= 520) return 256;
-  if (scaledDimension <= 920) return 512;
-  return 1024;
-};
-
 const getNetworkPreferredCardSize = () => {
   const connection = getConnectionInfo();
   if (!connection) return null;
@@ -134,14 +146,13 @@ const getNetworkPreferredCardSize = () => {
   }
 
   const effectiveType = connection.effectiveType || "";
-  if (effectiveType === "slow-2g" || effectiveType === "2g") {
+  if (
+    effectiveType === "slow-2g" ||
+    effectiveType === "2g" ||
+    effectiveType === "3g" ||
+    effectiveType === "4g"
+  ) {
     return 256;
-  }
-  if (effectiveType === "3g") {
-    return 256;
-  }
-  if (effectiveType === "4g") {
-    return 512;
   }
 
   return null;
@@ -159,10 +170,7 @@ const getOrderedCardSizes = (preferredSize) => {
 
 const getPreferredCardBasePaths = ({ preferredSize } = {}) => {
   const sizePreference =
-    preferredSize ||
-    getNetworkPreferredCardSize() ||
-    getDisplayPreferredCardSize() ||
-    1024;
+    preferredSize || getNetworkPreferredCardSize() || 1024;
 
   return getOrderedCardSizes(sizePreference).map(
     (size) => LOCAL_CARD_RESIZED_PATHS[size]
@@ -236,11 +244,15 @@ export const getCardImageUrl = async ({ name, fallbackUrl, preferredSize }) => {
           if (cache) {
             await cache.put(localUrl, response.clone());
           }
-          return localUrl;
+          const blobUrl = await getBlobUrlFromResponse(localUrl, response);
+          return blobUrl || localUrl;
         }
         localCardMisses.add(localUrl);
+      } else if (response.ok) {
+        const blobUrl = await getBlobUrlFromResponse(localUrl, response);
+        return blobUrl || localUrl;
       } else {
-        return localUrl;
+        localCardMisses.add(localUrl);
       }
     } catch (error) {
       localCardMisses.add(localUrl);
@@ -259,6 +271,7 @@ export const getCardImageUrl = async ({ name, fallbackUrl, preferredSize }) => {
 export const getCachedImageUrl = async (src) => {
   if (!src) return null;
   if (failedUrls.has(src)) return src;
+  if (blobUrlCache.has(src)) return blobUrlCache.get(src);
   const requestMode = getRequestMode(src);
   if (!requestMode || !("caches" in window)) return src;
 
@@ -276,6 +289,10 @@ export const getCachedImageUrl = async (src) => {
       }
     }
     if (!response) return src;
+    if (response.ok) {
+      const blobUrl = await getBlobUrlFromResponse(src, response);
+      if (blobUrl) return blobUrl;
+    }
     return src;
   } catch (error) {
     failedUrls.add(src);
