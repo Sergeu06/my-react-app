@@ -22,7 +22,10 @@ function CardImage({
     }
 
     const resolver = preferLocal
-      ? getCardImageUrl({ name, fallbackUrl: fallbackSrc })
+      ? getCardImageUrl({
+          name,
+          fallbackUrl: fallbackSrc,
+        })
       : getCachedImageUrl(fallbackSrc);
 
     Promise.resolve(resolver)
