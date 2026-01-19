@@ -1,5 +1,9 @@
 const CARD_IMAGE_CACHE = "card-images-v2";
 const LOCAL_CARD_PATH = "/cards/";
+const LOCAL_CARD_RESIZED_PATHS = {
+  512: "/cards-512/",
+  256: "/cards-256/",
+};
 
 const inFlightRequests = new Map();
 const failedUrls = new Set();
@@ -73,30 +77,82 @@ const normalizeCardFileName = (name) => {
   return /\.[a-z0-9]+$/i.test(trimmed) ? trimmed : `${trimmed}.png`;
 };
 
-export const getLocalCardImageUrl = (name) => {
+export const getLocalCardImageUrl = (name, basePath = LOCAL_CARD_PATH) => {
   const fileName = normalizeCardFileName(name);
   if (!fileName) return null;
-  return `${LOCAL_CARD_PATH}${encodeURIComponent(fileName)}`;
+  return `${basePath}${encodeURIComponent(fileName)}`;
 };
 
-const getLocalCardImageUrlFromFallback = (fallbackUrl) => {
+const getLocalCardImageUrlFromFallback = (
+  fallbackUrl,
+  basePath = LOCAL_CARD_PATH
+) => {
   if (!fallbackUrl) return null;
   try {
     const url = new URL(fallbackUrl);
     const parts = url.pathname.split("/");
     const fileName = parts[parts.length - 1];
     if (!fileName) return null;
-    return getLocalCardImageUrl(decodeURIComponent(fileName));
+    return getLocalCardImageUrl(decodeURIComponent(fileName), basePath);
   } catch (error) {
     return null;
   }
 };
 
+const getConnectionInfo = () => {
+  if (typeof navigator === "undefined") return null;
+  return (
+    navigator.connection ||
+    navigator.mozConnection ||
+    navigator.webkitConnection ||
+    null
+  );
+};
+
+const getPreferredCardBasePaths = () => {
+  const connection = getConnectionInfo();
+  if (!connection) return [LOCAL_CARD_PATH];
+
+  const type = connection.type || "";
+  const effectiveType = connection.effectiveType || "";
+
+  if (type === "wifi" || type === "ethernet") {
+    return [LOCAL_CARD_PATH];
+  }
+
+  if (type === "cellular") {
+    if (effectiveType === "slow-2g" || effectiveType === "2g") {
+      return [LOCAL_CARD_RESIZED_PATHS[256], LOCAL_CARD_PATH];
+    }
+    if (effectiveType === "3g") {
+      return [
+        LOCAL_CARD_RESIZED_PATHS[512],
+        LOCAL_CARD_RESIZED_PATHS[256],
+        LOCAL_CARD_PATH,
+      ];
+    }
+    if (effectiveType === "4g") {
+      return [LOCAL_CARD_RESIZED_PATHS[512], LOCAL_CARD_PATH];
+    }
+  }
+
+  return [LOCAL_CARD_PATH];
+};
+
+const getLocalCardImageCandidates = (name, fallbackUrl) => {
+  const basePaths = getPreferredCardBasePaths();
+  const candidates = new Set();
+
+  basePaths.forEach((basePath) => {
+    candidates.add(getLocalCardImageUrl(name, basePath));
+    candidates.add(getLocalCardImageUrlFromFallback(fallbackUrl, basePath));
+  });
+
+  return Array.from(candidates).filter(Boolean);
+};
+
 export const preloadCardImage = async (name, fallbackUrl) => {
-  const localCandidates = [
-    getLocalCardImageUrl(name),
-    getLocalCardImageUrlFromFallback(fallbackUrl),
-  ].filter(Boolean);
+  const localCandidates = getLocalCardImageCandidates(name, fallbackUrl);
 
   for (const localUrl of Array.from(new Set(localCandidates))) {
     const cached = await preloadImageToCache(localUrl);
@@ -119,10 +175,7 @@ export const preloadCardImage = async (name, fallbackUrl) => {
 };
 
 export const getCardImageUrl = async ({ name, fallbackUrl }) => {
-  const localCandidates = [
-    getLocalCardImageUrl(name),
-    getLocalCardImageUrlFromFallback(fallbackUrl),
-  ].filter(Boolean);
+  const localCandidates = getLocalCardImageCandidates(name, fallbackUrl);
 
   const canUseCache = "caches" in window;
 
