@@ -1,9 +1,11 @@
 const CARD_IMAGE_CACHE = "card-images-v2";
 const LOCAL_CARD_PATH = "/cards/";
 const LOCAL_CARD_RESIZED_PATHS = {
-  512: "/cards-512/",
   256: "/cards-256/",
+  512: "/cards-512/",
+  1024: LOCAL_CARD_PATH,
 };
+const CARD_IMAGE_SIZES = [256, 512, 1024];
 
 const inFlightRequests = new Map();
 const failedUrls = new Set();
@@ -109,38 +111,70 @@ const getConnectionInfo = () => {
   );
 };
 
-const getPreferredCardBasePaths = () => {
-  const connection = getConnectionInfo();
-  if (!connection) return [LOCAL_CARD_PATH];
+const getDisplayPreferredCardSize = () => {
+  if (typeof window === "undefined") return null;
+  const viewportWidth = window.innerWidth || 0;
+  const viewportHeight = window.innerHeight || 0;
+  const minDimension = Math.min(viewportWidth, viewportHeight) || viewportWidth;
+  if (!minDimension) return null;
+  const dpr = window.devicePixelRatio || 1;
+  const scaledDimension = minDimension * dpr;
 
-  const type = connection.type || "";
-  const effectiveType = connection.effectiveType || "";
-
-  if (type === "wifi" || type === "ethernet") {
-    return [LOCAL_CARD_PATH];
-  }
-
-  if (type === "cellular") {
-    if (effectiveType === "slow-2g" || effectiveType === "2g") {
-      return [LOCAL_CARD_RESIZED_PATHS[256], LOCAL_CARD_PATH];
-    }
-    if (effectiveType === "3g") {
-      return [
-        LOCAL_CARD_RESIZED_PATHS[512],
-        LOCAL_CARD_RESIZED_PATHS[256],
-        LOCAL_CARD_PATH,
-      ];
-    }
-    if (effectiveType === "4g") {
-      return [LOCAL_CARD_RESIZED_PATHS[512], LOCAL_CARD_PATH];
-    }
-  }
-
-  return [LOCAL_CARD_PATH];
+  if (scaledDimension <= 520) return 256;
+  if (scaledDimension <= 920) return 512;
+  return 1024;
 };
 
-const getLocalCardImageCandidates = (name, fallbackUrl) => {
-  const basePaths = getPreferredCardBasePaths();
+const getNetworkPreferredCardSize = () => {
+  const connection = getConnectionInfo();
+  if (!connection) return null;
+
+  if (connection.saveData) {
+    return 256;
+  }
+
+  const effectiveType = connection.effectiveType || "";
+  if (effectiveType === "slow-2g" || effectiveType === "2g") {
+    return 256;
+  }
+  if (effectiveType === "3g") {
+    return 256;
+  }
+  if (effectiveType === "4g") {
+    return 512;
+  }
+
+  return null;
+};
+
+const getOrderedCardSizes = (preferredSize) => {
+  if (preferredSize && CARD_IMAGE_SIZES.includes(preferredSize)) {
+    return [
+      preferredSize,
+      ...CARD_IMAGE_SIZES.filter((size) => size !== preferredSize),
+    ];
+  }
+  return CARD_IMAGE_SIZES;
+};
+
+const getPreferredCardBasePaths = ({ preferredSize } = {}) => {
+  const sizePreference =
+    preferredSize ||
+    getNetworkPreferredCardSize() ||
+    getDisplayPreferredCardSize() ||
+    1024;
+
+  return getOrderedCardSizes(sizePreference).map(
+    (size) => LOCAL_CARD_RESIZED_PATHS[size]
+  );
+};
+
+const getLocalCardImageCandidates = (
+  name,
+  fallbackUrl,
+  { preferredSize } = {}
+) => {
+  const basePaths = getPreferredCardBasePaths({ preferredSize });
   const candidates = new Set();
 
   basePaths.forEach((basePath) => {
@@ -151,8 +185,14 @@ const getLocalCardImageCandidates = (name, fallbackUrl) => {
   return Array.from(candidates).filter(Boolean);
 };
 
-export const preloadCardImage = async (name, fallbackUrl) => {
-  const localCandidates = getLocalCardImageCandidates(name, fallbackUrl);
+export const preloadCardImage = async (
+  name,
+  fallbackUrl,
+  { preferredSize } = {}
+) => {
+  const localCandidates = getLocalCardImageCandidates(name, fallbackUrl, {
+    preferredSize,
+  });
 
   for (const localUrl of Array.from(new Set(localCandidates))) {
     const cached = await preloadImageToCache(localUrl);
@@ -174,8 +214,10 @@ export const preloadCardImage = async (name, fallbackUrl) => {
   return { success: false, source: "none", url: localCandidates[0] || null };
 };
 
-export const getCardImageUrl = async ({ name, fallbackUrl }) => {
-  const localCandidates = getLocalCardImageCandidates(name, fallbackUrl);
+export const getCardImageUrl = async ({ name, fallbackUrl, preferredSize }) => {
+  const localCandidates = getLocalCardImageCandidates(name, fallbackUrl, {
+    preferredSize,
+  });
 
   const canUseCache = "caches" in window;
 
