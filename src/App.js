@@ -183,6 +183,38 @@ function collectDeviceInfo() {
   };
 }
 
+const getPreloadConcurrency = () => {
+  const connection = navigator.connection;
+  if (!connection) return 6;
+  if (connection.saveData) return 3;
+  switch (connection.effectiveType) {
+    case "slow-2g":
+      return 2;
+    case "2g":
+      return 3;
+    case "3g":
+      return 4;
+    default:
+      return 6;
+  }
+};
+
+const runWithConcurrency = async (items, limit, task) => {
+  if (!items.length) return;
+  const queue = [...items];
+  const workers = Array.from(
+    { length: Math.min(limit, queue.length) },
+    async () => {
+      while (queue.length) {
+        const item = queue.shift();
+        if (item === undefined) return;
+        await task(item);
+      }
+    }
+  );
+  await Promise.all(workers);
+};
+
 function App() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -308,6 +340,7 @@ function App() {
     const preloadCardBatches = async () => {
       let lastDoc = null;
       let reachedEnd = false;
+      const preloadConcurrency = getPreloadConcurrency();
 
       while (!reachedEnd) {
         const { cardEntries, fallbackUrls, lastDoc: nextDoc, isLastBatch } =
@@ -317,41 +350,51 @@ function App() {
 
         incrementAssetsProgress(0, batchTotal);
 
-        await Promise.all([
-          ...cardEntries.map(async (card) => {
-            const result = await preloadCardImage(card.name, card.image_url);
+        const tasks = [
+          ...cardEntries.map((card) => ({
+            type: "card",
+            payload: card,
+          })),
+          ...fallbackUrls.map((url) => ({
+            type: "fallback",
+            payload: url,
+          })),
+        ];
+
+        await runWithConcurrency(tasks, preloadConcurrency, async (task) => {
+          if (task.type === "card") {
+            const result = await preloadCardImage(
+              task.payload.name,
+              task.payload.image_url
+            );
             console.info("[GlobalLoader] card image cached", {
-              name: card.name,
-              fallbackUrl: card.image_url,
+              name: task.payload.name,
+              fallbackUrl: task.payload.image_url,
               ...result,
             });
-            incrementAssetsProgress(1, 0);
-          }),
-          ...fallbackUrls.map(async (url) => {
-            const result = await preloadCardImage(null, url);
+          } else {
+            const result = await preloadCardImage(null, task.payload);
             console.info("[GlobalLoader] asset cached", {
-              src: url,
+              src: task.payload,
               cached: result.success,
               source: result.source,
               url: result.url,
             });
-            incrementAssetsProgress(1, 0);
-          }),
-        ]);
+          }
+          incrementAssetsProgress(1, 0);
+        });
 
         lastDoc = nextDoc;
         reachedEnd = isLastBatch;
       }
     };
 
-    const timeoutId = setTimeout(() => {
-      if (isActive) setAssetsReady(true);
-    }, 7000);
-
     const preloadAssets = async () => {
       const { urls: remoteAssets, boxEntries } = await fetchRemoteImages();
       const allAssets = [...staticAssets, ...remoteAssets];
       const lootboxCache = {};
+      const preloadConcurrency = getPreloadConcurrency();
+      const boxConcurrency = Math.max(2, Math.floor(preloadConcurrency / 2));
 
       if (isActive) {
         setAssetsProgress({
@@ -360,54 +403,52 @@ function App() {
         });
       }
 
-      await Promise.all(
-        [
-          ...allAssets.map(async (src) => {
-            const cached = await preloadImageToCache(src);
-            console.info("[GlobalLoader] asset cached", { src, cached });
-            incrementAssetsProgress(1, 0);
-          }),
-          ...boxEntries.map(async (box) => {
-            const cardIds = box.data?.cards || [];
-            const rarityChances = {
-              Обычная: box.data?.Обычная ?? 0,
-              Редкая: box.data?.Редкая ?? 0,
-              Эпическая: box.data?.Эпическая ?? 0,
-              Легендарная: box.data?.Легендарная ?? 0,
-            };
+      await Promise.all([
+        runWithConcurrency(allAssets, preloadConcurrency, async (src) => {
+          const cached = await preloadImageToCache(src);
+          console.info("[GlobalLoader] asset cached", { src, cached });
+          incrementAssetsProgress(1, 0);
+        }),
+        runWithConcurrency(boxEntries, boxConcurrency, async (box) => {
+          const cardIds = box.data?.cards || [];
+          const rarityChances = {
+            Обычная: box.data?.Обычная ?? 0,
+            Редкая: box.data?.Редкая ?? 0,
+            Эпическая: box.data?.Эпическая ?? 0,
+            Легендарная: box.data?.Легендарная ?? 0,
+          };
 
-            const cardSnaps = await Promise.all(
-              cardIds.map((cardId) => getDoc(doc(db, "cards", cardId)))
-            );
+          const cardSnaps = await Promise.all(
+            cardIds.map((cardId) => getDoc(doc(db, "cards", cardId)))
+          );
 
-            const boxCards = cardSnaps
-              .map((snap, index) => {
-                if (!snap.exists()) return null;
-                const cardData = snap.data();
-                return {
-                  card_id: cardIds[index],
-                  name: cardData.name || "Без имени",
-                  rarity: (cardData.rarity || "обычная").toLowerCase(),
-                };
-              })
-              .filter(Boolean);
+          const boxCards = cardSnaps
+            .map((snap, index) => {
+              if (!snap.exists()) return null;
+              const cardData = snap.data();
+              return {
+                card_id: cardIds[index],
+                name: cardData.name || "Без имени",
+                rarity: (cardData.rarity || "обычная").toLowerCase(),
+              };
+            })
+            .filter(Boolean);
 
-            const rarityCountMap = {};
-            boxCards.forEach((card) => {
-              rarityCountMap[card.rarity] =
-                (rarityCountMap[card.rarity] || 0) + 1;
-            });
+          const rarityCountMap = {};
+          boxCards.forEach((card) => {
+            rarityCountMap[card.rarity] =
+              (rarityCountMap[card.rarity] || 0) + 1;
+          });
 
-            lootboxCache[box.id] = buildLootboxChances(
-              boxCards,
-              rarityChances,
-              rarityCountMap
-            );
+          lootboxCache[box.id] = buildLootboxChances(
+            boxCards,
+            rarityChances,
+            rarityCountMap
+          );
 
-            incrementAssetsProgress(1, 0);
-          }),
-        ]
-      );
+          incrementAssetsProgress(1, 0);
+        }),
+      ]);
 
       await preloadCardBatches();
 
@@ -427,13 +468,11 @@ function App() {
       .catch((err) => console.warn("[GlobalLoader] preload failed", err))
       .finally(() => {
         if (!isActive) return;
-        clearTimeout(timeoutId);
         setAssetsReady(true);
       });
 
     return () => {
       isActive = false;
-      clearTimeout(timeoutId);
     };
   }, [isVerified]);
 
