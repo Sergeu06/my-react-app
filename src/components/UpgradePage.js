@@ -425,6 +425,8 @@ function UpgradePage() {
       await updateDoc(userRef, {
         balance: (userDoc.balance ?? 0) - upgradeCost,
         SecretRecipes: (userDoc.SecretRecipes ?? 0) - secretCost,
+        "stats.coins_spent":
+          (userDoc.stats?.coins_spent ?? 0) + upgradeCost,
       });
       await completeDailyTask(database, uid, DAILY_TASK_IDS, "daily_upgrade");
 

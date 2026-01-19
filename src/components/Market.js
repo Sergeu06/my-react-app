@@ -260,6 +260,8 @@ function Market({ setError }) {
         await updateDoc(buyerRef, {
           balance: buyerData.balance - selectedCard.price,
           cards: arrayUnion(selectedCard.key),
+          "stats.coins_spent":
+            (buyerData.stats?.coins_spent ?? 0) + selectedCard.price,
         });
 
         // 2. Выплата продавцу
