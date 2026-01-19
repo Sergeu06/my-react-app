@@ -321,12 +321,26 @@ const ProfilePage = () => {
     }
   };
 
+  const getAchievementMaxValue = (achievement, data) => {
+    const storedMax =
+      data?.achievements_max?.[achievement.id] ??
+      data?.achievementsMax?.[achievement.id];
+    if (Number.isFinite(storedMax)) {
+      return storedMax;
+    }
+    return achievement.getValue(data);
+  };
+
   const getAchievementProgress = (achievement, data) => {
     const value = achievement.getValue(data);
+    const maxValue = getAchievementMaxValue(achievement, data);
     const achievedLevels = achievement.levels.filter(
+      (level) => maxValue >= level.value
+    ).length;
+    const currentLevels = achievement.levels.filter(
       (level) => value >= level.value
     ).length;
-    const nextLevel = achievement.levels[achievedLevels] || null;
+    const nextLevel = achievement.levels[currentLevels] || null;
     return {
       value,
       achievedLevels,
@@ -405,6 +419,11 @@ const ProfilePage = () => {
 
   const currentLevel = profileData.stats?.lvl ?? 1;
   const currentXp = profileData.stats?.xp ?? 0;
+  const spentCoins =
+    profileData.stats?.coins_spent ??
+    profileData.stats?.spent_coins ??
+    profileData.coins_spent ??
+    0;
 
   return (
     <div className="profile-container">
@@ -442,6 +461,10 @@ const ProfilePage = () => {
             <span className="stat-value">
               {(profileData.balance ?? 0).toFixed(2)}
             </span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Потрачено монет</span>
+            <span className="stat-value">{spentCoins}</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Тайные рецепты</span>
