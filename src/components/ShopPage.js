@@ -937,6 +937,9 @@ function ShopPage({ uid }) {
                         // Списываем средства
                         await updateDoc(userRef, {
                           balance: balance - selectedCard.price,
+                          "stats.coins_spent":
+                            (userData.stats?.coins_spent ?? 0) +
+                            selectedCard.price,
                         });
 
                         // Навигация на страницу открытия бокса
