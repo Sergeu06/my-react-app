@@ -1,8 +1,8 @@
 const CARD_IMAGE_CACHE = "card-images-v2";
 const LOCAL_CARD_PATH = "/cards/";
 const LOCAL_CARD_RESIZED_PATHS = {
-  256: "/cards-256/",
-  512: "/cards-512/",
+  256: "/cards/256/",
+  512: "/cards/512/",
   1024: LOCAL_CARD_PATH,
 };
 const CARD_IMAGE_SIZES = [256, 512, 1024];
