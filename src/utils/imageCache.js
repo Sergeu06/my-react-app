@@ -1,13 +1,41 @@
 const CARD_IMAGE_CACHE = "card-images-v2";
 const LOCAL_CARD_PATH = "/cards/";
 const LOCAL_CARD_RESIZED_PATHS = {
-  512: "/cards-512/",
   256: "/cards-256/",
+  512: "/cards-512/",
+  1024: LOCAL_CARD_PATH,
 };
+const CARD_IMAGE_SIZES = [256, 512, 1024];
 
 const inFlightRequests = new Map();
 const failedUrls = new Set();
 const localCardMisses = new Set();
+const blobUrlCache = new Map();
+const blobUrlInFlight = new Map();
+
+const getBlobUrlFromResponse = async (cacheKey, response) => {
+  if (!response || response.type === "opaque") return null;
+  if (blobUrlCache.has(cacheKey)) {
+    return blobUrlCache.get(cacheKey);
+  }
+  if (blobUrlInFlight.has(cacheKey)) {
+    return await blobUrlInFlight.get(cacheKey);
+  }
+
+  const promise = response
+    .blob()
+    .then((blob) => {
+      const objectUrl = URL.createObjectURL(blob);
+      blobUrlCache.set(cacheKey, objectUrl);
+      return objectUrl;
+    })
+    .finally(() => {
+      blobUrlInFlight.delete(cacheKey);
+    });
+
+  blobUrlInFlight.set(cacheKey, promise);
+  return await promise;
+};
 
 const getRequestMode = (src) => {
   try {
@@ -109,38 +137,52 @@ const getConnectionInfo = () => {
   );
 };
 
-const getPreferredCardBasePaths = () => {
+const getNetworkPreferredCardSize = () => {
   const connection = getConnectionInfo();
-  if (!connection) return [LOCAL_CARD_PATH];
+  if (!connection) return null;
 
-  const type = connection.type || "";
+  if (connection.saveData) {
+    return 256;
+  }
+
   const effectiveType = connection.effectiveType || "";
-
-  if (type === "wifi" || type === "ethernet") {
-    return [LOCAL_CARD_PATH];
+  if (
+    effectiveType === "slow-2g" ||
+    effectiveType === "2g" ||
+    effectiveType === "3g" ||
+    effectiveType === "4g"
+  ) {
+    return 256;
   }
 
-  if (type === "cellular") {
-    if (effectiveType === "slow-2g" || effectiveType === "2g") {
-      return [LOCAL_CARD_RESIZED_PATHS[256], LOCAL_CARD_PATH];
-    }
-    if (effectiveType === "3g") {
-      return [
-        LOCAL_CARD_RESIZED_PATHS[512],
-        LOCAL_CARD_RESIZED_PATHS[256],
-        LOCAL_CARD_PATH,
-      ];
-    }
-    if (effectiveType === "4g") {
-      return [LOCAL_CARD_RESIZED_PATHS[512], LOCAL_CARD_PATH];
-    }
-  }
-
-  return [LOCAL_CARD_PATH];
+  return null;
 };
 
-const getLocalCardImageCandidates = (name, fallbackUrl) => {
-  const basePaths = getPreferredCardBasePaths();
+const getOrderedCardSizes = (preferredSize) => {
+  if (preferredSize && CARD_IMAGE_SIZES.includes(preferredSize)) {
+    return [
+      preferredSize,
+      ...CARD_IMAGE_SIZES.filter((size) => size !== preferredSize),
+    ];
+  }
+  return CARD_IMAGE_SIZES;
+};
+
+const getPreferredCardBasePaths = ({ preferredSize } = {}) => {
+  const sizePreference =
+    preferredSize || getNetworkPreferredCardSize() || 1024;
+
+  return getOrderedCardSizes(sizePreference).map(
+    (size) => LOCAL_CARD_RESIZED_PATHS[size]
+  );
+};
+
+const getLocalCardImageCandidates = (
+  name,
+  fallbackUrl,
+  { preferredSize } = {}
+) => {
+  const basePaths = getPreferredCardBasePaths({ preferredSize });
   const candidates = new Set();
 
   basePaths.forEach((basePath) => {
@@ -151,8 +193,14 @@ const getLocalCardImageCandidates = (name, fallbackUrl) => {
   return Array.from(candidates).filter(Boolean);
 };
 
-export const preloadCardImage = async (name, fallbackUrl) => {
-  const localCandidates = getLocalCardImageCandidates(name, fallbackUrl);
+export const preloadCardImage = async (
+  name,
+  fallbackUrl,
+  { preferredSize } = {}
+) => {
+  const localCandidates = getLocalCardImageCandidates(name, fallbackUrl, {
+    preferredSize,
+  });
 
   for (const localUrl of Array.from(new Set(localCandidates))) {
     const cached = await preloadImageToCache(localUrl);
@@ -174,8 +222,10 @@ export const preloadCardImage = async (name, fallbackUrl) => {
   return { success: false, source: "none", url: localCandidates[0] || null };
 };
 
-export const getCardImageUrl = async ({ name, fallbackUrl }) => {
-  const localCandidates = getLocalCardImageCandidates(name, fallbackUrl);
+export const getCardImageUrl = async ({ name, fallbackUrl, preferredSize }) => {
+  const localCandidates = getLocalCardImageCandidates(name, fallbackUrl, {
+    preferredSize,
+  });
 
   const canUseCache = "caches" in window;
 
@@ -194,11 +244,15 @@ export const getCardImageUrl = async ({ name, fallbackUrl }) => {
           if (cache) {
             await cache.put(localUrl, response.clone());
           }
-          return localUrl;
+          const blobUrl = await getBlobUrlFromResponse(localUrl, response);
+          return blobUrl || localUrl;
         }
         localCardMisses.add(localUrl);
+      } else if (response.ok) {
+        const blobUrl = await getBlobUrlFromResponse(localUrl, response);
+        return blobUrl || localUrl;
       } else {
-        return localUrl;
+        localCardMisses.add(localUrl);
       }
     } catch (error) {
       localCardMisses.add(localUrl);
@@ -217,6 +271,7 @@ export const getCardImageUrl = async ({ name, fallbackUrl }) => {
 export const getCachedImageUrl = async (src) => {
   if (!src) return null;
   if (failedUrls.has(src)) return src;
+  if (blobUrlCache.has(src)) return blobUrlCache.get(src);
   const requestMode = getRequestMode(src);
   if (!requestMode || !("caches" in window)) return src;
 
@@ -234,6 +289,10 @@ export const getCachedImageUrl = async (src) => {
       }
     }
     if (!response) return src;
+    if (response.ok) {
+      const blobUrl = await getBlobUrlFromResponse(src, response);
+      if (blobUrl) return blobUrl;
+    }
     return src;
   } catch (error) {
     failedUrls.add(src);
