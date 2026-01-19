@@ -13,8 +13,17 @@ const localCardMisses = new Set();
 const blobUrlCache = new Map();
 const blobUrlInFlight = new Map();
 
+const isImageResponse = (response) => {
+  if (!response || !response.ok) return false;
+  const contentType = response.headers?.get("content-type") || "";
+  if (!contentType) return true;
+  return contentType.startsWith("image/");
+};
+
 const getBlobUrlFromResponse = async (cacheKey, response) => {
-  if (!response || response.type === "opaque") return null;
+  if (!response || response.type === "opaque" || !isImageResponse(response)) {
+    return null;
+  }
   if (blobUrlCache.has(cacheKey)) {
     return blobUrlCache.get(cacheKey);
   }
@@ -240,7 +249,7 @@ export const getCardImageUrl = async ({ name, fallbackUrl, preferredSize }) => {
           cache: "force-cache",
           mode: requestMode || "cors",
         });
-        if (response.ok) {
+        if (isImageResponse(response)) {
           if (cache) {
             await cache.put(localUrl, response.clone());
           }
@@ -248,7 +257,7 @@ export const getCardImageUrl = async ({ name, fallbackUrl, preferredSize }) => {
           return blobUrl || localUrl;
         }
         localCardMisses.add(localUrl);
-      } else if (response.ok) {
+      } else if (isImageResponse(response)) {
         const blobUrl = await getBlobUrlFromResponse(localUrl, response);
         return blobUrl || localUrl;
       } else {
@@ -289,7 +298,7 @@ export const getCachedImageUrl = async (src) => {
       }
     }
     if (!response) return src;
-    if (response.ok) {
+    if (isImageResponse(response)) {
       const blobUrl = await getBlobUrlFromResponse(src, response);
       if (blobUrl) return blobUrl;
     }
