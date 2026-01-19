@@ -321,12 +321,26 @@ const ProfilePage = () => {
     }
   };
 
+  const getAchievementMaxValue = (achievement, data) => {
+    const storedMax =
+      data?.achievements_max?.[achievement.id] ??
+      data?.achievementsMax?.[achievement.id];
+    if (Number.isFinite(storedMax)) {
+      return storedMax;
+    }
+    return achievement.getValue(data);
+  };
+
   const getAchievementProgress = (achievement, data) => {
     const value = achievement.getValue(data);
+    const maxValue = getAchievementMaxValue(achievement, data);
     const achievedLevels = achievement.levels.filter(
+      (level) => maxValue >= level.value
+    ).length;
+    const currentLevels = achievement.levels.filter(
       (level) => value >= level.value
     ).length;
-    const nextLevel = achievement.levels[achievedLevels] || null;
+    const nextLevel = achievement.levels[currentLevels] || null;
     return {
       value,
       achievedLevels,
