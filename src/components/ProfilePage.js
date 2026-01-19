@@ -419,6 +419,11 @@ const ProfilePage = () => {
 
   const currentLevel = profileData.stats?.lvl ?? 1;
   const currentXp = profileData.stats?.xp ?? 0;
+  const spentCoins =
+    profileData.stats?.coins_spent ??
+    profileData.stats?.spent_coins ??
+    profileData.coins_spent ??
+    0;
 
   return (
     <div className="profile-container">
@@ -456,6 +461,10 @@ const ProfilePage = () => {
             <span className="stat-value">
               {(profileData.balance ?? 0).toFixed(2)}
             </span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Потрачено монет</span>
+            <span className="stat-value">{spentCoins}</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Тайные рецепты</span>
