@@ -160,6 +160,15 @@ a {
   will-change: background-position, background-color, opacity;
 }
 
+.card-image {
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
+
+.card-image[data-loaded="false"] {
+  opacity: 0;
+}
+
 .background-container.bg-fight {
   background-image: url("/public/озеро3.png");
   background-size: 100% auto; /* ширина по экрану, высота естественная */
