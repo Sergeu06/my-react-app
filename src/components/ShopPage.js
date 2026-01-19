@@ -467,6 +467,7 @@ function ShopPage({ uid }) {
       await updateDoc(userRef, {
         balance: userData.balance - totalCost,
         cards: arrayUnion(...newCardIds),
+        "stats.coins_spent": (userData.stats?.coins_spent ?? 0) + totalCost,
       });
 
       await updateDoc(doc(db, "shop", selectedCard.card_id), {
@@ -936,6 +937,9 @@ function ShopPage({ uid }) {
                         // Списываем средства
                         await updateDoc(userRef, {
                           balance: balance - selectedCard.price,
+                          "stats.coins_spent":
+                            (userData.stats?.coins_spent ?? 0) +
+                            selectedCard.price,
                         });
 
                         // Навигация на страницу открытия бокса
