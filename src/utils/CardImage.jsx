@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { getCachedImageUrl, getCardImageUrl } from "./imageCache";
 
 function CardImage({
@@ -11,6 +11,40 @@ function CardImage({
 }) {
   const [resolvedSrc, setResolvedSrc] = useState(fallbackSrc);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [preferredSize, setPreferredSize] = useState(null);
+  const imageRef = useRef(null);
+
+  useEffect(() => {
+    if (!imageRef.current) return () => {};
+
+    const updatePreferredSize = () => {
+      const rect = imageRef.current?.getBoundingClientRect();
+      if (!rect?.width) return;
+      const dpr = window.devicePixelRatio || 1;
+      const target = rect.width * dpr;
+      if (target <= 260) {
+        setPreferredSize(256);
+      } else if (target <= 600) {
+        setPreferredSize(512);
+      } else {
+        setPreferredSize(1024);
+      }
+    };
+
+    updatePreferredSize();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updatePreferredSize);
+      return () => {
+        window.removeEventListener("resize", updatePreferredSize);
+      };
+    }
+
+    const observer = new ResizeObserver(() => updatePreferredSize());
+    observer.observe(imageRef.current);
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -38,7 +72,7 @@ function CardImage({
     return () => {
       active = false;
     };
-  }, [name, fallbackSrc, preferLocal]);
+  }, [name, fallbackSrc, preferLocal, preferredSize]);
 
   useEffect(() => {
     let active = true;
@@ -76,6 +110,7 @@ function CardImage({
       className={className}
       data-loaded={isLoaded}
       decoding="async"
+      ref={imageRef}
       {...props}
     />
   );
