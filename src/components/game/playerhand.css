@@ -19,6 +19,7 @@
   transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   border-radius: 4px; /* 👈 Совпадает с .card-in-hand-wrapper */
+  touch-action: none;
 }
 
 .card-in-hand-wrapper:hover {
