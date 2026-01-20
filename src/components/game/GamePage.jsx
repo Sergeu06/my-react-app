@@ -27,6 +27,7 @@ import FramedCard from "../../utils/FramedCard";
 import { renderCardStats } from "../../utils/renderCardStats";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import useResolvingPhase from "../game-logic/useResolvingPhase";
+import useLobbyPresence from "../game-logic/useLobbyPresence";
 
 import "./game.css";
 import "./animations.css";
@@ -127,6 +128,13 @@ function GamePage() {
     setHandVisible,
     navigate,
     setCanUndo,
+  });
+
+  useLobbyPresence({
+    database,
+    lobbyId,
+    uid,
+    opponentUid: gameData?.opponentUid,
   });
 
   // Подписка на завершение игры
