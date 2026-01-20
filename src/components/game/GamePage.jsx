@@ -62,9 +62,24 @@ function DraggableHandCard({
       collect: (monitor) => ({
         isDragging: monitor.isDragging(),
       }),
+      begin: () => {
+        debugLog("[DnD] drag start", { cardId: card.id, canPlay });
+        return { cardId: card.id };
+      },
+      end: (item, monitor) => {
+        debugLog("[DnD] drag end", {
+          cardId: item?.cardId,
+          didDrop: monitor.didDrop(),
+        });
+      },
     }),
     [card.id, canPlay]
   );
+
+  useEffect(() => {
+    if (!isDragging) return;
+    debugLog("[DnD] dragging", { cardId: card.id });
+  }, [isDragging, card.id]);
 
   return (
     <div
@@ -608,16 +623,28 @@ function GamePage() {
     );
   }, [hand, deck]);
 
-  const handlePlayCard = async (cardId = selectedCardId) => {
+  const handlePlayCard = async (cardId = selectedCardId, source = "drag") => {
     const cardToPlay = hand.find((c) => c.id === cardId);
-    if (!cardToPlay) return;
-    if (turnEnded || roundPhase !== "play") return;
+    if (!cardToPlay) {
+      debugLog("[DnD] play aborted: card not found", { cardId, source });
+      return;
+    }
+    if (turnEnded || roundPhase !== "play") {
+      debugLog("[DnD] play blocked: phase/turn", {
+        cardId,
+        source,
+        turnEnded,
+        roundPhase,
+      });
+      return;
+    }
 
     const cost = cardToPlay.cost ?? cardToPlay.value ?? 0;
 
     // Попытка списания энергии через energyManager
     const spent = await spendEnergy(database, lobbyId, uid, cost);
     if (!spent) {
+      debugLog("[DnD] play blocked: insufficient energy", { cardId, source });
       alert("Недостаточно энергии!");
       return;
     }
@@ -642,6 +669,7 @@ function GamePage() {
     setSelectedCardId(null);
 
     debugLog(`[GamePage][Energy] Карта сыграна: ${cardToPlay.id}, -${cost}`);
+    debugLog("[DnD] play success", { cardId: cardToPlay.id, source });
   };
 
   const [{ isOverBoard, canDropOnBoard }, boardDropRef] = useDrop(
@@ -649,8 +677,9 @@ function GamePage() {
       accept: DRAG_CARD_TYPE,
       canDrop: () => !turnEnded && roundPhase === "play",
       drop: (item) => {
+        debugLog("[DnD] drop received", { item });
         if (item?.cardId) {
-          handlePlayCard(item.cardId);
+          handlePlayCard(item.cardId, "drop");
         }
       },
       collect: (monitor) => ({
@@ -660,6 +689,15 @@ function GamePage() {
     }),
     [turnEnded, roundPhase, handlePlayCard]
   );
+
+  useEffect(() => {
+    debugLog("[DnD] board state", {
+      canDropOnBoard,
+      isOverBoard,
+      roundPhase,
+      turnEnded,
+    });
+  }, [canDropOnBoard, isOverBoard, roundPhase, turnEnded]);
 
   const renderStats = (card) =>
     renderCardStats(card).map((stat, index) => (
