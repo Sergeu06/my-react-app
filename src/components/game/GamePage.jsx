@@ -1004,7 +1004,11 @@ function GamePage() {
         />
       )}
 
-      <div className={`player-bottom-bar ${handVisible ? "" : "hidden"}`}>
+      <div
+        className={`player-bottom-bar ${handVisible ? "" : "hidden"}${
+          dragLayerState.isDragging ? " dragging" : ""
+        }`}
+      >
         <div
           className="player-hand-platform"
           onClick={() => setSelectedCardId(null)}

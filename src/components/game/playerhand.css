@@ -305,6 +305,15 @@
   will-change: transform, opacity, filter;
 }
 
+.player-bottom-bar.dragging {
+  pointer-events: none;
+}
+
+.player-bottom-bar.dragging .player-hand,
+.player-bottom-bar.dragging .card-in-hand-wrapper {
+  pointer-events: auto;
+}
+
 .player-bottom-bar.hidden {
   animation: bar-slide-out 0.4s cubic-bezier(0.6, -0.3, 0.7, 1.2) forwards;
 }
