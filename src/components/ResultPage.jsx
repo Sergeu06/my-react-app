@@ -189,6 +189,12 @@ export default function ResultPage() {
   if (!result) return <div className="loading">Загрузка результата...</div>;
 
   const isWin = result.winner === start;
+  const isDisconnectLoss = !isWin && result.endReason === "disconnect";
+  const resultTitle = isWin
+    ? "ПОБЕДА"
+    : isDisconnectLoss
+      ? "ТЕХНИЧЕСКОЕ ПОРАЖЕНИЕ"
+      : "ПОРАЖЕНИЕ";
   const handleBackToMenu = async () => {
     try {
       if (lobbyId && start) {
@@ -216,7 +222,7 @@ export default function ResultPage() {
     <div className="result-page-new">
       <div className="result-card">
         <h1 className={`result-header ${isWin ? "win" : "lose"}`}>
-          {isWin ? "ПОБЕДА" : "ПОРАЖЕНИЕ"}
+          {resultTitle}
         </h1>
         <div className="rewards">
           <div className="reward-item">
