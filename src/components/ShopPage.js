@@ -17,6 +17,8 @@ import CardTooltip from "../utils/CardTooltip";
 import FramedCard from "../utils/FramedCard";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import RarityIcon from "@mui/icons-material/Star";
 import PriceIcon from "@mui/icons-material/AttachMoney";
 import DamageIcon from "@mui/icons-material/FlashOn";
@@ -151,6 +153,7 @@ function ShopPage({ uid }) {
     }, // заменили 'damage' на 'characteristic'
   ];
   const [sortCriterion, setSortCriterion] = useState("rarity");
+  const [sortDirection, setSortDirection] = useState("desc");
   const holdTimer = useRef(null);
   const characteristicGroupsOrder = ["damage", "heal", "damage_multiplier"];
 
@@ -500,13 +503,15 @@ function ShopPage({ uid }) {
 
   const sortCards = (cards) => {
     return [...cards].sort((a, b) => {
+      const directionFactor = sortDirection === "asc" ? -1 : 1;
+      let result = 0;
       if (sortCriterion === "rarity") {
         const rarityA = normalizeRarity(a.rarity);
         const rarityB = normalizeRarity(b.rarity);
-        return (rarityOrder[rarityB] || 0) - (rarityOrder[rarityA] || 0);
+        result = (rarityOrder[rarityB] || 0) - (rarityOrder[rarityA] || 0);
       }
       if (sortCriterion === "price") {
-        return b.price - a.price;
+        result = b.price - a.price;
       }
       if (sortCriterion === "characteristic") {
         const aChar = getMainCharacteristic(a);
@@ -514,19 +519,19 @@ function ShopPage({ uid }) {
 
         // Если у одной из карт нет характеристики, она уходит вниз
         if (!aChar.type && !bChar.type) return 0;
-        if (!aChar.type) return 1;
-        if (!bChar.type) return -1;
+        if (!aChar.type) return 1 * directionFactor;
+        if (!bChar.type) return -1 * directionFactor;
 
         // Сравниваем по порядку групп
         const orderA = characteristicGroupsOrder.indexOf(aChar.type);
         const orderB = characteristicGroupsOrder.indexOf(bChar.type);
 
-        if (orderA !== orderB) return orderA - orderB; // меньший индекс — выше
+        if (orderA !== orderB) result = orderA - orderB; // меньший индекс — выше
 
         // Если группа совпала, сортируем по значению по убыванию
-        return bChar.value - aChar.value;
+        else result = bChar.value - aChar.value;
       }
-      return 0;
+      return result * directionFactor;
     });
   };
 
@@ -626,6 +631,28 @@ function ShopPage({ uid }) {
                 </MenuItem>
               ))}
             </Select>
+            <button
+              type="button"
+              className={`sort-direction-button ${sortDirection}`}
+              onClick={() =>
+                setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))
+              }
+              aria-label={
+                sortDirection === "desc"
+                  ? "Сортировка по убыванию"
+                  : "Сортировка по возрастанию"
+              }
+              title={
+                sortDirection === "desc"
+                  ? "Сортировка по убыванию"
+                  : "Сортировка по возрастанию"
+              }
+            >
+              <span className="sort-direction-icon">
+                <ArrowUpwardIcon fontSize="small" />
+                <ArrowDownwardIcon fontSize="small" />
+              </span>
+            </button>
           </div>
         )}
 

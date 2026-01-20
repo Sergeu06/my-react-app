@@ -794,6 +794,48 @@
   box-shadow: 0 0 6px #ffa500;
 }
 
+.sort-direction-button {
+  background-color: #2e2e2e;
+  border: 1px solid #ffa500;
+  border-radius: 5px;
+  height: 36px;
+  width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffa500;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sort-direction-button:hover {
+  background-color: #1f1f1f;
+}
+
+.sort-direction-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 6px rgba(255, 165, 0, 0.6);
+}
+
+.sort-direction-icon {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.sort-direction-icon svg {
+  opacity: 0.4;
+}
+
+.sort-direction-button.asc .sort-direction-icon svg:first-child {
+  opacity: 1;
+}
+
+.sort-direction-button.desc .sort-direction-icon svg:last-child {
+  opacity: 1;
+}
+
 .search-refresh-container {
   display: flex;
   align-items: center;
