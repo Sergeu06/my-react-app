@@ -18,7 +18,7 @@ function PlayerInfo({
         <rect width='100%' height='100%' fill='#2b2b2b'/>
         <circle cx='64' cy='64' r='62' fill='#3a3a3a'/>
         <text x='50%' y='54%' dominant-baseline='middle' text-anchor='middle'
-              font-family='Arial' font-size='56' fill='#ffa500'>${initials}</text>
+              font-family='Inter, Manrope, Rubik, Segoe UI, Roboto, Helvetica Neue, sans-serif' font-size='56' fill='#ffa500'>${initials}</text>
       </svg>
     `)}`;
 
