@@ -19,6 +19,7 @@
   transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   border-radius: 4px; /* 👈 Совпадает с .card-in-hand-wrapper */
+  touch-action: none;
 }
 
 .card-in-hand-wrapper:hover {
@@ -302,6 +303,15 @@
   transform: translateY(0);
   animation: bar-slide-in 0.5s cubic-bezier(0.25, 1.25, 0.5, 1) forwards;
   will-change: transform, opacity, filter;
+}
+
+.player-bottom-bar.dragging {
+  pointer-events: none;
+}
+
+.player-bottom-bar.dragging .player-hand,
+.player-bottom-bar.dragging .card-in-hand-wrapper {
+  pointer-events: auto;
 }
 
 .player-bottom-bar.hidden {
