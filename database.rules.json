@@ -1,0 +1,18 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$uid": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "presence": {
+      "$uid": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+}

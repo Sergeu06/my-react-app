@@ -54,6 +54,7 @@ import GlobalLoader from "./components/GlobalLoader";
 import { UserProvider } from "./components/UserContext";
 import { preloadCardImage, preloadImageToCache } from "./utils/imageCache";
 import { buildLootboxChances } from "./utils/lootboxChances";
+import { initSingleSession } from "./session/singleSession";
 
 const BOT_TOKEN = "6990185927:AAG8cCLlwX-z8ZcwYGN_oUOfGC2vONls87Q";
 
@@ -225,6 +226,7 @@ function App() {
   const [uiLocked, setUiLocked] = useState(false);
   const [, setTelegramUser] = useState(null);
   const [isVerified, setIsVerified] = useState(false);
+  const [isKicked, setIsKicked] = useState(false);
   const [error, setError] = useState(null);
   const [assetsReady, setAssetsReady] = useState(false);
   const [assetsProgress, setAssetsProgress] = useState({
@@ -799,15 +801,71 @@ function App() {
 
   useEffect(() => {
     if (!window.Telegram || !window.Telegram.WebApp) {
-      setError("Ошибка: Telegram WebApp API недоступен.");
+      setError(
+        "Ошибка: Telegram WebApp API недоступен. Откройте приложение через Telegram."
+      );
     }
   }, []);
+
+  useEffect(() => {
+    if (!isVerified || !uid || isKicked) return;
+    let isActive = true;
+    let cleanup = null;
+
+    const startSession = async () => {
+      const disposer = await initSingleSession({
+        rtdb: database,
+        tgUserId: uid,
+        onKicked: () => {
+          setUiLocked(true);
+          setIsKicked(true);
+        },
+      });
+
+      if (!isActive) {
+        disposer();
+        return;
+      }
+
+      cleanup = disposer;
+    };
+
+    startSession();
+
+    return () => {
+      isActive = false;
+      if (cleanup) cleanup();
+    };
+  }, [isVerified, uid, isKicked]);
 
   if (error) {
     return (
       <div style={{ padding: 20, color: "red" }}>
         <h2>Доступ запрещён</h2>
         <p>{error}</p>
+      </div>
+    );
+  }
+  if (isKicked) {
+    return (
+      <div
+        style={{
+          width: "100vw",
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#0b0f16",
+          color: "white",
+          textAlign: "center",
+          padding: 24,
+        }}
+      >
+        <h2 style={{ marginBottom: 12 }}>Сессия завершена</h2>
+        <p style={{ maxWidth: 360, opacity: 0.8 }}>
+          Вы вошли с другого устройства. Эта сессия завершена.
+        </p>
       </div>
     );
   }
