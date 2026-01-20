@@ -311,10 +311,7 @@ function GamePage() {
     return () => off(roundRef);
   }, [isActive, lobbyId]);
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      // если клик был по кнопке "Разыграть" – игнорируем
-      if (e.target.closest(".playcardbutton")) return;
-      // иначе снимаем выделение
+    const handleClickOutside = () => {
       setSelectedCardId(null);
     };
 
@@ -562,9 +559,10 @@ function GamePage() {
     );
   }, [hand, deck]);
 
-  const handlePlayCard = async () => {
-    const cardToPlay = hand.find((c) => c.id === selectedCardId);
+  const handlePlayCard = async (cardId = selectedCardId) => {
+    const cardToPlay = hand.find((c) => c.id === cardId);
     if (!cardToPlay) return;
+    if (turnEnded || roundPhase !== "play") return;
 
     const cost = cardToPlay.cost ?? cardToPlay.value ?? 0;
 
@@ -577,6 +575,7 @@ function GamePage() {
 
     // Убираем карту из руки и добавляем в сыгранные
     setHand((prev) => prev.filter((c) => c.id !== cardToPlay.id));
+    setSelectedCardId(null);
     const cardWithTs = {
       ...cardToPlay,
       ts: Date.now(),
@@ -731,7 +730,20 @@ function GamePage() {
         </div>
 
         {/* Нижняя половина — игрок */}
-        <div className="board-half player">
+        <div
+          className="board-half player"
+          onDragOver={(event) => {
+            if (!turnEnded && roundPhase === "play") {
+              event.preventDefault();
+            }
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            const draggedCardId = event.dataTransfer.getData("text/plain");
+            if (!draggedCardId) return;
+            handlePlayCard(draggedCardId);
+          }}
+        >
           <PlayedCards
             cards={playedCards}
             side="player"
@@ -781,6 +793,8 @@ function GamePage() {
           <div className="player-hand">
             {hand.map((card) => {
               const isSelected = selectedCardId === card.id;
+              const cost = card.cost ?? card.value ?? 0;
+              const canPlay = !turnEnded && roundPhase === "play" && recipes >= cost;
               return (
                 <div
                   key={card.id}
@@ -788,9 +802,19 @@ function GamePage() {
                     isSelected ? " selected" : ""
                   }`}
                   title={card.name}
+                  draggable={canPlay}
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedCardId(isSelected ? null : card.id);
+                  }}
+                  onDragStart={(event) => {
+                    if (!canPlay) {
+                      event.preventDefault();
+                      return;
+                    }
+                    event.dataTransfer.setData("text/plain", card.id);
+                    event.dataTransfer.effectAllowed = "move";
+                    setSelectedCardId(card.id);
                   }}
                 >
                   <FramedCard
@@ -818,19 +842,6 @@ function GamePage() {
                     </div>
                   ))}
 
-                  {/* 👇 кнопка теперь рендерится только у выбранной карты */}
-                  {!turnEnded && isSelected && (
-                    <button
-                      className="playcardbutton"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePlayCard();
-                      }}
-                      disabled={recipes < (card.cost ?? card.value ?? 0)} // 👈 условие
-                    >
-                      Разыграть
-                    </button>
-                  )}
                 </div>
               );
             })}

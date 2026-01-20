@@ -22,9 +22,11 @@ function PlayedCards({
         const offset = idx - middleIndex;
         const tilt = offset < 0 ? "10deg" : offset > 0 ? "-10deg" : "0deg";
 
-        const hasActiveDoT =
-          Array.isArray(card.damage_over_time) &&
-          (card.dotTurnsLeft ?? card.damage_over_time.length ?? 0) > 0;
+        const isDotCard = Array.isArray(card.damage_over_time);
+        const totalDotTurns = card.damage_over_time?.length ?? 0;
+        const dotTurnsLeft = card.dotTurnsLeft ?? totalDotTurns;
+        const hasActiveDoT = isDotCard && dotTurnsLeft > 0;
+        const hasDotTicked = isDotCard && dotTurnsLeft < totalDotTurns;
 
         const dotClass = hasActiveDoT ? "dot-active" : "";
 
@@ -33,7 +35,8 @@ function PlayedCards({
           side === "player" &&
           typeof onUndo === "function" &&
           roundPhase === "play" &&
-          card.locked !== true;
+          card.locked !== true &&
+          !hasDotTicked;
 
         return (
           <div
