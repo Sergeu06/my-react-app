@@ -1108,7 +1108,7 @@ function App() {
             </div>
           )}
 
-          <DndProvider backend={TouchBackend}>
+          <DndProvider backend={TouchBackend} options={{ enableMouseEvents: true }}>
             {lowEndMode ? (
               <Routes location={location} key={location.pathname}>
                 <Route

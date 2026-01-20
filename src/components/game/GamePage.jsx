@@ -26,6 +26,7 @@ import OpponentHand from "./OpponentHand";
 import FramedCard from "../../utils/FramedCard";
 import { renderCardStats } from "../../utils/renderCardStats";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import { useDrag, useDrop } from "react-dnd";
 import useResolvingPhase from "../game-logic/useResolvingPhase";
 import useLobbyPresence from "../game-logic/useLobbyPresence";
 import { usePerformance } from "../../perf/PerformanceContext";
@@ -36,6 +37,8 @@ import "./game.css";
 import "./animations.css";
 import "./playerhand.css";
 
+const DRAG_CARD_TYPE = "PVP_HAND_CARD";
+
 const sortPlayedCards = (cards = []) =>
   [...cards].sort((a, b) => {
     const aTs = Number(a.ts ?? 0);
@@ -43,6 +46,52 @@ const sortPlayedCards = (cards = []) =>
     if (aTs !== bTs) return aTs - bTs;
     return String(a.id ?? "").localeCompare(String(b.id ?? ""));
   });
+
+function DraggableHandCard({
+  card,
+  isSelected,
+  canPlay,
+  onSelect,
+  renderStats,
+}) {
+  const [{ isDragging }, dragRef] = useDrag(
+    () => ({
+      type: DRAG_CARD_TYPE,
+      item: { cardId: card.id },
+      canDrag: canPlay,
+      collect: (monitor) => ({
+        isDragging: monitor.isDragging(),
+      }),
+    }),
+    [card.id, canPlay]
+  );
+
+  return (
+    <div
+      ref={dragRef}
+      className={`card-in-hand-wrapper${isSelected ? " selected" : ""}`}
+      title={card.name}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect(isSelected ? null : card.id);
+      }}
+      style={{ opacity: isDragging ? 0.6 : 1 }}
+    >
+      <FramedCard
+        card={card}
+        showLevel={true}
+        showName={false}
+        showPriority={true}
+      />
+
+      {card.value !== undefined && (
+        <div className="card-corner cost">{card.value}</div>
+      )}
+
+      {renderStats(card)}
+    </div>
+  );
+}
 
 const formatMultiplierValue = (value) => {
   if (!isFinite(value)) return null;
@@ -594,6 +643,38 @@ function GamePage() {
 
     debugLog(`[GamePage][Energy] Карта сыграна: ${cardToPlay.id}, -${cost}`);
   };
+
+  const [{ isOverBoard, canDropOnBoard }, boardDropRef] = useDrop(
+    () => ({
+      accept: DRAG_CARD_TYPE,
+      canDrop: () => !turnEnded && roundPhase === "play",
+      drop: (item) => {
+        if (item?.cardId) {
+          handlePlayCard(item.cardId);
+        }
+      },
+      collect: (monitor) => ({
+        isOverBoard: monitor.isOver(),
+        canDropOnBoard: monitor.canDrop(),
+      }),
+    }),
+    [turnEnded, roundPhase, handlePlayCard]
+  );
+
+  const renderStats = (card) =>
+    renderCardStats(card).map((stat, index) => (
+      <div
+        key={stat.label + index}
+        className={`card-corner ${stat.type}`}
+        style={{
+          bottom: `${-12 + index * 22}px`,
+          left: -12,
+          fontSize: "1em",
+        }}
+      >
+        {stat.value !== null ? stat.value : "×"}
+      </div>
+    ));
   const startFirstRound = async () => {
     if (!isHost || !lobbyId) return;
 
@@ -731,18 +812,11 @@ function GamePage() {
 
         {/* Нижняя половина — игрок */}
         <div
-          className="board-half player"
-          onDragOver={(event) => {
-            if (!turnEnded && roundPhase === "play") {
-              event.preventDefault();
-            }
-          }}
-          onDrop={(event) => {
-            event.preventDefault();
-            const draggedCardId = event.dataTransfer.getData("text/plain");
-            if (!draggedCardId) return;
-            handlePlayCard(draggedCardId);
-          }}
+          ref={boardDropRef}
+          className={`board-half player ${
+            canDropOnBoard && isOverBoard ? "drop-target-active" : ""
+          }`}
+          data-drop-active={canDropOnBoard && isOverBoard ? "true" : "false"}
         >
           <PlayedCards
             cards={playedCards}
@@ -794,55 +868,17 @@ function GamePage() {
             {hand.map((card) => {
               const isSelected = selectedCardId === card.id;
               const cost = card.cost ?? card.value ?? 0;
-              const canPlay = !turnEnded && roundPhase === "play" && recipes >= cost;
+              const canPlay =
+                !turnEnded && roundPhase === "play" && recipes >= cost;
               return (
-                <div
+                <DraggableHandCard
                   key={card.id}
-                  className={`card-in-hand-wrapper${
-                    isSelected ? " selected" : ""
-                  }`}
-                  title={card.name}
-                  draggable={canPlay}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedCardId(isSelected ? null : card.id);
-                  }}
-                  onDragStart={(event) => {
-                    if (!canPlay) {
-                      event.preventDefault();
-                      return;
-                    }
-                    event.dataTransfer.setData("text/plain", card.id);
-                    event.dataTransfer.effectAllowed = "move";
-                    setSelectedCardId(card.id);
-                  }}
-                >
-                  <FramedCard
-                    card={card}
-                    showLevel={true}
-                    showName={false}
-                    showPriority={true}
-                  />
-
-                  {card.value !== undefined && (
-                    <div className="card-corner cost">{card.value}</div>
-                  )}
-
-                  {renderCardStats(card).map((stat, index) => (
-                    <div
-                      key={stat.label + index}
-                      className={`card-corner ${stat.type}`}
-                      style={{
-                        bottom: `${-12 + index * 22}px`,
-                        left: -12,
-                        fontSize: "1em",
-                      }}
-                    >
-                      {stat.value !== null ? stat.value : "×"}
-                    </div>
-                  ))}
-
-                </div>
+                  card={card}
+                  isSelected={isSelected}
+                  canPlay={canPlay}
+                  onSelect={setSelectedCardId}
+                  renderStats={renderStats}
+                />
               );
             })}
           </div>
