@@ -57,15 +57,14 @@ function DraggableHandCard({
   const [{ isDragging }, dragRef] = useDrag(
     () => ({
       type: DRAG_CARD_TYPE,
-      item: { cardId: card.id },
+      item: () => {
+        debugLog("[DnD] drag start", { cardId: card.id, canPlay });
+        return { cardId: card.id };
+      },
       canDrag: canPlay,
       collect: (monitor) => ({
         isDragging: monitor.isDragging(),
       }),
-      begin: () => {
-        debugLog("[DnD] drag start", { cardId: card.id, canPlay });
-        return { cardId: card.id };
-      },
       end: (item, monitor) => {
         debugLog("[DnD] drag end", {
           cardId: item?.cardId,
