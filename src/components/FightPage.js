@@ -92,6 +92,14 @@ function FightPage({ uid, searchState, setSearchState }) {
   const [dailyBonusState, setDailyBonusState] = useState({});
   const [dailyTasksLoaded, setDailyTasksLoaded] = useState(false);
   const [dailyResetRemaining, setDailyResetRemaining] = useState(0);
+
+  const getClaimAmountClassName = (label) => {
+    const length = label?.length ?? 0;
+    if (length > 18) return "claim-amount_FightPage claim-amount--long_FightPage";
+    if (length > 14)
+      return "claim-amount_FightPage claim-amount--medium_FightPage";
+    return "claim-amount_FightPage";
+  };
   const [showDailyBonusModal, setShowDailyBonusModal] = useState(false);
   const [selectedDailyBonus, setSelectedDailyBonus] = useState(null);
 
@@ -1095,7 +1103,11 @@ function FightPage({ uid, searchState, setSearchState }) {
                       alt={dailyBoxReward.name || "Лутбокс"}
                       className="claim-coin_FightPage"
                     />
-                    <span className="claim-amount_FightPage">
+                    <span
+                      className={getClaimAmountClassName(
+                        dailyBoxReward.name || "Лутбокс"
+                      )}
+                    >
                       {dailyBoxReward.name || "Лутбокс"}
                     </span>
                   </div>
@@ -1128,7 +1140,11 @@ function FightPage({ uid, searchState, setSearchState }) {
                           alt={box.name || "Лутбокс"}
                           className="claim-coin_FightPage"
                         />
-                        <span className="claim-amount_FightPage">
+                        <span
+                          className={getClaimAmountClassName(
+                            box.name || "Лутбокс"
+                          )}
+                        >
                           {box.name || "Лутбокс"}
                         </span>
                       </div>
