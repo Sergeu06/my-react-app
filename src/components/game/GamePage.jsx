@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   databaseRef,
@@ -26,7 +26,7 @@ import OpponentHand from "./OpponentHand";
 import FramedCard from "../../utils/FramedCard";
 import { renderCardStats } from "../../utils/renderCardStats";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import { useDrag, useDrop } from "react-dnd";
+import { useDrag, useDragLayer, useDrop } from "react-dnd";
 import useResolvingPhase from "../game-logic/useResolvingPhase";
 import useLobbyPresence from "../game-logic/useLobbyPresence";
 import { usePerformance } from "../../perf/PerformanceContext";
@@ -57,15 +57,18 @@ function DraggableHandCard({
   const [{ isDragging }, dragRef] = useDrag(
     () => ({
       type: DRAG_CARD_TYPE,
-      item: { cardId: card.id },
-      canDrag: canPlay,
+      item: () => {
+        debugLog("[DnD] drag start", { cardId: card.id, canPlay });
+        return {
+          cardId: card.id,
+          cost: card.cost ?? card.value ?? 0,
+          card,
+        };
+      },
+      canDrag: true,
       collect: (monitor) => ({
         isDragging: monitor.isDragging(),
       }),
-      begin: () => {
-        debugLog("[DnD] drag start", { cardId: card.id, canPlay });
-        return { cardId: card.id };
-      },
       end: (item, monitor) => {
         debugLog("[DnD] drag end", {
           cardId: item?.cardId,
@@ -104,6 +107,38 @@ function DraggableHandCard({
       )}
 
       {renderStats(card)}
+    </div>
+  );
+}
+
+function DragPreviewLayer({ card, offset, canPlay, renderStats }) {
+  if (!card || !offset) return null;
+
+  return (
+    <div className="drag-layer">
+      <div
+        className="drag-layer-inner"
+        style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
+      >
+        <div
+          className={`drag-preview ${
+            canPlay ? "drag-preview-allowed" : "drag-preview-blocked"
+          }`}
+        >
+          <div className="drag-preview-card">
+            <FramedCard
+              card={card}
+              showLevel={true}
+              showName={false}
+              showPriority={true}
+            />
+            {card.value !== undefined && (
+              <div className="card-corner cost">{card.value}</div>
+            )}
+            {renderStats(card)}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -672,10 +707,24 @@ function GamePage() {
     debugLog("[DnD] play success", { cardId: cardToPlay.id, source });
   };
 
+  const canDropCard = useCallback(
+    (item) => {
+      if (!item?.cardId) return false;
+      if (turnEnded || roundPhase !== "play") return false;
+      const cardCost =
+        item.cost ??
+        hand.find((card) => card.id === item.cardId)?.cost ??
+        hand.find((card) => card.id === item.cardId)?.value ??
+        0;
+      return recipes >= cardCost;
+    },
+    [hand, recipes, roundPhase, turnEnded]
+  );
+
   const [{ isOverBoard, canDropOnBoard }, boardDropRef] = useDrop(
     () => ({
       accept: DRAG_CARD_TYPE,
-      canDrop: () => !turnEnded && roundPhase === "play",
+      canDrop: (item) => canDropCard(item),
       drop: (item) => {
         debugLog("[DnD] drop received", { item });
         if (item?.cardId) {
@@ -687,8 +736,30 @@ function GamePage() {
         canDropOnBoard: monitor.canDrop(),
       }),
     }),
-    [turnEnded, roundPhase, handlePlayCard]
+    [canDropCard, handlePlayCard]
   );
+
+  const dragLayerState = useDragLayer((monitor) => ({
+    isDragging: monitor.isDragging(),
+    item: monitor.getItem(),
+    currentOffset: monitor.getClientOffset(),
+  }));
+  const draggedCard =
+    dragLayerState.item?.card ??
+    hand.find((card) => card.id === dragLayerState.item?.cardId);
+  const draggedCardCost = draggedCard?.cost ?? draggedCard?.value ?? 0;
+  const canPlayDraggedCard = draggedCard
+    ? !turnEnded && roundPhase === "play" && recipes >= draggedCardCost
+    : false;
+  const dropState = dragLayerState.isDragging
+    ? canDropOnBoard
+      ? isOverBoard
+        ? "allowed-over"
+        : "allowed"
+      : isOverBoard
+        ? "blocked-over"
+        : "blocked"
+    : "idle";
 
   useEffect(() => {
     debugLog("[DnD] board state", {
@@ -851,10 +922,8 @@ function GamePage() {
         {/* Нижняя половина — игрок */}
         <div
           ref={boardDropRef}
-          className={`board-half player ${
-            canDropOnBoard && isOverBoard ? "drop-target-active" : ""
-          }`}
-          data-drop-active={canDropOnBoard && isOverBoard ? "true" : "false"}
+          className={`board-half player drop-target drop-target-${dropState}`}
+          data-drop-state={dropState}
         >
           <PlayedCards
             cards={playedCards}
@@ -884,6 +953,14 @@ function GamePage() {
           )}
         </AnimatePresence>
       </div>
+      {dragLayerState.isDragging && (
+        <DragPreviewLayer
+          card={draggedCard}
+          offset={dragLayerState.currentOffset}
+          canPlay={canPlayDraggedCard}
+          renderStats={renderStats}
+        />
+      )}
 
       <div className="recipes-container">
         <AutoAwesomeIcon fontSize="small" style={{ marginRight: 6 }} />
