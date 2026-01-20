@@ -68,3 +68,10 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## Realtime Database rules (single-session)
+
+The project includes `database.rules.json` that only allows reads/writes in `users/{uid}` and `presence/{uid}` branches. **Without Firebase Auth these rules cannot prove the `uid`**, so data is still effectively public. Consider at minimum:
+
+- Move Firebase config values into environment variables for builds.
+- Restrict allowed referrers in Firebase console (if possible).
