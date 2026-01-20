@@ -26,6 +26,7 @@ import OpponentHand from "./OpponentHand";
 import FramedCard from "../../utils/FramedCard";
 import { renderCardStats } from "../../utils/renderCardStats";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import { useDrag, useDrop } from "react-dnd";
 import useResolvingPhase from "../game-logic/useResolvingPhase";
 import useLobbyPresence from "../game-logic/useLobbyPresence";
 import { usePerformance } from "../../perf/PerformanceContext";
@@ -36,6 +37,8 @@ import "./game.css";
 import "./animations.css";
 import "./playerhand.css";
 
+const DRAG_CARD_TYPE = "PVP_HAND_CARD";
+
 const sortPlayedCards = (cards = []) =>
   [...cards].sort((a, b) => {
     const aTs = Number(a.ts ?? 0);
@@ -43,6 +46,52 @@ const sortPlayedCards = (cards = []) =>
     if (aTs !== bTs) return aTs - bTs;
     return String(a.id ?? "").localeCompare(String(b.id ?? ""));
   });
+
+function DraggableHandCard({
+  card,
+  isSelected,
+  canPlay,
+  onSelect,
+  renderStats,
+}) {
+  const [{ isDragging }, dragRef] = useDrag(
+    () => ({
+      type: DRAG_CARD_TYPE,
+      item: { cardId: card.id },
+      canDrag: canPlay,
+      collect: (monitor) => ({
+        isDragging: monitor.isDragging(),
+      }),
+    }),
+    [card.id, canPlay]
+  );
+
+  return (
+    <div
+      ref={dragRef}
+      className={`card-in-hand-wrapper${isSelected ? " selected" : ""}`}
+      title={card.name}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect(isSelected ? null : card.id);
+      }}
+      style={{ opacity: isDragging ? 0.6 : 1 }}
+    >
+      <FramedCard
+        card={card}
+        showLevel={true}
+        showName={false}
+        showPriority={true}
+      />
+
+      {card.value !== undefined && (
+        <div className="card-corner cost">{card.value}</div>
+      )}
+
+      {renderStats(card)}
+    </div>
+  );
+}
 
 const formatMultiplierValue = (value) => {
   if (!isFinite(value)) return null;
@@ -311,10 +360,7 @@ function GamePage() {
     return () => off(roundRef);
   }, [isActive, lobbyId]);
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      // если клик был по кнопке "Разыграть" – игнорируем
-      if (e.target.closest(".playcardbutton")) return;
-      // иначе снимаем выделение
+    const handleClickOutside = () => {
       setSelectedCardId(null);
     };
 
@@ -562,9 +608,10 @@ function GamePage() {
     );
   }, [hand, deck]);
 
-  const handlePlayCard = async () => {
-    const cardToPlay = hand.find((c) => c.id === selectedCardId);
+  const handlePlayCard = async (cardId = selectedCardId) => {
+    const cardToPlay = hand.find((c) => c.id === cardId);
     if (!cardToPlay) return;
+    if (turnEnded || roundPhase !== "play") return;
 
     const cost = cardToPlay.cost ?? cardToPlay.value ?? 0;
 
@@ -577,6 +624,7 @@ function GamePage() {
 
     // Убираем карту из руки и добавляем в сыгранные
     setHand((prev) => prev.filter((c) => c.id !== cardToPlay.id));
+    setSelectedCardId(null);
     const cardWithTs = {
       ...cardToPlay,
       ts: Date.now(),
@@ -595,6 +643,38 @@ function GamePage() {
 
     debugLog(`[GamePage][Energy] Карта сыграна: ${cardToPlay.id}, -${cost}`);
   };
+
+  const [{ isOverBoard, canDropOnBoard }, boardDropRef] = useDrop(
+    () => ({
+      accept: DRAG_CARD_TYPE,
+      canDrop: () => !turnEnded && roundPhase === "play",
+      drop: (item) => {
+        if (item?.cardId) {
+          handlePlayCard(item.cardId);
+        }
+      },
+      collect: (monitor) => ({
+        isOverBoard: monitor.isOver(),
+        canDropOnBoard: monitor.canDrop(),
+      }),
+    }),
+    [turnEnded, roundPhase, handlePlayCard]
+  );
+
+  const renderStats = (card) =>
+    renderCardStats(card).map((stat, index) => (
+      <div
+        key={stat.label + index}
+        className={`card-corner ${stat.type}`}
+        style={{
+          bottom: `${-12 + index * 22}px`,
+          left: -12,
+          fontSize: "1em",
+        }}
+      >
+        {stat.value !== null ? stat.value : "×"}
+      </div>
+    ));
   const startFirstRound = async () => {
     if (!isHost || !lobbyId) return;
 
@@ -731,7 +811,13 @@ function GamePage() {
         </div>
 
         {/* Нижняя половина — игрок */}
-        <div className="board-half player">
+        <div
+          ref={boardDropRef}
+          className={`board-half player ${
+            canDropOnBoard && isOverBoard ? "drop-target-active" : ""
+          }`}
+          data-drop-active={canDropOnBoard && isOverBoard ? "true" : "false"}
+        >
           <PlayedCards
             cards={playedCards}
             side="player"
@@ -781,57 +867,18 @@ function GamePage() {
           <div className="player-hand">
             {hand.map((card) => {
               const isSelected = selectedCardId === card.id;
+              const cost = card.cost ?? card.value ?? 0;
+              const canPlay =
+                !turnEnded && roundPhase === "play" && recipes >= cost;
               return (
-                <div
+                <DraggableHandCard
                   key={card.id}
-                  className={`card-in-hand-wrapper${
-                    isSelected ? " selected" : ""
-                  }`}
-                  title={card.name}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedCardId(isSelected ? null : card.id);
-                  }}
-                >
-                  <FramedCard
-                    card={card}
-                    showLevel={true}
-                    showName={false}
-                    showPriority={true}
-                  />
-
-                  {card.value !== undefined && (
-                    <div className="card-corner cost">{card.value}</div>
-                  )}
-
-                  {renderCardStats(card).map((stat, index) => (
-                    <div
-                      key={stat.label + index}
-                      className={`card-corner ${stat.type}`}
-                      style={{
-                        bottom: `${-12 + index * 22}px`,
-                        left: -12,
-                        fontSize: "1em",
-                      }}
-                    >
-                      {stat.value !== null ? stat.value : "×"}
-                    </div>
-                  ))}
-
-                  {/* 👇 кнопка теперь рендерится только у выбранной карты */}
-                  {!turnEnded && isSelected && (
-                    <button
-                      className="playcardbutton"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePlayCard();
-                      }}
-                      disabled={recipes < (card.cost ?? card.value ?? 0)} // 👈 условие
-                    >
-                      Разыграть
-                    </button>
-                  )}
-                </div>
+                  card={card}
+                  isSelected={isSelected}
+                  canPlay={canPlay}
+                  onSelect={setSelectedCardId}
+                  renderStats={renderStats}
+                />
               );
             })}
           </div>

@@ -423,11 +423,29 @@ function RaidPage() {
     }, 350);
   }
 
+  const handleDropPlayCard = (event) => {
+    event.preventDefault();
+    if (playingCard || flyingCard) return;
+    const draggedCardId = event.dataTransfer.getData("text/plain");
+    if (!draggedCardId) return;
+    const cardToPlay = hand.find((card) => card.id === draggedCardId);
+    if (!cardToPlay) return;
+    playCard(cardToPlay);
+  };
+
   return (
     <div className="raid-page">
       <div className="red-flash left" />
       <div className="red-flash right" />
-      <div className={`boss-container ${isBossShaking ? "screen-shake" : ""}`}>
+      <div
+        className={`boss-container ${isBossShaking ? "screen-shake" : ""}`}
+        onDragOver={(event) => {
+          if (!playingCard && !flyingCard) {
+            event.preventDefault();
+          }
+        }}
+        onDrop={handleDropPlayCard}
+      >
         <img
           src={bossImageUrl}
           alt={bossName}
@@ -516,6 +534,12 @@ function RaidPage() {
             >
               {hand.map((card) => {
                 const isSelected = selectedCardId === card.id;
+                const cardCost = Math.max(
+                  0,
+                  Math.ceil((card.value ?? 0) * raidModifiers.costMultiplier)
+                );
+                const canPlayCard =
+                  !playingCard && !flyingCard && energy >= cardCost;
                 return (
                   <div
                     key={card.id}
@@ -523,9 +547,19 @@ function RaidPage() {
                       isSelected ? " selected" : ""
                     }`}
                     title={card.name}
+                    draggable={canPlayCard}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleCardClick(card.id);
+                    }}
+                    onDragStart={(event) => {
+                      if (!canPlayCard) {
+                        event.preventDefault();
+                        return;
+                      }
+                      event.dataTransfer.setData("text/plain", card.id);
+                      event.dataTransfer.effectAllowed = "move";
+                      setSelectedCardId(card.id);
                     }}
                     data-playable={playingCard ? "false" : "true"}
                   >
@@ -536,9 +570,7 @@ function RaidPage() {
                         className="card-corner cost"
                         aria-label={`Стоимость: ${card.value}`}
                       >
-                        {Math.ceil(
-                          (card.value ?? 0) * raidModifiers.costMultiplier
-                        )}
+                        {cardCost}
                       </div>
                     )}
 
@@ -552,31 +584,6 @@ function RaidPage() {
                       </div>
                     ))}
 
-                    {isSelected && !playingCard && (
-                      <button
-                        className="play-card-button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          playCard(card);
-                        }}
-                        aria-label={`Разыграть карту ${card.name}`}
-                      >
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <path
-                            d="M12 4L12 20M12 4L6 10M12 4L18 10"
-                            stroke="#000"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </button>
-                    )}
                   </div>
                 );
               })}

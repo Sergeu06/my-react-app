@@ -836,6 +836,14 @@
   white-space: nowrap;
 }
 
+.claim-amount--medium_FightPage {
+  font-size: 24px;
+}
+
+.claim-amount--long_FightPage {
+  font-size: 20px;
+}
+
 /* кнопка */
 .claim-button_FightPage {
   padding: 12px 36px;
