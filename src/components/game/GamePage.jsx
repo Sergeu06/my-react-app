@@ -49,10 +49,12 @@ const sortPlayedCards = (cards = []) =>
 
 function DraggableHandCard({
   card,
+  index,
   isSelected,
   canPlay,
   onSelect,
   renderStats,
+  moveCard,
 }) {
   const [{ isDragging }, dragRef] = useDrag(
     () => ({
@@ -63,6 +65,7 @@ function DraggableHandCard({
           cardId: card.id,
           cost: card.cost ?? card.value ?? 0,
           card,
+          index,
         };
       },
       canDrag: true,
@@ -78,6 +81,23 @@ function DraggableHandCard({
     }),
     [card.id, canPlay]
   );
+  const [, dropRef] = useDrop(
+    () => ({
+      accept: DRAG_CARD_TYPE,
+      hover: (item) => {
+        if (!item?.cardId || item.cardId === card.id) return;
+        if (item.index === undefined) return;
+        if (item.index === index) return;
+        moveCard(item.index, index);
+        item.index = index;
+      },
+    }),
+    [card.id, index, moveCard]
+  );
+  const setCardRef = (node) => {
+    dragRef(node);
+    dropRef(node);
+  };
 
   useEffect(() => {
     if (!isDragging) return;
@@ -86,7 +106,7 @@ function DraggableHandCard({
 
   return (
     <div
-      ref={dragRef}
+      ref={setCardRef}
       className={`card-in-hand-wrapper${isSelected ? " selected" : ""}`}
       title={card.name}
       onClick={(event) => {
@@ -674,7 +694,7 @@ function GamePage() {
       return;
     }
 
-    const cost = cardToPlay.cost ?? cardToPlay.value ?? 0;
+    const cost = Number(cardToPlay.cost ?? cardToPlay.value ?? 0);
 
     // Попытка списания энергии через energyManager
     const spent = await spendEnergy(database, lobbyId, uid, cost);
@@ -711,12 +731,14 @@ function GamePage() {
     (item) => {
       if (!item?.cardId) return false;
       if (turnEnded || roundPhase !== "play") return false;
-      const cardCost =
+      const cardCost = Number(
         item.cost ??
-        hand.find((card) => card.id === item.cardId)?.cost ??
-        hand.find((card) => card.id === item.cardId)?.value ??
-        0;
-      return recipes >= cardCost;
+          hand.find((card) => card.id === item.cardId)?.cost ??
+          hand.find((card) => card.id === item.cardId)?.value ??
+          0
+      );
+      const availableEnergy = Number(recipes ?? 0);
+      return availableEnergy >= cardCost;
     },
     [hand, recipes, roundPhase, turnEnded]
   );
@@ -747,9 +769,11 @@ function GamePage() {
   const draggedCard =
     dragLayerState.item?.card ??
     hand.find((card) => card.id === dragLayerState.item?.cardId);
-  const draggedCardCost = draggedCard?.cost ?? draggedCard?.value ?? 0;
+  const draggedCardCost = Number(draggedCard?.cost ?? draggedCard?.value ?? 0);
   const canPlayDraggedCard = draggedCard
-    ? !turnEnded && roundPhase === "play" && recipes >= draggedCardCost
+    ? !turnEnded &&
+      roundPhase === "play" &&
+      Number(recipes ?? 0) >= draggedCardCost
     : false;
   const dropState = dragLayerState.isDragging
     ? canDropOnBoard
@@ -769,6 +793,17 @@ function GamePage() {
       turnEnded,
     });
   }, [canDropOnBoard, isOverBoard, roundPhase, turnEnded]);
+
+  const moveCard = useCallback((fromIndex, toIndex) => {
+    setHand((prev) => {
+      if (fromIndex < 0 || toIndex < 0) return prev;
+      if (fromIndex >= prev.length || toIndex >= prev.length) return prev;
+      const updated = [...prev];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return updated;
+    });
+  }, []);
 
   const renderStats = (card) =>
     renderCardStats(card).map((stat, index) => (
@@ -980,7 +1015,7 @@ function GamePage() {
           tabIndex={-1}
         >
           <div className="player-hand">
-            {hand.map((card) => {
+            {hand.map((card, index) => {
               const isSelected = selectedCardId === card.id;
               const cost = card.cost ?? card.value ?? 0;
               const canPlay =
@@ -989,10 +1024,12 @@ function GamePage() {
                 <DraggableHandCard
                   key={card.id}
                   card={card}
+                  index={index}
                   isSelected={isSelected}
                   canPlay={canPlay}
                   onSelect={setSelectedCardId}
                   renderStats={renderStats}
+                  moveCard={moveCard}
                 />
               );
             })}
