@@ -4,7 +4,7 @@
   background-color: var(--secondary-color);
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
-  font-family: Arial, sans-serif;
+  font-family: var(--app-font);
   color: #333;
 }
 
@@ -46,7 +46,7 @@
   padding: 15px;
   text-align: center;
   position: relative; /* добавьте это для корректного позиционирования */
-  font-family: "Arial", sans-serif;
+  font-family: var(--app-font);
 }
 
 .card:hover {
@@ -389,7 +389,7 @@
 .market-container {
   color: #e0e0e0;
   padding: 20px;
-  font-family: "Segoe UI", sans-serif;
+  font-family: var(--app-font);
 }
 
 .card-grid-panel {

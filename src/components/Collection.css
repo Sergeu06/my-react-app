@@ -26,7 +26,7 @@
 .collection-container {
   color: var(--primary-text);
   padding: 20px;
-  font-family: "Segoe UI", sans-serif;
+  font-family: var(--app-font);
 }
 
 .collection-container h1 {
@@ -280,7 +280,7 @@
   border-radius: 6px;
   font-size: 1rem;
   font-weight: 700;
-  font-family: "Playfair Display", serif;
+  font-family: var(--app-font);
   pointer-events: none;
   user-select: none;
   z-index: 100;

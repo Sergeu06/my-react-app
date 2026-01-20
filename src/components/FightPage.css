@@ -10,7 +10,7 @@
   justify-content: center;
   align-items: center;
   color: white;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--app-font);
 }
 
 .fight-overlay {
@@ -93,7 +93,7 @@
   margin-top: 55vh;
   pointer-events: auto;
   transition: opacity 0.4s ease;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--app-font);
   margin-left: 5%;
   display: flex;
   flex-direction: column;

@@ -4,7 +4,7 @@
   height: 100vh;
   background: linear-gradient(to top, #1a1a1a, #2e2e2e);
   color: white;
-  font-family: sans-serif;
+  font-family: var(--app-font);
   box-sizing: border-box;
   overflow: hidden;
 }

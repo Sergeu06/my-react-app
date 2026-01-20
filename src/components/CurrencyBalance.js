@@ -21,14 +21,14 @@ function CurrencyBalance({
   const path = location.pathname.toLowerCase();
   const [showHint, setShowHint] = useState(false);
   const [showHintRecipes, setShowHintRecipes] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(path !== "/upgrade");
+  const [isExpanded, setIsExpanded] = useState(false);
   const hiddenPaths = ["/raid", "/game", "/profile", "/open-box"];
   const showMystery = path === "/upgrade" || forceShow;
   const [showHintTickets, setShowHintTickets] = useState(false);
   const hintTicketsRef = useRef(null);
 
   useEffect(() => {
-    setIsExpanded(path !== "/upgrade");
+    setIsExpanded(false);
   }, [path]);
 
   useEffect(() => {

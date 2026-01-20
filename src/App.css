@@ -25,6 +25,8 @@ img {
 }
 :root {
   color-scheme: dark;
+  --app-font: "Inter", "Manrope", "Rubik", "Segoe UI", "Roboto", "Helvetica Neue",
+    sans-serif;
   --app-bg: #0b0f14;
   --surface-1: #121826;
   --surface-2: #0f141f;
@@ -55,8 +57,7 @@ img {
 /* Затемнённый фон */
 body {
   margin: 0;
-  font-family: "Inter", "Manrope", "Rubik", "Segoe UI", "Roboto", "Helvetica Neue",
-    sans-serif;
+  font-family: var(--app-font);
   background-color: var(--app-bg);
   color: var(--text-primary);
   overflow-x: hidden;

@@ -80,8 +80,7 @@
 
 .profile-info .uid {
   font-size: 0.95rem;
-  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono",
-    Menlo, monospace;
+  font-family: var(--app-font);
   color: rgba(255, 255, 255, 0.6);
   margin: 0;
 }
