@@ -51,6 +51,7 @@ export default function ResultPage() {
           setResult({
             winner: lobbyData.winner,
             loser: lobbyData.loser,
+            endReason: lobbyData.endReason || null,
             roundsPlayed: lobbyData.round || 1, // берём из RTDB
             players: lobbyData.players || {},
           });
@@ -65,8 +66,9 @@ export default function ResultPage() {
     if (!uid || !result) return;
 
     const isWin = result.winner === start;
-    const coins = isWin ? 250 : 150;
-    const exp = isWin ? 100 : 50;
+    const isDisconnectLoss = !isWin && result.endReason === "disconnect";
+    const coins = isWin ? 250 : isDisconnectLoss ? 0 : 150;
+    const exp = isWin ? 100 : isDisconnectLoss ? 0 : 50;
 
     const userRef = doc(db, "users", uid);
 

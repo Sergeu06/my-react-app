@@ -1,3 +1,5 @@
+import { getLowEndMode } from "../perf/perfFlags";
+
 const CARD_IMAGE_CACHE = "card-images-v2";
 const LOCAL_CARD_PATH = "/cards/";
 const LOCAL_CARD_RESIZED_PATHS = {
@@ -10,8 +12,45 @@ const CARD_IMAGE_SIZES = [256, 512, 1024];
 const inFlightRequests = new Map();
 const failedUrls = new Set();
 const localCardMisses = new Set();
+
 const blobUrlCache = new Map();
 const blobUrlInFlight = new Map();
+const MAX_BLOB_URLS = 150;
+const MAX_BLOB_URLS_LOW_END = 50;
+
+const getBlobUrlLimit = () =>
+  getLowEndMode() ? MAX_BLOB_URLS_LOW_END : MAX_BLOB_URLS;
+
+const touchBlobUrl = (cacheKey) => {
+  if (!blobUrlCache.has(cacheKey)) return;
+  const value = blobUrlCache.get(cacheKey);
+  blobUrlCache.delete(cacheKey);
+  blobUrlCache.set(cacheKey, value);
+};
+
+const enforceBlobUrlLimit = () => {
+  const limit = getBlobUrlLimit();
+  while (blobUrlCache.size > limit) {
+    const [oldestKey, oldestUrl] = blobUrlCache.entries().next().value;
+    blobUrlCache.delete(oldestKey);
+    if (oldestUrl) {
+      URL.revokeObjectURL(oldestUrl);
+    }
+  }
+};
+
+const setBlobUrlCache = (cacheKey, url) => {
+  if (!cacheKey || !url) return;
+  if (blobUrlCache.has(cacheKey)) {
+    const existingUrl = blobUrlCache.get(cacheKey);
+    if (existingUrl && existingUrl !== url) {
+      URL.revokeObjectURL(existingUrl);
+    }
+    blobUrlCache.delete(cacheKey);
+  }
+  blobUrlCache.set(cacheKey, url);
+  enforceBlobUrlLimit();
+};
 
 const isImageResponse = (response) => {
   if (!response || !response.ok) return false;
@@ -21,10 +60,12 @@ const isImageResponse = (response) => {
 };
 
 const getBlobUrlFromResponse = async (cacheKey, response) => {
+  if (getLowEndMode()) return null;
   if (!response || response.type === "opaque" || !isImageResponse(response)) {
     return null;
   }
   if (blobUrlCache.has(cacheKey)) {
+    touchBlobUrl(cacheKey);
     return blobUrlCache.get(cacheKey);
   }
   if (blobUrlInFlight.has(cacheKey)) {
@@ -35,7 +76,7 @@ const getBlobUrlFromResponse = async (cacheKey, response) => {
     .blob()
     .then((blob) => {
       const objectUrl = URL.createObjectURL(blob);
-      blobUrlCache.set(cacheKey, objectUrl);
+      setBlobUrlCache(cacheKey, objectUrl);
       return objectUrl;
     })
     .finally(() => {
@@ -280,7 +321,10 @@ export const getCardImageUrl = async ({ name, fallbackUrl, preferredSize }) => {
 export const getCachedImageUrl = async (src) => {
   if (!src) return null;
   if (failedUrls.has(src)) return src;
-  if (blobUrlCache.has(src)) return blobUrlCache.get(src);
+  if (blobUrlCache.has(src)) {
+    touchBlobUrl(src);
+    return blobUrlCache.get(src);
+  }
   const requestMode = getRequestMode(src);
   if (!requestMode || !("caches" in window)) return src;
 
