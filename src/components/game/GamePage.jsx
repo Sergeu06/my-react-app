@@ -731,16 +731,12 @@ function GamePage() {
     (item) => {
       if (!item?.cardId) return false;
       if (turnEnded || roundPhase !== "play") return false;
-      const cardCost = Number(
-        item.cost ??
-          hand.find((card) => card.id === item.cardId)?.cost ??
-          hand.find((card) => card.id === item.cardId)?.value ??
-          0
-      );
+      const cardCost = Number(item.cost ?? 0);
+      if (!Number.isFinite(cardCost)) return false;
       const availableEnergy = Number(recipes ?? 0);
       return availableEnergy >= cardCost;
     },
-    [hand, recipes, roundPhase, turnEnded]
+    [recipes, roundPhase, turnEnded]
   );
 
   const [{ isOverBoard, canDropOnBoard }, boardDropRef] = useDrop(
