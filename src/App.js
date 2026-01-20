@@ -55,6 +55,10 @@ import { UserProvider } from "./components/UserContext";
 import { preloadCardImage, preloadImageToCache } from "./utils/imageCache";
 import { buildLootboxChances } from "./utils/lootboxChances";
 import { initSingleSession } from "./session/singleSession";
+import { detectLowEndDevice } from "./perf/detectLowEndDevice";
+import { setLowEndMode } from "./perf/perfFlags";
+import { PerformanceProvider } from "./perf/PerformanceContext";
+import { debugLog } from "./perf/debugLog";
 
 const BOT_TOKEN = "6990185927:AAG8cCLlwX-z8ZcwYGN_oUOfGC2vONls87Q";
 
@@ -228,6 +232,8 @@ function App() {
   const [isVerified, setIsVerified] = useState(false);
   const [isKicked, setIsKicked] = useState(false);
   const [error, setError] = useState(null);
+  const [lowEndMode] = useState(() => detectLowEndDevice());
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [assetsReady, setAssetsReady] = useState(false);
   const [assetsProgress, setAssetsProgress] = useState({
     loaded: 0,
@@ -251,6 +257,21 @@ function App() {
   const prevTabIndexRef = useRef(tabIndex);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setLowEndMode(lowEndMode);
+  }, [lowEndMode]);
+
+  useEffect(() => {
+    setIsTransitioning(true);
+    if (lowEndMode) {
+      const rafId = requestAnimationFrame(() => {
+        setIsTransitioning(false);
+      });
+      return () => cancelAnimationFrame(rafId);
+    }
+    return undefined;
+  }, [location.pathname, lowEndMode]);
 
   useEffect(() => {
     if (!isVerified) return;
@@ -339,7 +360,17 @@ function App() {
       };
     };
 
+    const waitForIdle = () =>
+      new Promise((resolve) => {
+        if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+          window.requestIdleCallback(() => resolve());
+        } else {
+          setTimeout(resolve, 0);
+        }
+      });
+
     const preloadCardBatches = async () => {
+      if (lowEndMode) return;
       let lastDoc = null;
       let reachedEnd = false;
       const preloadConcurrency = getPreloadConcurrency();
@@ -369,14 +400,14 @@ function App() {
               task.payload.name,
               task.payload.image_url
             );
-            console.info("[GlobalLoader] card image cached", {
+            debugLog("[GlobalLoader] card image cached", {
               name: task.payload.name,
               fallbackUrl: task.payload.image_url,
               ...result,
             });
           } else {
             const result = await preloadCardImage(null, task.payload);
-            console.info("[GlobalLoader] asset cached", {
+            debugLog("[GlobalLoader] asset cached", {
               src: task.payload,
               cached: result.success,
               source: result.source,
@@ -388,14 +419,17 @@ function App() {
 
         lastDoc = nextDoc;
         reachedEnd = isLastBatch;
+        await waitForIdle();
       }
     };
 
     const preloadAssets = async () => {
-      const { urls: remoteAssets, boxEntries } = await fetchRemoteImages();
-      const allAssets = [...staticAssets, ...remoteAssets];
+      const { urls: remoteAssets, boxEntries } = lowEndMode
+        ? { urls: [], boxEntries: [] }
+        : await fetchRemoteImages();
+      const allAssets = lowEndMode ? staticAssets : [...staticAssets, ...remoteAssets];
       const lootboxCache = {};
-      const preloadConcurrency = getPreloadConcurrency();
+      const preloadConcurrency = lowEndMode ? 2 : getPreloadConcurrency();
       const boxConcurrency = Math.max(2, Math.floor(preloadConcurrency / 2));
 
       if (isActive) {
@@ -408,10 +442,11 @@ function App() {
       await Promise.all([
         runWithConcurrency(allAssets, preloadConcurrency, async (src) => {
           const cached = await preloadImageToCache(src);
-          console.info("[GlobalLoader] asset cached", { src, cached });
+          debugLog("[GlobalLoader] asset cached", { src, cached });
           incrementAssetsProgress(1, 0);
         }),
         runWithConcurrency(boxEntries, boxConcurrency, async (box) => {
+          if (lowEndMode) return;
           const cardIds = box.data?.cards || [];
           const rarityChances = {
             Обычная: box.data?.Обычная ?? 0,
@@ -452,8 +487,12 @@ function App() {
         }),
       ]);
 
-      await preloadCardBatches();
+      if (!lowEndMode) {
+        await waitForIdle();
+        await preloadCardBatches();
+      }
 
+      if (lowEndMode) return;
       try {
         const cachedRaw = localStorage.getItem("lootboxChanceCache");
         const cached = cachedRaw ? JSON.parse(cachedRaw) : {};
@@ -476,7 +515,7 @@ function App() {
     return () => {
       isActive = false;
     };
-  }, [isVerified]);
+  }, [isVerified, lowEndMode]);
 
   const tabRoutes = [
     `/shop?start=${uid}`,
@@ -529,6 +568,18 @@ function App() {
       location.pathname.startsWith("/game") ||
       location.pathname.startsWith("/open-box");
 
+    if (lowEndMode) {
+      return (
+        <div
+          className={`page-shell${
+            isFullBleedPage ? " page-shell--full-bleed" : ""
+          }`}
+        >
+          {children}
+        </div>
+      );
+    }
+
     return (
       <motion.div
         custom={direction}
@@ -537,6 +588,11 @@ function App() {
         exit="out"
         variants={isGameOrResult ? pageVariantsGameResult : pageVariantsDefault}
         className="animated-page"
+        onAnimationComplete={(definition) => {
+          if (definition === "in") {
+            setIsTransitioning(false);
+          }
+        }}
         style={{
           position: "relative",
           top: 0,
@@ -943,7 +999,8 @@ function App() {
   })();
 
   return (
-    <UserProvider>
+    <PerformanceProvider value={{ lowEndMode, isTransitioning }}>
+      <UserProvider>
       <div>
         <div className="safe-container" {...handlers}>
           {uiLocked && (
@@ -1052,7 +1109,7 @@ function App() {
           )}
 
           <DndProvider backend={TouchBackend}>
-            <AnimatePresence mode="wait" initial={false}>
+            {lowEndMode ? (
               <Routes location={location} key={location.pathname}>
                 <Route
                   path="/fight"
@@ -1157,11 +1214,119 @@ function App() {
                   }
                 />
               </Routes>
-            </AnimatePresence>
+            ) : (
+              <AnimatePresence mode="wait" initial={false}>
+                <Routes location={location} key={location.pathname}>
+                  <Route
+                    path="/fight"
+                    element={
+                      <AnimatedPageWrapper direction={direction}>
+                        <FightPage
+                          uid={uid}
+                          searchState={searchState}
+                          setSearchState={setSearchState}
+                        />
+                      </AnimatedPageWrapper>
+                    }
+                  />
+
+                  <Route
+                    path="/"
+                    element={<Navigate to={`/fight?start=${uid}`} replace />}
+                  />
+
+                  <Route
+                    path="/shop"
+                    element={
+                      <AnimatedPageWrapper
+                        direction={direction}
+                        allowScroll={true}
+                      >
+                        <Shop uid={uid} />
+                      </AnimatedPageWrapper>
+                    }
+                  />
+                  <Route
+                    path="/collection"
+                    element={
+                      <AnimatedPageWrapper
+                        direction={direction}
+                        allowScroll={true}
+                      >
+                        <Collection uid={uid} />
+                      </AnimatedPageWrapper>
+                    }
+                  />
+                  <Route
+                    path="/profile"
+                    element={
+                      <AnimatedPageWrapper
+                        direction={direction}
+                        allowScroll={true}
+                      >
+                        <Profile uid={uid} />
+                      </AnimatedPageWrapper>
+                    }
+                  />
+                  <Route
+                    path="/upgrade"
+                    element={
+                      <AnimatedPageWrapper direction={direction}>
+                        <UpgradePage uid={uid} />
+                      </AnimatedPageWrapper>
+                    }
+                  />
+                  <Route
+                    path="/game"
+                    element={
+                      <AnimatedPageWrapper direction={direction}>
+                        <Game uid={uid} />
+                      </AnimatedPageWrapper>
+                    }
+                  />
+                  <Route
+                    path="/raid"
+                    element={
+                      <AnimatedPageWrapper direction={direction}>
+                        <Raid uid={uid} />
+                      </AnimatedPageWrapper>
+                    }
+                  />
+                  <Route
+                    path="/profile/:userId"
+                    element={
+                      <AnimatedPageWrapper
+                        direction={direction}
+                        allowScroll={true}
+                      >
+                        <Profile />
+                      </AnimatedPageWrapper>
+                    }
+                  />
+                  <Route
+                    path="/open-box"
+                    element={
+                      <AnimatedPageWrapper direction={direction}>
+                        <OpenBoxPage uid={uid} />
+                      </AnimatedPageWrapper>
+                    }
+                  />
+                  <Route
+                    path="/result"
+                    element={
+                      <AnimatedPageWrapper direction={direction}>
+                        <ResultPage uid={uid} />
+                      </AnimatedPageWrapper>
+                    }
+                  />
+                </Routes>
+              </AnimatePresence>
+            )}
           </DndProvider>
         </div>
       </div>
-    </UserProvider>
+      </UserProvider>
+    </PerformanceProvider>
   );
 }
 export default App;

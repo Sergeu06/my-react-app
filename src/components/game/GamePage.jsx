@@ -28,6 +28,9 @@ import { renderCardStats } from "../../utils/renderCardStats";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import useResolvingPhase from "../game-logic/useResolvingPhase";
 import useLobbyPresence from "../game-logic/useLobbyPresence";
+import { usePerformance } from "../../perf/PerformanceContext";
+import { usePageActivity } from "../../perf/usePageActivity";
+import { debugLog } from "../../perf/debugLog";
 
 import "./game.css";
 import "./animations.css";
@@ -73,6 +76,8 @@ function GamePage() {
   const [priorityUid, setPriorityUid] = useState(null);
   const [handVisible, setHandVisible] = useState(true);
   const navigate = useNavigate();
+  const { isTransitioning } = usePerformance();
+  const isActive = usePageActivity({ isTransitioning });
 
   const [timer, setTimer] = useState(30);
   const [autoEndTriggered, setAutoEndTriggered] = useState(false);
@@ -91,7 +96,7 @@ function GamePage() {
       `lobbies/${lobbyId}/turnTimerStart`
     );
     await set(timerRef, { start: Date.now(), duration });
-    console.log(
+    debugLog(
       `[Таймер] хост установил новый таймер хода с длительностью ${duration}`
     );
   };
@@ -139,12 +144,12 @@ function GamePage() {
 
   // Подписка на завершение игры
   useEffect(() => {
-    if (!lobbyId) return;
+    if (!lobbyId || !isActive) return;
 
     const statusRef = databaseRef(database, `lobbies/${lobbyId}/status`);
     const unsub = onValue(statusRef, (snap) => {
       const val = snap.val();
-      console.log("[GamePage] статус лобби:", val);
+      debugLog("[GamePage] статус лобби:", val);
       if (val === "end") {
         // подгружаем данные победителя/проигравшего
         get(databaseRef(database, `lobbies/${lobbyId}`)).then((snap) => {
@@ -160,19 +165,19 @@ function GamePage() {
     });
 
     return () => off(statusRef);
-  }, [lobbyId, navigate]);
+  }, [isActive, lobbyId, navigate]);
 
   useEffect(() => {
-    if (!lobbyId || !uid) return;
+    if (!lobbyId || !uid || !isActive) return;
     const energyRef = databaseRef(database, `lobbies/${lobbyId}/energy/${uid}`);
     const unsub = onValue(energyRef, (snap) => {
       const val = snap.val();
       if (val !== null) setRecipes(val); // синхронизация локального отображения
     });
     return () => off(energyRef);
-  }, [lobbyId, uid]);
+  }, [isActive, lobbyId, uid]);
   useEffect(() => {
-    if (!lobbyId || !uid || !gameData?.opponentUid) return;
+    if (!lobbyId || !uid || !gameData?.opponentUid || !isActive) return;
 
     const playerHpRef = databaseRef(database, `lobbies/${lobbyId}/hp/${uid}`);
     const opponentHpRef = databaseRef(
@@ -204,10 +209,10 @@ function GamePage() {
       off(playerHpRef);
       off(opponentHpRef);
     };
-  }, [lobbyId, uid, gameData?.opponentUid]);
+  }, [isActive, lobbyId, uid, gameData?.opponentUid]);
 
   useEffect(() => {
-    if (!lobbyId || !uid || !gameData?.opponentUid) return;
+    if (!lobbyId || !uid || !gameData?.opponentUid || !isActive) return;
 
     const playerMaxHpRef = databaseRef(database, `lobbies/${lobbyId}/maxHp/${uid}`);
     const opponentMaxHpRef = databaseRef(
@@ -239,10 +244,10 @@ function GamePage() {
       unsubPlayerMax();
       unsubOpponentMax();
     };
-  }, [lobbyId, uid, gameData?.opponentUid]);
+  }, [isActive, lobbyId, uid, gameData?.opponentUid]);
 
   useEffect(() => {
-    if (!lobbyId || !uid || !gameData?.opponentUid) return;
+    if (!lobbyId || !uid || !gameData?.opponentUid || !isActive) return;
 
     const uids = [uid, gameData.opponentUid];
 
@@ -280,22 +285,22 @@ function GamePage() {
       dotRefs.forEach((r) => off(r));
       multRefs.forEach((r) => off(r));
     };
-  }, [lobbyId, uid, gameData?.opponentUid]);
+  }, [isActive, lobbyId, uid, gameData?.opponentUid]);
 
   useEffect(() => {
-    if (!lobbyId) return;
+    if (!lobbyId || !isActive) return;
 
     const priorityRef = databaseRef(database, `lobbies/${lobbyId}/priority`);
     const unsub = onValue(priorityRef, (snap) => {
       const val = snap.val();
-      console.log("[DEBUG] priority from RTDB:", val); // <- добавь это
+      debugLog("[DEBUG] priority from RTDB:", val); // <- добавь это
       setPriorityUid(val);
     });
 
     return () => off(priorityRef);
-  }, [lobbyId]);
+  }, [isActive, lobbyId]);
   useEffect(() => {
-    if (!lobbyId) return;
+    if (!lobbyId || !isActive) return;
 
     const roundRef = databaseRef(database, `lobbies/${lobbyId}/round`);
     const unsub = onValue(roundRef, (snap) => {
@@ -304,7 +309,7 @@ function GamePage() {
     });
 
     return () => off(roundRef);
-  }, [lobbyId]);
+  }, [isActive, lobbyId]);
   useEffect(() => {
     const handleClickOutside = (e) => {
       // если клик был по кнопке "Разыграть" – игнорируем
@@ -328,7 +333,7 @@ function GamePage() {
 
         const userData = userDoc.data();
         const playerDeck = userData.deck_pvp || []; // 👉 берём массив deck_pvp
-        console.log("[GamePage] deck_pvp:", playerDeck);
+        debugLog("[GamePage] deck_pvp:", playerDeck);
 
         if (!Array.isArray(playerDeck) || playerDeck.length === 0) {
           console.warn("[GamePage] deck_pvp пустой");
@@ -350,7 +355,7 @@ function GamePage() {
 
         const cards = (await Promise.all(cardPromises)).filter(Boolean);
 
-        console.log("[GamePage] загруженные карты:", cards);
+        debugLog("[GamePage] загруженные карты:", cards);
 
         setHand(cards.slice(0, 4));
         setDeck(cards.slice(4));
@@ -359,13 +364,21 @@ function GamePage() {
       }
     }
 
-    if (uid) fetchDeckAndHand();
-  }, [uid]);
+    let rafId = null;
+    if (uid && isActive) {
+      rafId = requestAnimationFrame(() => {
+        fetchDeckAndHand();
+      });
+    }
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [isActive, uid]);
 
   // загрузка данных лобби и определение хоста
   useEffect(() => {
-    if (!uid || !lobbyId) return;
-    console.log("[GamePage] загрузка игры()", { uid, lobbyId });
+    if (!uid || !lobbyId || !isActive) return;
+    debugLog("[GamePage] загрузка игры()", { uid, lobbyId });
 
     const loadGame = async () => {
       try {
@@ -416,7 +429,7 @@ function GamePage() {
           playerData.recipes || 0
         );
         setRecipes(playerData.recipes || 0);
-        console.log(
+        debugLog(
           `%c[GamePage] Хост: ${lobbyData.players[0]}, Гость: ${lobbyData.players[1]}`,
           "color: deepskyblue; font-weight: bold"
         );
@@ -425,11 +438,14 @@ function GamePage() {
       }
     };
 
-    loadGame();
-  }, [uid, lobbyId]);
+    const rafId = requestAnimationFrame(() => {
+      loadGame();
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [isActive, uid, lobbyId]);
   // подписка на завершение хода соперника
   useEffect(() => {
-    if (!lobbyId || !gameData?.opponentUid) return;
+    if (!lobbyId || !gameData?.opponentUid || !isActive) return;
 
     const oppTurnRef = databaseRef(
       database,
@@ -438,16 +454,16 @@ function GamePage() {
 
     const unsub = onValue(oppTurnRef, (snap) => {
       const val = snap.val();
-      console.log("[GamePage] ход соперника завершён:", val);
+      debugLog("[GamePage] ход соперника завершён:", val);
       setOpponentTurnEnded(!!val); // true, если соперник завершил
     });
 
     return () => off(oppTurnRef);
-  }, [lobbyId, gameData?.opponentUid]);
+  }, [isActive, lobbyId, gameData?.opponentUid]);
 
   // подписка на завершение хода соперника
   useEffect(() => {
-    if (!lobbyId || !gameData?.opponentUid) return;
+    if (!lobbyId || !gameData?.opponentUid || !isActive) return;
 
     const oppPlayedRef = databaseRef(
       database,
@@ -456,22 +472,22 @@ function GamePage() {
     const unsub = onValue(oppPlayedRef, (snap) => {
       const val = snap.val();
       if (!val) {
-        console.log("[GamePage] сыгранные карты соперника очищены");
+        debugLog("[GamePage] сыгранные карты соперника очищены");
 
         setOpponentPlayed([]); // 👈 сбрасываем руку соперника
       } else {
         const cards = sortPlayedCards(Object.values(val));
-        console.log("[GamePage] сыгранные карты соперника:", cards);
+        debugLog("[GamePage] сыгранные карты соперника:", cards);
         setOpponentPlayed(cards);
       }
     });
 
     return () => off(oppPlayedRef);
-  }, [lobbyId, gameData?.opponentUid]);
+  }, [isActive, lobbyId, gameData?.opponentUid]);
 
   // синхронизированный таймер
   useEffect(() => {
-    if (!lobbyId) return;
+    if (!lobbyId || !isActive) return;
 
     const timerRef = databaseRef(database, `lobbies/${lobbyId}/turnTimerStart`);
     const unsub = onValue(timerRef, (snap) => {
@@ -479,7 +495,7 @@ function GamePage() {
       if (!val) return;
 
       const { start, duration } = val;
-      console.log("[Таймер] получен старт таймера:", val);
+      debugLog("[Таймер] получен старт таймера:", val);
 
       if (timerInterval.current) clearInterval(timerInterval.current);
 
@@ -490,7 +506,7 @@ function GamePage() {
           clearInterval(timerInterval.current);
           setTimer(0);
           if (!turnEnded) {
-            console.log(
+            debugLog(
               "[Таймер] автоматическое завершение хода (время вышло)"
             );
             handleEndTurn();
@@ -505,15 +521,15 @@ function GamePage() {
       off(timerRef);
       if (timerInterval.current) clearInterval(timerInterval.current);
     };
-  }, [lobbyId, turnEnded]);
+  }, [isActive, lobbyId, turnEnded]);
 
   useEffect(() => {
-    if (!lobbyId) return;
+    if (!lobbyId || !isActive) return;
 
     const doneRef = databaseRef(database, `lobbies/${lobbyId}/resolvingDone`);
     const unsub = onValue(doneRef, (snap) => {
       if (snap.exists()) {
-        console.log("[GamePage] resolvingDone received, reset flags only");
+        debugLog("[GamePage] resolvingDone received, reset flags only");
 
         // ⬇️ мы УЖЕ управляем фазами в useResolvingPhase
         setWaitingForOpponent(false);
@@ -525,22 +541,22 @@ function GamePage() {
     });
 
     return () => off(doneRef);
-  }, [lobbyId]);
+  }, [isActive, lobbyId]);
 
   // --- запуск первого таймера при заходе ---
   useEffect(() => {
-    if (!uid || !lobbyId || !isHost || firstTimerStarted) return;
+    if (!uid || !lobbyId || !isHost || firstTimerStarted || !isActive) return;
 
-    console.log("[Timer] first round, set 40 sec timer");
+    debugLog("[Timer] first round, set 40 sec timer");
     startNewTurnTimer(25);
     setFirstTimerStarted(true);
-  }, [uid, lobbyId, isHost, firstTimerStarted]);
+  }, [isActive, uid, lobbyId, isHost, firstTimerStarted]);
   // 👇 ставим где-то после всех useState, до return
   useEffect(() => {
-    console.log(
+    debugLog(
       `[Hand Debug] Текущее количество карт в руке: ${hand.length}, в колоде: ${deck.length}`
     );
-    console.log(
+    debugLog(
       "[Hand Debug] Состав руки:",
       hand.map((c) => c.id)
     );
@@ -577,7 +593,7 @@ function GamePage() {
 
     setSelectedCardId(null);
 
-    console.log(`[GamePage][Energy] Карта сыграна: ${cardToPlay.id}, -${cost}`);
+    debugLog(`[GamePage][Energy] Карта сыграна: ${cardToPlay.id}, -${cost}`);
   };
   const startFirstRound = async () => {
     if (!isHost || !lobbyId) return;
@@ -612,11 +628,11 @@ function GamePage() {
     );
     await set(playedRef, null);
 
-    console.log(`[GamePage][Energy] Карта отменена: ${card.id}, +${cost}`);
+    debugLog(`[GamePage][Energy] Карта отменена: ${card.id}, +${cost}`);
   };
 
   const handleEndTurn = async () => {
-    console.log("[GamePage] нажата кнопка 'Завершить ход'");
+    debugLog("[GamePage] нажата кнопка 'Завершить ход'");
 
     try {
       await endTurn(uid, lobbyId);

@@ -28,6 +28,8 @@ import { useNavigate } from "react-router-dom";
 import "./FightPage.css";
 import "./raid-boss/boss-container.css";
 import CachedImage from "../utils/CachedImage";
+import { usePerformance } from "../perf/PerformanceContext";
+import { usePageActivity } from "../perf/usePageActivity";
 import {
   ensureDailyTasks,
   completeDailyTask,
@@ -38,6 +40,8 @@ import { formatRaidCountdown, getRaidEventInfo } from "../utils/raidEvents";
 
 function FightPage({ uid, searchState, setSearchState }) {
   const { isSearching, lobbyId } = searchState;
+  const { isTransitioning } = usePerformance();
+  const isActive = usePageActivity({ isTransitioning });
   const [elapsed, setElapsed] = useState(0);
   const [raidEnterError, setRaidEnterError] = useState(null);
 
@@ -190,6 +194,7 @@ function FightPage({ uid, searchState, setSearchState }) {
   }, [showRaidConfirm]);
 
   useEffect(() => {
+    if (!isActive) return;
     const updateEvent = () => {
       const { event, secondsRemaining } = getRaidEventInfo();
       setRaidEvent(event);
@@ -199,7 +204,7 @@ function FightPage({ uid, searchState, setSearchState }) {
     updateEvent();
     const timer = setInterval(updateEvent, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [isActive]);
 
   useEffect(() => {
     if (!uid) return;
@@ -281,6 +286,7 @@ function FightPage({ uid, searchState, setSearchState }) {
 
   // таймер
   useEffect(() => {
+    if (!isActive) return;
     if (!claimLoaded) return; // Данные ещё не получены — ничего не делаем
 
     if (!lastClaimAt) {
@@ -304,9 +310,10 @@ function FightPage({ uid, searchState, setSearchState }) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [lastClaimAt]);
+  }, [isActive, lastClaimAt, claimLoaded]);
 
   useEffect(() => {
+    if (!isActive) return;
     if (!dailyBoxLoaded) return;
     if (dailyBoxReward) {
       setDailyBoxRemaining(0);
@@ -332,9 +339,10 @@ function FightPage({ uid, searchState, setSearchState }) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [dailyBoxLoaded, dailyBoxReward, lastDailyBoxClaimAt]);
+  }, [isActive, dailyBoxLoaded, dailyBoxReward, lastDailyBoxClaimAt]);
 
   useEffect(() => {
+    if (!isActive) return;
     const updateResetTimer = () => {
       const now = new Date();
       const nextReset = new Date(now);
@@ -346,7 +354,7 @@ function FightPage({ uid, searchState, setSearchState }) {
     updateResetTimer();
     const interval = setInterval(updateResetTimer, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isActive]);
 
   const completedDailyCount = useMemo(
     () =>
@@ -582,11 +590,12 @@ function FightPage({ uid, searchState, setSearchState }) {
   }, []);
   // --- автопереключение каждые 6 секунд ---
   useEffect(() => {
+    if (!isActive) return;
     const interval = setInterval(() => {
       setActiveBoard((prev) => (prev === "raid" ? "pvp" : "raid"));
     }, 6000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isActive]);
   const getActiveRaidBoss = (bosses) => {
     if (!bosses) return null;
 
@@ -635,6 +644,7 @@ function FightPage({ uid, searchState, setSearchState }) {
 
   // при старте поиска сбрасываем таймер
   useEffect(() => {
+    if (!isActive) return;
     if (!isSearching || !searchState.startTimestamp) {
       setElapsed(0);
       return;
@@ -646,10 +656,11 @@ function FightPage({ uid, searchState, setSearchState }) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isSearching, searchState.startTimestamp]);
+  }, [isActive, isSearching, searchState.startTimestamp]);
 
   // --- подсказки
   useEffect(() => {
+    if (!isActive) return;
     if (!isSearching) return setTip(null);
     const tips = [
       "💡 Подсказка: множители урона складываются в один эффект и имеют ограниченное число ходов — не тратьте их на пустой стол.",
@@ -672,7 +683,7 @@ function FightPage({ uid, searchState, setSearchState }) {
     };
     showTip();
     return () => clearTimeout(tipTimeout);
-  }, [isSearching]);
+  }, [isActive, isSearching]);
 
   // --- старт поиска
   const handleSearchOpponent = async () => {
@@ -771,9 +782,10 @@ function FightPage({ uid, searchState, setSearchState }) {
 
   // --- подписка на изменения в лобби
   useEffect(() => {
-    if (!lobbyId) return;
+    if (!lobbyId || !isActive) return;
     const lobbyRef = databaseRef(database, `lobbies/${lobbyId}`);
     const unsubscribe = onValue(lobbyRef, async (snapshot) => {
+      if (!isActive) return;
       const lobby = snapshot.val();
       if (!lobby) {
         setSearchState({
@@ -799,6 +811,7 @@ function FightPage({ uid, searchState, setSearchState }) {
       ) {
         await update(lobbyRef, { status: "Play", countdown: 3 });
         const interval = setInterval(async () => {
+          if (!isActive) return;
           const snap = await get(lobbyRef);
           const curr = snap.val();
           if (!curr || curr.countdown == null) {
@@ -852,7 +865,7 @@ function FightPage({ uid, searchState, setSearchState }) {
       }
     });
     return () => unsubscribe();
-  }, [lobbyId, uid, navigate, setSearchState]);
+  }, [isActive, lobbyId, uid, navigate, setSearchState]);
 
   const formatTime = (totalSeconds) => {
     const minutes = Math.floor(totalSeconds / 60);
