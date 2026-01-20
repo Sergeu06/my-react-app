@@ -296,8 +296,16 @@
 }
 
 .drag-preview {
-  transform: translate(-50%, -50%) scale(1.05);
+  transform: translate(-50%, -50%) scale(1);
   filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.35));
+}
+
+.drag-preview-card {
+  position: relative;
+  min-width: 48px;
+  width: 18vw;
+  max-width: 140px;
+  border-radius: 4px;
 }
 
 .drag-preview-allowed {

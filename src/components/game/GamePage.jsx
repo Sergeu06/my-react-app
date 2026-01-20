@@ -65,7 +65,7 @@ function DraggableHandCard({
           card,
         };
       },
-      canDrag: canPlay,
+      canDrag: true,
       collect: (monitor) => ({
         isDragging: monitor.isDragging(),
       }),
@@ -125,16 +125,18 @@ function DragPreviewLayer({ card, offset, canPlay, renderStats }) {
             canPlay ? "drag-preview-allowed" : "drag-preview-blocked"
           }`}
         >
-          <FramedCard
-            card={card}
-            showLevel={true}
-            showName={false}
-            showPriority={true}
-          />
-          {card.value !== undefined && (
-            <div className="card-corner cost">{card.value}</div>
-          )}
-          {renderStats(card)}
+          <div className="drag-preview-card">
+            <FramedCard
+              card={card}
+              showLevel={true}
+              showName={false}
+              showPriority={true}
+            />
+            {card.value !== undefined && (
+              <div className="card-corner cost">{card.value}</div>
+            )}
+            {renderStats(card)}
+          </div>
         </div>
       </div>
     </div>
