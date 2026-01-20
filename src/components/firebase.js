@@ -27,6 +27,7 @@ import {
   onValue,
   serverTimestamp,
   runTransaction as runDatabaseTransaction,
+  onDisconnect,
   off,
   remove,
 } from "firebase/database"; // Renamed ref to databaseRef
@@ -93,6 +94,7 @@ export {
   onValue,
   serverTimestamp,
   runDatabaseTransaction,
+  onDisconnect,
   off,
   remove,
 
