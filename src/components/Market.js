@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   db,
   database,
@@ -16,6 +16,7 @@ import {
 
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import TuneIcon from "@mui/icons-material/Tune";
 import IconButton from "@mui/material/IconButton";
 
 import FramedCard from "../utils/FramedCard";
@@ -37,6 +38,18 @@ function SkeletonCard() {
   );
 }
 
+const normalizeRarity = (rarity) =>
+  (rarity || "обычная").toString().trim().toLowerCase();
+const rarityOrder = { обычная: 1, редкая: 2, эпическая: 3, легендарная: 4 };
+const getCardType = (card) =>
+  (card.cardDetails?.type ||
+    card.cardDetails?.card_type ||
+    card.cardDetails?.category ||
+    "")
+    .toString()
+    .trim()
+    .toLowerCase();
+
 function Market({ setError }) {
   const [allCards, setAllCards] = useState([]);
   const [allCardsFull, setAllCardsFull] = useState([]);
@@ -45,6 +58,17 @@ function Market({ setError }) {
   const [actionInProgress, setActionInProgress] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [sortMode, setSortMode] = useState("relevance");
+  const [rarityFilters, setRarityFilters] = useState({
+    обычная: true,
+    редкая: true,
+    эпическая: true,
+    легендарная: true,
+  });
+  const [typeFilters, setTypeFilters] = useState({});
 
   const query = useQuery();
   const currentUid = query.get("start");
@@ -52,41 +76,112 @@ function Market({ setError }) {
   const cardsPerPage = 12;
   const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
-    const total = Math.max(1, Math.ceil(allCardsFull.length / cardsPerPage));
-    setTotalPages(total);
-    if (currentPage > total) setCurrentPage(total);
-  }, [allCardsFull, currentPage]);
+  const typeOptions = useMemo(() => {
+    const types = new Set();
+    allCardsFull.forEach((card) => {
+      const type = getCardType(card) || "прочее";
+      types.add(type);
+    });
+    return Array.from(types).sort((a, b) => a.localeCompare(b, "ru"));
+  }, [allCardsFull]);
 
   useEffect(() => {
-    const startIndex = (currentPage - 1) * cardsPerPage;
-    const endIndex = startIndex + cardsPerPage;
-    setAllCards(allCardsFull.slice(startIndex, endIndex));
-  }, [allCardsFull, currentPage]);
+    setTypeFilters((prev) => {
+      const next = { ...prev };
+      typeOptions.forEach((type) => {
+        if (next[type] === undefined) next[type] = true;
+      });
+      return next;
+    });
+  }, [typeOptions]);
+
+  const sortMarketCards = useCallback(
+    (cards) => {
+      if (sortMode === "relevance" && searchTerm.trim()) {
+        return [...cards].sort((a, b) => b.relevance - a.relevance);
+      }
+
+      if (sortMode === "rarity") {
+        return [...cards].sort((a, b) => {
+          const rarityA = normalizeRarity(a.cardDetails?.rarity);
+          const rarityB = normalizeRarity(b.cardDetails?.rarity);
+          return (rarityOrder[rarityB] || 0) - (rarityOrder[rarityA] || 0);
+        });
+      }
+
+      if (sortMode === "alphabet") {
+        return [...cards].sort((a, b) =>
+          (a.cardDetails?.name || "").localeCompare(
+            b.cardDetails?.name || "",
+            "ru"
+          )
+        );
+      }
+
+      if (sortMode === "type") {
+        return [...cards].sort((a, b) =>
+          getCardType(a).localeCompare(getCardType(b), "ru")
+        );
+      }
+
+      return cards;
+    },
+    [sortMode, searchTerm]
+  );
 
   useEffect(() => {
     const term = searchTerm.toLowerCase().trim();
+    const minValue = Number.parseFloat(minPrice);
+    const maxValue = Number.parseFloat(maxPrice);
+    const hasMin = !Number.isNaN(minValue);
+    const hasMax = !Number.isNaN(maxValue);
+
+    const applyPriceFilter = (cards) =>
+      cards.filter((card) => {
+        if (hasMin && card.price < minValue) return false;
+        if (hasMax && card.price > maxValue) return false;
+        return true;
+      });
+
+    const applyRarityFilter = (cards) =>
+      cards.filter((card) => {
+        const rarity = normalizeRarity(card.cardDetails?.rarity);
+        return rarityFilters[rarity] !== false;
+      });
+
+    const applyTypeFilter = (cards) =>
+      cards.filter((card) => {
+        const type = getCardType(card) || "прочее";
+        return typeFilters[type] !== false;
+      });
 
     if (!term) {
+      const filteredCards = applyTypeFilter(
+        applyRarityFilter(applyPriceFilter(allCardsFull))
+      );
+      const sortedCards = sortMarketCards(filteredCards);
+      const total = Math.max(
+        1,
+        Math.ceil(sortedCards.length / cardsPerPage)
+      );
+      if (currentPage > total) setCurrentPage(total);
+      setTotalPages(total);
       const startIndex = (currentPage - 1) * cardsPerPage;
       const endIndex = startIndex + cardsPerPage;
-      setAllCards(allCardsFull.slice(startIndex, endIndex));
+      setAllCards(sortedCards.slice(startIndex, endIndex));
       return;
     }
 
     const computeRelevance = (card) => {
       let score = 0;
 
-      const { cardDetails, price, sellerName } = card;
+      const { cardDetails, price } = card;
 
       if (cardDetails?.name?.toLowerCase() === term) score += 100;
       else if (cardDetails?.name?.toLowerCase().includes(term)) score += 50;
 
       if (String(price) === term) score += 80;
       else if (String(price).includes(term)) score += 40;
-
-      if (sellerName?.toLowerCase() === term) score += 70;
-      else if (sellerName?.toLowerCase().includes(term)) score += 35;
 
       const stats = renderCardStats(card.cardDetails || {});
       for (const line of stats) {
@@ -96,15 +191,28 @@ function Market({ setError }) {
       return score;
     };
 
-    const sorted = [...allCardsFull]
+    const filteredBySearch = [...allCardsFull]
       .map((card) => ({ ...card, relevance: computeRelevance(card) }))
-      .filter((card) => card.relevance > 0)
-      .sort((a, b) => b.relevance - a.relevance);
+      .filter((card) => card.relevance > 0);
+
+    const filteredByPrice = applyPriceFilter(filteredBySearch);
+    const filteredByRarity = applyRarityFilter(filteredByPrice);
+    const filteredByType = applyTypeFilter(filteredByRarity);
+    const sorted = sortMarketCards(filteredByType);
 
     setAllCards(sorted.slice(0, cardsPerPage));
     setTotalPages(Math.ceil(sorted.length / cardsPerPage) || 1);
     setCurrentPage(1);
-  }, [searchTerm, allCardsFull, currentPage]);
+  }, [
+    searchTerm,
+    allCardsFull,
+    currentPage,
+    minPrice,
+    maxPrice,
+    sortMarketCards,
+    rarityFilters,
+    typeFilters,
+  ]);
 
   const renderCardStats = (card) => {
     if (!card) return [];
@@ -312,6 +420,11 @@ function Market({ setError }) {
     ));
   };
 
+  const formatTypeLabel = (type) =>
+    type === "прочее" || !type
+      ? "Прочее"
+      : `${type.charAt(0).toUpperCase()}${type.slice(1)}`;
+
   return (
     <div className="market-container">
       <div className="search-refresh-container">
@@ -326,7 +439,104 @@ function Market({ setError }) {
           {!searchTerm && (
             <div className="placeholder-mask">
               <div className="scrolling-text">
-                Название, Цена, Продавец, Характеристика, Уровень...
+                Название, Цена, Характеристика, Уровень...
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="market-filter-wrapper">
+          <button
+            type="button"
+            className={`market-filter-toggle ${filtersOpen ? "open" : ""}`}
+            onClick={() => setFiltersOpen((prev) => !prev)}
+            aria-expanded={filtersOpen}
+            aria-controls="market-filter-panel"
+          >
+            <TuneIcon fontSize="small" />
+            Фильтры
+          </button>
+          {filtersOpen && (
+            <div className="market-filter-panel" id="market-filter-panel">
+              <div className="market-filter-section">
+                <div className="market-filter-label">Стоимость</div>
+                <div className="market-filter-row">
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="От"
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                    className="market-filter-input"
+                  />
+                  <span className="market-filter-separator">—</span>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="До"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    className="market-filter-input"
+                  />
+                </div>
+              </div>
+              <div className="market-filter-section">
+                <label className="market-filter-label" htmlFor="market-sort">
+                  Сортировка
+                </label>
+                <select
+                  id="market-sort"
+                  value={sortMode}
+                  onChange={(e) => setSortMode(e.target.value)}
+                  className="market-filter-select"
+                >
+                  <option value="relevance">По релевантности</option>
+                  <option value="rarity">По редкости</option>
+                  <option value="alphabet">По алфавиту</option>
+                  <option value="type">По типу карты</option>
+                </select>
+              </div>
+              <div className="market-filter-section">
+                <div className="market-filter-label">Редкость</div>
+                <div className="market-filter-options">
+                  {Object.keys(rarityOrder).map((rarity) => (
+                    <label className="market-filter-checkbox" key={rarity}>
+                      <input
+                        type="checkbox"
+                        checked={rarityFilters[rarity] !== false}
+                        onChange={() =>
+                          setRarityFilters((prev) => ({
+                            ...prev,
+                            [rarity]: !(prev[rarity] !== false),
+                          }))
+                        }
+                      />
+                      <span>
+                        {rarity.charAt(0).toUpperCase()}
+                        {rarity.slice(1)}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="market-filter-section">
+                <div className="market-filter-label">Тип карты</div>
+                <div className="market-filter-options">
+                  {typeOptions.map((type) => (
+                    <label className="market-filter-checkbox" key={type}>
+                      <input
+                        type="checkbox"
+                        checked={typeFilters[type] !== false}
+                        onChange={() =>
+                          setTypeFilters((prev) => ({
+                            ...prev,
+                            [type]: !(prev[type] !== false),
+                          }))
+                        }
+                      />
+                      <span>{formatTypeLabel(type)}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           )}
