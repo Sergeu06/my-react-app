@@ -376,7 +376,9 @@ export default function useResolvingPhase(params) {
             // показываем визуально число лечения (если возможно)
             try {
               const hpBefore = null; // не читаем отдельно, show number uses heal value
-              const healValue = Number(card.raw.heal) || 0;
+              const healBonus =
+                typeof card.raw.bonus?.heal === "number" ? card.raw.bonus.heal : 0;
+              const healValue = (Number(card.raw.heal) || 0) + healBonus;
               const avatarEl = document.querySelector(
                 `.player-avatar[data-position="${targetPos}"]`
               );
@@ -485,11 +487,13 @@ export default function useResolvingPhase(params) {
           }
         } else {
           // === Damage logic ===
+          const damageBonus =
+            typeof card.raw.bonus?.damage === "number" ? card.raw.bonus.damage : 0;
           const baseDamage =
             typeof card.raw.damage === "number"
-              ? card.raw.damage
+              ? card.raw.damage + damageBonus
               : typeof card.raw.attack === "number"
-              ? card.raw.attack
+              ? card.raw.attack + damageBonus
               : 0;
           const damage =
             Math.max(1, Math.floor(baseDamage * (nextMult?.multiplier ?? 1))) ||

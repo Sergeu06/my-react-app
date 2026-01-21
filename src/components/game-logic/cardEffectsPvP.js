@@ -41,7 +41,10 @@ export function applyDamageMultiplierPvP(damageMultiplierEffect, card) {
   if (!card || typeof card.damage_multiplier !== "number") {
     return damageMultiplierEffect ?? null;
   }
-  const factor = card.damage_multiplier; // например 1.25 или 2.1
+  const bonus = typeof card.bonus?.damage_multiplier === "number"
+    ? card.bonus.damage_multiplier
+    : 0;
+  const factor = card.damage_multiplier + bonus; // например 1.25 или 2.1
   if (!isFinite(factor) || factor <= 0) return damageMultiplierEffect ?? null;
 
   return addDamageMultiplierEffectPvP(damageMultiplierEffect, factor);
@@ -62,7 +65,8 @@ function calcEffectiveDamage(baseDamage, effect) {
 export async function applyHealPvP(targetUid, card, lobbyId) {
   if (!targetUid || !lobbyId || !card) return null;
 
-  const healValue = Number(card.heal);
+  const bonus = typeof card.bonus?.heal === "number" ? card.bonus.heal : 0;
+  const healValue = Number(card.heal) + bonus;
   if (!isFinite(healValue) || healValue <= 0) return null;
 
   const hpRef = databaseRef(database, `lobbies/${lobbyId}/hp/${targetUid}`);
@@ -107,11 +111,12 @@ export async function applyDamagePvP(
   const snap = await get(hpRef);
   const currentHp = snap.val() ?? 0;
 
+  const bonus = typeof card.bonus?.damage === "number" ? card.bonus.damage : 0;
   const baseDamage =
     typeof card.damage === "number"
-      ? card.damage
+      ? card.damage + bonus
       : typeof card.attack === "number"
-      ? card.attack
+      ? card.attack + bonus
       : 0;
 
   const multiplier = damageMultiplierEffect?.multiplier ?? 1;
