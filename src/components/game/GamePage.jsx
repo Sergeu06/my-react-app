@@ -50,11 +50,9 @@ const sortPlayedCards = (cards = []) =>
 function DraggableHandCard({
   card,
   index,
-  isSelected,
   canPlay,
   isOverPlayerBoard,
   onPlayCard,
-  onSelect,
   renderStats,
   moveCard,
 }) {
@@ -118,12 +116,8 @@ function DraggableHandCard({
   return (
     <div
       ref={setCardRef}
-      className={`card-in-hand-wrapper${isSelected ? " selected" : ""}`}
+      className="card-in-hand-wrapper"
       title={card.name}
-      onClick={(event) => {
-        event.stopPropagation();
-        onSelect(isSelected ? null : card.id);
-      }}
       style={{ opacity: isDragging ? 0.6 : 1 }}
     >
       <FramedCard
@@ -197,7 +191,6 @@ function GamePage() {
   const [deck, setDeck] = useState([]);
   const [playedCards, setPlayedCards] = useState([]);
   const [recipes, setRecipes] = useState(0);
-  const [selectedCardId, setSelectedCardId] = useState(null);
   const [round, setRound] = useState(1);
   const [showDamageFlash, setShowDamageFlash] = useState(false);
   const [turnEnded, setTurnEnded] = useState(false);
@@ -275,7 +268,7 @@ function GamePage() {
 
   // Подписка на завершение игры
   useEffect(() => {
-    if (!lobbyId || !isActive) return;
+    if (!lobbyId) return;
 
     const statusRef = databaseRef(database, `lobbies/${lobbyId}/status`);
     const unsub = onValue(statusRef, (snap) => {
@@ -296,7 +289,7 @@ function GamePage() {
     });
 
     return () => off(statusRef);
-  }, [isActive, lobbyId, navigate]);
+  }, [lobbyId, navigate]);
 
   useEffect(() => {
     if (!lobbyId || !uid || !isActive) return;
@@ -505,13 +498,19 @@ function GamePage() {
 
   // загрузка данных лобби и определение хоста
   useEffect(() => {
-    if (!uid || !lobbyId || !isActive) return;
+    if (!uid || !lobbyId) return;
     debugLog("[GamePage] загрузка игры()", { uid, lobbyId });
 
     const loadGame = async () => {
       try {
         const lobbySnap = await get(databaseRef(database, `lobbies/${lobbyId}`));
         const lobbyData = lobbySnap.val();
+        if (lobbyData?.status === "end" && lobbyData?.winner && lobbyData?.loser) {
+          navigate(
+            `/result?lobby=${lobbyId}&winner=${lobbyData.winner}&loser=${lobbyData.loser}&start=${uid}`
+          );
+          return;
+        }
         if (!lobbyData?.players) return;
 
         // определяем хоста
@@ -570,7 +569,7 @@ function GamePage() {
       loadGame();
     });
     return () => cancelAnimationFrame(rafId);
-  }, [isActive, uid, lobbyId]);
+  }, [uid, lobbyId, navigate]);
   // подписка на завершение хода соперника
   useEffect(() => {
     if (!lobbyId || !gameData?.opponentUid || !isActive) return;
@@ -702,7 +701,7 @@ function GamePage() {
     );
   }, []);
 
-  const handlePlayCard = async (cardId = selectedCardId, source = "drag") => {
+  const handlePlayCard = async (cardId, source = "drag") => {
     const cardToPlay = hand.find((c) => c.id === cardId);
     if (!cardToPlay) {
       debugLog("[DnD] play aborted: card not found", { cardId, source });
@@ -730,7 +729,6 @@ function GamePage() {
 
     // Убираем карту из руки и добавляем в сыгранные
     setHand((prev) => prev.filter((c) => c.id !== cardToPlay.id));
-    setSelectedCardId(null);
     const cardWithTs = {
       ...cardToPlay,
       ts: Date.now(),
@@ -744,8 +742,6 @@ function GamePage() {
       `lobbies/${lobbyId}/playedCards/${uid}/${cardToPlay.id}`
     );
     await set(playedRef, cardWithTs);
-
-    setSelectedCardId(null);
 
     debugLog(`[GamePage][Energy] Карта сыграна: ${cardToPlay.id}, -${cost}`);
     debugLog("[DnD] play success", { cardId: cardToPlay.id, source });
@@ -1042,12 +1038,10 @@ function GamePage() {
       >
         <div
           className="player-hand-platform"
-          onClick={() => setSelectedCardId(null)}
           tabIndex={-1}
         >
           <div className="player-hand">
             {hand.map((card, index) => {
-              const isSelected = selectedCardId === card.id;
               const cost = card.cost ?? card.value ?? 0;
               const canPlay =
                 !turnEnded && roundPhase === "play" && recipes >= cost;
@@ -1056,11 +1050,9 @@ function GamePage() {
                   key={card.id}
                   card={card}
                   index={index}
-                  isSelected={isSelected}
                   canPlay={canPlay}
                   isOverPlayerBoard={isOverPlayerBoard}
                   onPlayCard={handlePlayCard}
-                  onSelect={setSelectedCardId}
                   renderStats={renderStats}
                   moveCard={moveCard}
                 />
