@@ -17,6 +17,10 @@
     "lobbies": {
       ".read": true,
       ".write": true
+    },
+    "Raid_BOSS": {
+      ".read": true,
+      ".write": true
     }
   }
 }
