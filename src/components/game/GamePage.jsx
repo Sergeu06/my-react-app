@@ -268,7 +268,7 @@ function GamePage() {
 
   // Подписка на завершение игры
   useEffect(() => {
-    if (!lobbyId || !isActive) return;
+    if (!lobbyId) return;
 
     const statusRef = databaseRef(database, `lobbies/${lobbyId}/status`);
     const unsub = onValue(statusRef, (snap) => {
@@ -289,7 +289,7 @@ function GamePage() {
     });
 
     return () => off(statusRef);
-  }, [isActive, lobbyId, navigate]);
+  }, [lobbyId, navigate]);
 
   useEffect(() => {
     if (!lobbyId || !uid || !isActive) return;
@@ -498,13 +498,19 @@ function GamePage() {
 
   // загрузка данных лобби и определение хоста
   useEffect(() => {
-    if (!uid || !lobbyId || !isActive) return;
+    if (!uid || !lobbyId) return;
     debugLog("[GamePage] загрузка игры()", { uid, lobbyId });
 
     const loadGame = async () => {
       try {
         const lobbySnap = await get(databaseRef(database, `lobbies/${lobbyId}`));
         const lobbyData = lobbySnap.val();
+        if (lobbyData?.status === "end" && lobbyData?.winner && lobbyData?.loser) {
+          navigate(
+            `/result?lobby=${lobbyId}&winner=${lobbyData.winner}&loser=${lobbyData.loser}&start=${uid}`
+          );
+          return;
+        }
         if (!lobbyData?.players) return;
 
         // определяем хоста
@@ -563,7 +569,7 @@ function GamePage() {
       loadGame();
     });
     return () => cancelAnimationFrame(rafId);
-  }, [isActive, uid, lobbyId]);
+  }, [uid, lobbyId, navigate]);
   // подписка на завершение хода соперника
   useEffect(() => {
     if (!lobbyId || !gameData?.opponentUid || !isActive) return;
