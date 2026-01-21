@@ -52,6 +52,8 @@ function DraggableHandCard({
   index,
   isSelected,
   canPlay,
+  isOverPlayerBoard,
+  onPlayCard,
   onSelect,
   renderStats,
   moveCard,
@@ -77,9 +79,18 @@ function DraggableHandCard({
           cardId: item?.cardId,
           didDrop: monitor.didDrop(),
         });
+        if (monitor.didDrop()) return;
+        if (!canPlay || !item?.cardId) return;
+        const clientOffset = monitor.getClientOffset();
+        if (!isOverPlayerBoard?.(clientOffset)) return;
+        debugLog("[DnD] drop fallback: play from drag end", {
+          cardId: item.cardId,
+          source: "drag-fallback",
+        });
+        onPlayCard?.(item.cardId, "drag-fallback");
       },
     }),
-    [card.id, canPlay]
+    [card.id, canPlay, isOverPlayerBoard, onPlayCard]
   );
   const [, dropRef] = useDrop(
     () => ({
@@ -205,6 +216,7 @@ function GamePage() {
   const [roundPhase, setRoundPhase] = useState("play");
 
   const [effectsByUid, setEffectsByUid] = useState({});
+  const playerBoardRef = useRef(null);
   // --- функция старта таймера ---
   const startNewTurnTimer = async (duration = 25) => {
     if (!isHost) return; // только хост пишет
@@ -678,6 +690,18 @@ function GamePage() {
     );
   }, [hand, deck]);
 
+  const isOverPlayerBoard = useCallback((point) => {
+    if (!point) return false;
+    const rect = playerBoardRef.current?.getBoundingClientRect();
+    if (!rect) return false;
+    return (
+      point.x >= rect.left &&
+      point.x <= rect.right &&
+      point.y >= rect.top &&
+      point.y <= rect.bottom
+    );
+  }, []);
+
   const handlePlayCard = async (cardId = selectedCardId, source = "drag") => {
     const cardToPlay = hand.find((c) => c.id === cardId);
     if (!cardToPlay) {
@@ -755,6 +779,13 @@ function GamePage() {
       }),
     }),
     [canDropCard, handlePlayCard]
+  );
+  const setBoardRefs = useCallback(
+    (node) => {
+      boardDropRef(node);
+      playerBoardRef.current = node;
+    },
+    [boardDropRef]
   );
 
   const dragLayerState = useDragLayer((monitor) => ({
@@ -952,7 +983,7 @@ function GamePage() {
 
         {/* Нижняя половина — игрок */}
         <div
-          ref={boardDropRef}
+          ref={setBoardRefs}
           className={`board-half player drop-target drop-target-${dropState}`}
           data-drop-state={dropState}
         >
@@ -1027,6 +1058,8 @@ function GamePage() {
                   index={index}
                   isSelected={isSelected}
                   canPlay={canPlay}
+                  isOverPlayerBoard={isOverPlayerBoard}
+                  onPlayCard={handlePlayCard}
                   onSelect={setSelectedCardId}
                   renderStats={renderStats}
                   moveCard={moveCard}
