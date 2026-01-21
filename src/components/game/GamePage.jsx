@@ -435,14 +435,6 @@ function GamePage() {
     return () => off(roundRef);
   }, [isActive, lobbyId]);
   useEffect(() => {
-    const handleClickOutside = () => {
-      setSelectedCardId(null);
-    };
-
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
-  useEffect(() => {
     async function fetchDeckAndHand() {
       try {
         // берём документ пользователя

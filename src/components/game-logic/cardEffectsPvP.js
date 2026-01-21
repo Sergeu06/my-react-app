@@ -116,7 +116,7 @@ export async function applyDamagePvP(
     typeof card.damage === "number"
       ? card.damage + bonus
       : typeof card.attack === "number"
-      ? card.attack
+      ? card.attack + bonus
       : 0;
 
   const multiplier = damageMultiplierEffect?.multiplier ?? 1;
