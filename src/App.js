@@ -976,26 +976,34 @@ function App() {
             </div>
           )}
 
-          <div
-            className={`page-content${
-              contentReady ? " page-content--ready" : ""
-            }`}
-          >
-            <DndProvider
-              backend={TouchBackend}
-              options={{
-                enableMouseEvents: true,
-                delayTouchStart: 0,
-                delayMouseStart: 0,
-                touchSlop: 0,
-              }}
+          <div className="page-stage">
+            {!contentReady && (
+              <div className="page-skeleton" aria-hidden="true">
+                <div className="skeleton-circle" />
+                <div className="skeleton-line short" />
+                <div className="skeleton-line long" />
+              </div>
+            )}
+            <div
+              className={`page-content${
+                contentReady ? " page-content--ready" : ""
+              }`}
             >
-            {lowEndMode ? (
-              <Routes location={location} key={location.pathname}>
-                <Route
-                  path="/fight"
-                  element={
-                    <AnimatedPageWrapper direction={direction}>
+              <DndProvider
+                backend={TouchBackend}
+                options={{
+                  enableMouseEvents: true,
+                  delayTouchStart: 0,
+                  delayMouseStart: 0,
+                  touchSlop: 0,
+                }}
+              >
+                {lowEndMode ? (
+                  <Routes location={location} key={location.pathname}>
+                    <Route
+                      path="/fight"
+                      element={
+                        <AnimatedPageWrapper direction={direction}>
                         <FightPage
                           uid={uid}
                           searchState={searchState}
@@ -1094,13 +1102,13 @@ function App() {
                     </AnimatedPageWrapper>
                   }
                 />
-              </Routes>
-            ) : (
-              <Routes location={location} key={location.pathname}>
-                <Route
-                  path="/fight"
-                  element={
-                    <AnimatedPageWrapper direction={direction}>
+                  </Routes>
+                ) : (
+                  <Routes location={location} key={location.pathname}>
+                    <Route
+                      path="/fight"
+                      element={
+                        <AnimatedPageWrapper direction={direction}>
                       <FightPage
                         uid={uid}
                         searchState={searchState}
@@ -1199,9 +1207,10 @@ function App() {
                     </AnimatedPageWrapper>
                   }
                 />
-              </Routes>
-            )}
-            </DndProvider>
+                  </Routes>
+                )}
+              </DndProvider>
+            </div>
           </div>
         </div>
       </div>
