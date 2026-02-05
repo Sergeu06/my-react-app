@@ -339,12 +339,16 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Активный элемент */
 .custom-nav .MuiBottomNavigationAction-root.Mui-selected {
   color: #ffa500 !important;
   transform: scale(1.07); /* эффект увеличения */
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Анимация значка */
@@ -398,7 +402,7 @@ a {
   height: 4px; /* <— здесь настраиваешь толщину полоски */
   background-color: #ffa500;
   border-radius: 2px;
-  box-shadow: 0 0 6px rgba(255, 165, 0, 0.4);
+  box-shadow: none;
   transition: transform 0.4s ease, opacity 0.4s ease;
   opacity: 0;
 }
@@ -407,6 +411,17 @@ a {
 .custom-nav .MuiBottomNavigationAction-root.Mui-selected::after {
   transform: translateX(-50%) scaleX(1);
   opacity: 1;
+  box-shadow: 0 0 6px rgba(255, 165, 0, 0.4);
+}
+
+.custom-nav .MuiBottomNavigationAction-root::before,
+.custom-nav .MuiBottomNavigationAction-root:focus,
+.custom-nav .MuiBottomNavigationAction-root:active {
+  box-shadow: none !important;
+}
+
+.custom-nav .MuiTouchRipple-root {
+  display: none;
 }
 
 /* === Удаляет синие выделения при клике/тапе по элементам === */
@@ -423,6 +438,19 @@ a {
 * {
   -webkit-tap-highlight-color: transparent;
   -webkit-focus-ring-color: transparent;
+}
+
+.page-bg-overlay {
+  transition: background-color 0.35s ease, opacity 0.35s ease;
+}
+
+.page-content {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.page-content.page-content--ready {
+  opacity: 1;
 }
 
 /* Контейнер для анимированных страниц */
