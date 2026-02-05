@@ -3,7 +3,6 @@ import { Navigate } from "react-router-dom";
 import {
   Routes,
   Route,
-  Link,
   useLocation,
   useSearchParams,
   useNavigate,
@@ -1053,15 +1052,11 @@ function App() {
                 <BottomNavigationAction
                   label="Торговец"
                   icon={<StoreIcon />}
-                  component={Link}
-                  to={`/shop?start=${uid}`}
                   value={0}
                 />
                 <BottomNavigationAction
                   label="Архив"
                   icon={<CollectionsIcon />}
-                  component={Link}
-                  to={`/collection?start=${uid}`}
                   value={1}
                 />
                 <BottomNavigationAction
@@ -1081,27 +1076,17 @@ function App() {
                       color={searchState.isSearching ? "warning" : "inherit"}
                     />
                   }
-                  component={Link}
-                  to={
-                    searchState.isSearching
-                      ? searchState.searchStartPath
-                      : `/fight?start=${uid}`
-                  }
                   value={2}
                 />
 
                 <BottomNavigationAction
                   label="Эволюция"
                   icon={<UpgradeIcon />}
-                  component={Link}
-                  to={`/upgrade?start=${uid}`}
                   value={3}
                 />
                 <BottomNavigationAction
                   label="Профиль"
                   icon={<AccountCircleIcon />}
-                  component={Link}
-                  to={`/profile?start=${uid}`}
                   value={4}
                 />
               </BottomNavigation>
