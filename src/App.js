@@ -3,7 +3,6 @@ import { Navigate } from "react-router-dom";
 import {
   Routes,
   Route,
-  Link,
   useLocation,
   useSearchParams,
   useNavigate,
@@ -239,6 +238,7 @@ function App() {
     loaded: 0,
     total: 0,
   });
+  const [contentReady, setContentReady] = useState(true);
   const [searchState, setSearchState] = useState({
     isSearching: false,
     searchStartPath: null,
@@ -261,6 +261,33 @@ function App() {
   useEffect(() => {
     setLowEndMode(lowEndMode);
   }, [lowEndMode]);
+
+  const path = location.pathname.toLowerCase();
+  const pageBackground = getPageBg(path);
+  const backgroundClass = (() => {
+    if (path.includes("/fight")) return "bg-fight";
+    if (path.includes("/shop")) return "bg-shop";
+    if (path.includes("/collection")) return "bg-collection";
+    if (path.includes("/upgrade")) return "bg-upgrade";
+    if (path.includes("/profile")) return "bg-profile";
+    if (path.includes("/raid")) return "bg-raid";
+    if (path.includes("/game")) return "bg-game";
+    if (path.includes("/open-box")) return "bg-open-box";
+    if (path.includes("/result")) return "bg-result";
+    return "bg-shop";
+  })();
+
+  useEffect(() => {
+    if (!pageBackground) {
+      setContentReady(true);
+      return;
+    }
+    setContentReady(false);
+    const timeoutId = setTimeout(() => {
+      setContentReady(true);
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [pageBackground, location.pathname]);
 
   useEffect(() => {
     setIsTransitioning(true);
@@ -981,22 +1008,8 @@ function App() {
     );
   }
 
-  const path = location.pathname.toLowerCase();
   const isGameOrProfile = path === "/game";
   const isRaid = path === "/raid";
-  const pageBackground = getPageBg(path);
-  const backgroundClass = (() => {
-    if (path.includes("/fight")) return "bg-fight";
-    if (path.includes("/shop")) return "bg-shop";
-    if (path.includes("/collection")) return "bg-collection";
-    if (path.includes("/upgrade")) return "bg-upgrade";
-    if (path.includes("/profile")) return "bg-profile";
-    if (path.includes("/raid")) return "bg-raid";
-    if (path.includes("/game")) return "bg-game";
-    if (path.includes("/open-box")) return "bg-open-box";
-    if (path.includes("/result")) return "bg-result";
-    return "bg-shop";
-  })();
 
   return (
     <PerformanceProvider value={{ lowEndMode, isTransitioning }}>
@@ -1053,15 +1066,11 @@ function App() {
                 <BottomNavigationAction
                   label="Торговец"
                   icon={<StoreIcon />}
-                  component={Link}
-                  to={`/shop?start=${uid}`}
                   value={0}
                 />
                 <BottomNavigationAction
                   label="Архив"
                   icon={<CollectionsIcon />}
-                  component={Link}
-                  to={`/collection?start=${uid}`}
                   value={1}
                 />
                 <BottomNavigationAction
@@ -1081,56 +1090,51 @@ function App() {
                       color={searchState.isSearching ? "warning" : "inherit"}
                     />
                   }
-                  component={Link}
-                  to={
-                    searchState.isSearching
-                      ? searchState.searchStartPath
-                      : `/fight?start=${uid}`
-                  }
                   value={2}
                 />
 
                 <BottomNavigationAction
                   label="Эволюция"
                   icon={<UpgradeIcon />}
-                  component={Link}
-                  to={`/upgrade?start=${uid}`}
                   value={3}
                 />
                 <BottomNavigationAction
                   label="Профиль"
                   icon={<AccountCircleIcon />}
-                  component={Link}
-                  to={`/profile?start=${uid}`}
                   value={4}
                 />
               </BottomNavigation>
             </div>
           )}
 
-          <DndProvider
-            backend={TouchBackend}
-            options={{
-              enableMouseEvents: true,
-              delayTouchStart: 0,
-              delayMouseStart: 0,
-              touchSlop: 0,
-            }}
+          <div
+            className={`page-content${
+              contentReady ? " page-content--ready" : ""
+            }`}
           >
-            {lowEndMode ? (
-              <Routes location={location} key={location.pathname}>
-                <Route
-                  path="/fight"
-                  element={
-                    <AnimatedPageWrapper direction={direction}>
-                      <FightPage
-                        uid={uid}
-                        searchState={searchState}
-                        setSearchState={setSearchState}
-                      />
-                    </AnimatedPageWrapper>
-                  }
-                />
+            <DndProvider
+              backend={TouchBackend}
+              options={{
+                enableMouseEvents: true,
+                delayTouchStart: 0,
+                delayMouseStart: 0,
+                touchSlop: 0,
+              }}
+            >
+              {lowEndMode ? (
+                <Routes location={location} key={location.pathname}>
+                  <Route
+                    path="/fight"
+                    element={
+                      <AnimatedPageWrapper direction={direction}>
+                        <FightPage
+                          uid={uid}
+                          searchState={searchState}
+                          setSearchState={setSearchState}
+                        />
+                      </AnimatedPageWrapper>
+                    }
+                  />
 
                 <Route
                   path="/"
@@ -1330,7 +1334,8 @@ function App() {
                 </Routes>
               </AnimatePresence>
             )}
-          </DndProvider>
+            </DndProvider>
+          </div>
         </div>
       </div>
       </UserProvider>
