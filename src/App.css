@@ -339,12 +339,16 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Активный элемент */
 .custom-nav .MuiBottomNavigationAction-root.Mui-selected {
   color: #ffa500 !important;
   transform: scale(1.07); /* эффект увеличения */
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Анимация значка */
@@ -398,7 +402,7 @@ a {
   height: 4px; /* <— здесь настраиваешь толщину полоски */
   background-color: #ffa500;
   border-radius: 2px;
-  box-shadow: 0 0 6px rgba(255, 165, 0, 0.4);
+  box-shadow: none;
   transition: transform 0.4s ease, opacity 0.4s ease;
   opacity: 0;
 }
@@ -407,6 +411,17 @@ a {
 .custom-nav .MuiBottomNavigationAction-root.Mui-selected::after {
   transform: translateX(-50%) scaleX(1);
   opacity: 1;
+  box-shadow: 0 0 6px rgba(255, 165, 0, 0.4);
+}
+
+.custom-nav .MuiBottomNavigationAction-root::before,
+.custom-nav .MuiBottomNavigationAction-root:focus,
+.custom-nav .MuiBottomNavigationAction-root:active {
+  box-shadow: none !important;
+}
+
+.custom-nav .MuiTouchRipple-root {
+  display: none;
 }
 
 /* === Удаляет синие выделения при клике/тапе по элементам === */
@@ -423,6 +438,71 @@ a {
 * {
   -webkit-tap-highlight-color: transparent;
   -webkit-focus-ring-color: transparent;
+}
+
+.page-bg-overlay {
+  transition: background-color 0.35s ease, opacity 0.35s ease;
+}
+
+.page-stage {
+  position: relative;
+  min-height: calc(100vh - 55px);
+}
+
+.page-content {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.page-content.page-content--ready {
+  opacity: 1;
+}
+
+.page-skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.page-skeleton .skeleton-circle,
+.page-skeleton .skeleton-line {
+  background: linear-gradient(90deg, #2b2b2b 25%, #3a3a3a 50%, #2b2b2b 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.2s ease-in-out infinite;
+  border-radius: 999px;
+}
+
+.page-skeleton .skeleton-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+}
+
+.page-skeleton .skeleton-line {
+  height: 14px;
+  width: min(300px, 70vw);
+}
+
+.page-skeleton .skeleton-line.short {
+  width: min(180px, 55vw);
+}
+
+.page-skeleton .skeleton-line.long {
+  width: min(340px, 80vw);
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* Контейнер для анимированных страниц */
