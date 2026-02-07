@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import {
   Routes,
@@ -120,6 +120,19 @@ function getPageBg(pathname) {
   return null;
 }
 
+function getBackgroundClass(pathname) {
+  if (pathname.includes("/fight")) return "bg-fight";
+  if (pathname.includes("/shop")) return "bg-shop";
+  if (pathname.includes("/collection")) return "bg-collection";
+  if (pathname.includes("/upgrade")) return "bg-upgrade";
+  if (pathname.includes("/profile")) return "bg-profile";
+  if (pathname.includes("/raid")) return "bg-raid";
+  if (pathname.includes("/game")) return "bg-game";
+  if (pathname.includes("/open-box")) return "bg-open-box";
+  if (pathname.includes("/result")) return "bg-result";
+  return "bg-shop";
+}
+
 function collectDeviceInfo() {
   return {
     userAgent: navigator.userAgent,
@@ -190,7 +203,15 @@ function App() {
     loaded: 0,
     total: 0,
   });
-  const [contentReady, setContentReady] = useState(true);
+  const [activeBackgroundClass, setActiveBackgroundClass] = useState(() =>
+    getBackgroundClass(location.pathname.toLowerCase())
+  );
+  const [previousBackgroundClass, setPreviousBackgroundClass] = useState(null);
+  const [isBackgroundTransitioning, setIsBackgroundTransitioning] =
+    useState(false);
+  const [contentReady, setContentReady] = useState(
+    () => !getPageBg(location.pathname.toLowerCase())
+  );
   const [searchState, setSearchState] = useState({
     isSearching: false,
     searchStartPath: null,
@@ -216,30 +237,35 @@ function App() {
 
   const path = location.pathname.toLowerCase();
   const pageBackground = getPageBg(path);
-  const backgroundClass = (() => {
-    if (path.includes("/fight")) return "bg-fight";
-    if (path.includes("/shop")) return "bg-shop";
-    if (path.includes("/collection")) return "bg-collection";
-    if (path.includes("/upgrade")) return "bg-upgrade";
-    if (path.includes("/profile")) return "bg-profile";
-    if (path.includes("/raid")) return "bg-raid";
-    if (path.includes("/game")) return "bg-game";
-    if (path.includes("/open-box")) return "bg-open-box";
-    if (path.includes("/result")) return "bg-result";
-    return "bg-shop";
-  })();
+  const backgroundClass = getBackgroundClass(path);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!pageBackground) {
       setContentReady(true);
       return;
     }
     setContentReady(false);
+  }, [pageBackground, location.pathname]);
+
+  useEffect(() => {
+    if (!pageBackground) return;
     const timeoutId = setTimeout(() => {
       setContentReady(true);
-    }, 350);
+    }, 450);
     return () => clearTimeout(timeoutId);
   }, [pageBackground, location.pathname]);
+
+  useEffect(() => {
+    if (backgroundClass === activeBackgroundClass) return;
+    setPreviousBackgroundClass(activeBackgroundClass);
+    setActiveBackgroundClass(backgroundClass);
+    setIsBackgroundTransitioning(true);
+    const timeoutId = setTimeout(() => {
+      setPreviousBackgroundClass(null);
+      setIsBackgroundTransitioning(false);
+    }, 700);
+    return () => clearTimeout(timeoutId);
+  }, [activeBackgroundClass, backgroundClass]);
 
   useEffect(() => {
     if (!isVerified) return;
@@ -1033,8 +1059,16 @@ function App() {
             }}
             aria-hidden="true"
           />
+          {previousBackgroundClass && (
+            <div
+              className={`background-layer ${previousBackgroundClass}`}
+              aria-hidden="true"
+            />
+          )}
           <div
-            className={`background-container ${backgroundClass}`}
+            className={`background-layer ${activeBackgroundClass}${
+              isBackgroundTransitioning ? " background-layer--fade-in" : ""
+            }`}
             ref={backgroundRef}
           />
           <div className="game-version">v0.9.96.14</div>
