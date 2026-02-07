@@ -20,7 +20,9 @@
 }
 
 .currency-dock.collapsed {
-  max-width: min(140px, 45vw);
+  width: max-content;
+  min-width: max-content;
+  max-width: none;
   padding: 2px;
   gap: 2px;
 }
@@ -114,7 +116,9 @@
   }
 
   .currency-dock.collapsed {
-    max-width: min(106px, 55vw);
+    width: max-content;
+    min-width: max-content;
+    max-width: none;
     padding: 2px;
     gap: 2px;
   }
