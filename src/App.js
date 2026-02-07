@@ -209,9 +209,6 @@ function App() {
   const [previousBackgroundClass, setPreviousBackgroundClass] = useState(null);
   const [isBackgroundTransitioning, setIsBackgroundTransitioning] =
     useState(false);
-  const [contentReady, setContentReady] = useState(
-    () => !getPageBg(location.pathname.toLowerCase())
-  );
   const [searchState, setSearchState] = useState({
     isSearching: false,
     searchStartPath: null,
@@ -238,22 +235,26 @@ function App() {
   const path = location.pathname.toLowerCase();
   const pageBackground = getPageBg(path);
   const backgroundClass = getBackgroundClass(path);
-
-  useLayoutEffect(() => {
-    if (!pageBackground) {
-      setContentReady(true);
-      return;
-    }
-    setContentReady(false);
-  }, [pageBackground, location.pathname]);
+  const progressRatio =
+    assetsProgress.total > 0 ? assetsProgress.loaded / assetsProgress.total : 0;
+  const isSkeletonPage =
+    path.includes("/shop") ||
+    path.includes("/collection") ||
+    path.includes("/profile");
+  const shouldShowSkeleton = isSkeletonPage && progressRatio < 0.85;
+  const contentReady = !shouldShowSkeleton;
 
   useEffect(() => {
-    if (!pageBackground) return;
+    if (backgroundClass === activeBackgroundClass) return;
+    setPreviousBackgroundClass(activeBackgroundClass);
+    setActiveBackgroundClass(backgroundClass);
+    setIsBackgroundTransitioning(true);
     const timeoutId = setTimeout(() => {
-      setContentReady(true);
-    }, 450);
+      setPreviousBackgroundClass(null);
+      setIsBackgroundTransitioning(false);
+    }, 700);
     return () => clearTimeout(timeoutId);
-  }, [pageBackground, location.pathname]);
+  }, [activeBackgroundClass, backgroundClass]);
 
   useEffect(() => {
     if (backgroundClass === activeBackgroundClass) return;
