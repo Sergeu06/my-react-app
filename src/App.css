@@ -464,13 +464,11 @@ a {
 
 .page-content {
   opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 0.45s ease, transform 0.45s ease;
+  transition: opacity 0.45s ease;
 }
 
 .page-content.page-content--ready {
   opacity: 1;
-  transform: translateY(0);
   transition-delay: 0.08s;
 }
 
