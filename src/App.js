@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import {
   Routes,
@@ -209,7 +209,9 @@ function App() {
   const [previousBackgroundClass, setPreviousBackgroundClass] = useState(null);
   const [isBackgroundTransitioning, setIsBackgroundTransitioning] =
     useState(false);
-  const [contentReady, setContentReady] = useState(true);
+  const [contentReady, setContentReady] = useState(
+    () => !getPageBg(location.pathname.toLowerCase())
+  );
   const [searchState, setSearchState] = useState({
     isSearching: false,
     searchStartPath: null,
@@ -237,12 +239,16 @@ function App() {
   const pageBackground = getPageBg(path);
   const backgroundClass = getBackgroundClass(path);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!pageBackground) {
       setContentReady(true);
       return;
     }
     setContentReady(false);
+  }, [pageBackground, location.pathname]);
+
+  useEffect(() => {
+    if (!pageBackground) return;
     const timeoutId = setTimeout(() => {
       setContentReady(true);
     }, 450);
