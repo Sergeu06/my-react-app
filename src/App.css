@@ -158,12 +158,12 @@ a {
   background-size: cover;
   z-index: -2;
   pointer-events: none;
-  transition: opacity 700ms ease;
+  transition: opacity 320ms ease;
   will-change: background-position, opacity;
 }
 
 .background-layer--fade-in {
-  animation: bgFadeIn 700ms ease;
+  animation: bgFadeIn 320ms ease;
 }
 
 @keyframes bgFadeIn {
@@ -524,7 +524,13 @@ a {
 }
 
 .page-bg-overlay {
-  transition: background-color 0.6s ease, opacity 0.6s ease;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  transition: background-color 0.32s ease;
+  opacity: 1;
+  will-change: background-color;
 }
 
 .page-stage {
@@ -534,12 +540,17 @@ a {
 
 .page-content {
   opacity: 0;
-  transition: opacity 0.45s ease;
+  transition: opacity 0.2s ease;
 }
 
 .page-content.page-content--ready {
   opacity: 1;
-  transition-delay: 0.08s;
+  transition-delay: 0.05s;
+}
+
+.page-content.page-content--fade-out {
+  opacity: 0;
+  transition-delay: 0s;
 }
 
 .page-skeleton {
