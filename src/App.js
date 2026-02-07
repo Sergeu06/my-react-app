@@ -257,18 +257,6 @@ function App() {
   }, [activeBackgroundClass, backgroundClass]);
 
   useEffect(() => {
-    if (backgroundClass === activeBackgroundClass) return;
-    setPreviousBackgroundClass(activeBackgroundClass);
-    setActiveBackgroundClass(backgroundClass);
-    setIsBackgroundTransitioning(true);
-    const timeoutId = setTimeout(() => {
-      setPreviousBackgroundClass(null);
-      setIsBackgroundTransitioning(false);
-    }, 700);
-    return () => clearTimeout(timeoutId);
-  }, [activeBackgroundClass, backgroundClass]);
-
-  useEffect(() => {
     if (!isVerified) return;
     let isActive = true;
     const staticAssets = [
