@@ -15,6 +15,12 @@
   background-color: #000;
 }
 
+.boss-container.boss-drop-active {
+  outline: 2px dashed rgba(34, 211, 238, 0.7);
+  outline-offset: -8px;
+  box-shadow: inset 0 0 40px rgba(34, 211, 238, 0.35);
+}
+
 .damage-multiplier-effects {
   margin-top: 4px;
   color: #ffa500;
@@ -105,6 +111,24 @@
   justify-content: center;
   align-items: flex-end;
   z-index: 3;
+}
+
+.raid-card-draggable {
+  touch-action: none;
+  cursor: grab;
+}
+
+.raid-card-draggable.dragging {
+  opacity: 0.45;
+}
+
+.raid-drag-preview {
+  position: fixed;
+  z-index: 20;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  width: min(180px, 24vw);
+  max-width: 200px;
 }
 
 .boss-hp-bar {

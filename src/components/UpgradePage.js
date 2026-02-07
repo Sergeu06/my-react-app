@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import FramedCard from "../utils/FramedCard";
 import {
   collection,
@@ -33,6 +33,7 @@ function UpgradePage() {
   const [loadingUpgrade, setLoadingUpgrade] = useState(false);
   const [loadingCards, setLoadingCards] = useState(true);
   const [activeTab, setActiveTab] = useState("upgrade");
+  const upgradeCardRef = useRef(null);
 
   const [fusionSlots, setFusionSlots] = useState(Array(5).fill(null));
   const [fusionSlotIndex, setFusionSlotIndex] = useState(null);
@@ -48,6 +49,58 @@ function UpgradePage() {
   const [secretBalance, setSecretBalance] = useState(
     userData?.SecretRecipes ?? 0
   );
+
+  const handleChaosMove = useCallback(
+    (event) => {
+      if (!animating || !upgradeCardRef.current) return;
+      const rect = upgradeCardRef.current.getBoundingClientRect();
+      const offsetX = event.clientX - rect.left - rect.width / 2;
+      const offsetY = event.clientY - rect.top - rect.height / 2;
+      const x = Math.min(
+        100,
+        Math.max(0, ((event.clientX - rect.left) / rect.width) * 100)
+      );
+      const y = Math.min(
+        100,
+        Math.max(0, ((event.clientY - rect.top) / rect.height) * 100)
+      );
+      const tiltX = (offsetX / rect.width) * 40;
+      const tiltY = (offsetY / rect.height) * 40;
+      upgradeCardRef.current.style.setProperty("--chaos-x", `${x.toFixed(2)}%`);
+      upgradeCardRef.current.style.setProperty("--chaos-y", `${y.toFixed(2)}%`);
+      upgradeCardRef.current.style.setProperty(
+        "--chaos-tilt-x",
+        `${tiltX.toFixed(2)}px`
+      );
+      upgradeCardRef.current.style.setProperty(
+        "--chaos-tilt-y",
+        `${tiltY.toFixed(2)}px`
+      );
+      upgradeCardRef.current.style.setProperty(
+        "--chaos-rot",
+        `${(tiltX * 0.4).toFixed(2)}deg`
+      );
+    },
+    [animating]
+  );
+
+  const handleChaosLeave = useCallback(() => {
+    if (!upgradeCardRef.current) return;
+    upgradeCardRef.current.style.setProperty("--chaos-x", "50%");
+    upgradeCardRef.current.style.setProperty("--chaos-y", "50%");
+    upgradeCardRef.current.style.setProperty("--chaos-tilt-x", "0px");
+    upgradeCardRef.current.style.setProperty("--chaos-tilt-y", "0px");
+    upgradeCardRef.current.style.setProperty("--chaos-rot", "0deg");
+  }, []);
+
+  useEffect(() => {
+    if (!animating || !upgradeCardRef.current) return;
+    upgradeCardRef.current.style.setProperty("--chaos-x", "50%");
+    upgradeCardRef.current.style.setProperty("--chaos-y", "50%");
+    upgradeCardRef.current.style.setProperty("--chaos-tilt-x", "0px");
+    upgradeCardRef.current.style.setProperty("--chaos-tilt-y", "0px");
+    upgradeCardRef.current.style.setProperty("--chaos-rot", "0deg");
+  }, [animating]);
 
   useEffect(() => {
     setSecretBalance(userData?.SecretRecipes ?? 0);
@@ -430,8 +483,6 @@ function UpgradePage() {
       });
       await completeDailyTask(database, uid, DAILY_TASK_IDS, "daily_upgrade");
 
-      setAnimationSuccess(success);
-
       setTimeout(() => {
         setSelectedCard({ ...updatedCard, card_id: selectedCard.card_id });
         setPlayerCards((prev) =>
@@ -442,11 +493,14 @@ function UpgradePage() {
           )
         );
 
+        setAnimating(false);
+        setAnimationSuccess(success);
         setUpgradeResult(success ? "success" : "fail");
         setLoadingUpgrade(false);
-        setAnimating(false);
-        setTimeout(() => setUpgradeResult(null), 2000);
-        setAnimationSuccess(null);
+        setTimeout(() => {
+          setUpgradeResult(null);
+          setAnimationSuccess(null);
+        }, 2000);
       }, 3200);
     } catch (e) {
       console.error("Ошибка улучшения:", e);
@@ -912,6 +966,8 @@ function UpgradePage() {
           <div
             className="upgrade-panel"
             style={{ display: "flex", alignItems: "center" }}
+            onPointerMove={handleChaosMove}
+            onPointerLeave={handleChaosLeave}
           >
             <div className="card-style">{renderPreviewCard()}</div>
 
@@ -976,7 +1032,7 @@ function UpgradePage() {
 
             <div
               className={`card-style clickable
-                  ${animating ? "upgrade-glow-pulse upgrade-ritual-active" : ""}
+                  ${animating ? "upgrade-glow-pulse upgrade-chaos-active" : ""}
                   ${
                     animationSuccess === null && animating
                       ? "upgrade-glow-flicker"
@@ -986,14 +1042,18 @@ function UpgradePage() {
                   ${animationSuccess === false ? "upgrade-fail-shake-glow" : ""}
                 `}
               style={{ position: "relative" }}
+              ref={upgradeCardRef}
+              onMouseMove={handleChaosMove}
+              onMouseLeave={handleChaosLeave}
               onClick={() => setShowCardModal(true)}
             >
               {animating && (
                 <>
-                  <div className="upgrade-ritual-overlay" />
-                  <div className="upgrade-ritual-runes" />
-                  <div className="upgrade-ritual-spark" />
-                  <div className="upgrade-mystic-fog" />
+                  <div className="upgrade-chaos-field" />
+                  <div className="upgrade-chaos-shards" />
+                  <div className="upgrade-chaos-sparks" />
+                  <div className="upgrade-chaos-orbs" />
+                  <div className="upgrade-chaos-parallax" />
                 </>
               )}
               {selectedCard ? (
