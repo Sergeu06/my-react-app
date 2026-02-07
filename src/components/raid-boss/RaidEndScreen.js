@@ -56,11 +56,14 @@ const ROULETTE_PHASES = {
 const SPIN_STAGES = {
   kick: "kick",
   main: "main",
+  settle: "settle",
+  final: "final",
 };
 
 const ROULETTE_CONFIG = {
   spinDurationMs: 2600,
   kickDurationMs: 240,
+  settleDurationMs: 360,
   revealMinMs: 500,
   revealMaxMs: 900,
   itemHeight: 64,
@@ -311,13 +314,15 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
         targetOffset,
         (ROULETTE_CONFIG.itemHeight + ROULETTE_CONFIG.itemGap) * 2
       );
+      const settleOffset =
+        targetOffset + (ROULETTE_CONFIG.itemHeight + ROULETTE_CONFIG.itemGap) * 0.35;
 
       setRouletteItems(items);
       setWinningIndex(targetIndex);
       setRouletteOffset(0);
 
       if (prefersReducedMotion) {
-        setSpinStage(SPIN_STAGES.main);
+        setSpinStage(SPIN_STAGES.final);
         setRouletteOffset(targetOffset);
       } else {
         requestAnimationFrame(() => {
@@ -329,14 +334,34 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
           setTimeout(() => {
             if (!isActive) return;
             setSpinStage(SPIN_STAGES.main);
-            setRouletteOffset(targetOffset);
+            setRouletteOffset(settleOffset);
           }, ROULETTE_CONFIG.kickDurationMs)
+        );
+
+        timeouts.push(
+          setTimeout(() => {
+            if (!isActive) return;
+            setSpinStage(SPIN_STAGES.settle);
+            setRouletteOffset(targetOffset);
+          }, ROULETTE_CONFIG.kickDurationMs + ROULETTE_CONFIG.spinDurationMs)
+        );
+
+        timeouts.push(
+          setTimeout(() => {
+            if (!isActive) return;
+            setSpinStage(SPIN_STAGES.final);
+          },
+          ROULETTE_CONFIG.kickDurationMs +
+            ROULETTE_CONFIG.spinDurationMs +
+            ROULETTE_CONFIG.settleDurationMs)
         );
       }
 
       const totalSpinDuration = prefersReducedMotion
         ? 0
-        : ROULETTE_CONFIG.spinDurationMs + ROULETTE_CONFIG.kickDurationMs;
+        : ROULETTE_CONFIG.spinDurationMs +
+          ROULETTE_CONFIG.kickDurationMs +
+          ROULETTE_CONFIG.settleDurationMs;
       const revealDuration = randomInt(
         ROULETTE_CONFIG.revealMinMs,
         ROULETTE_CONFIG.revealMaxMs
@@ -613,14 +638,16 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
                   transition: `transform ${
                     spinStage === SPIN_STAGES.kick
                       ? ROULETTE_CONFIG.kickDurationMs
-                      : ROULETTE_CONFIG.spinDurationMs
+                      : spinStage === SPIN_STAGES.settle
+                        ? ROULETTE_CONFIG.settleDurationMs
+                        : ROULETTE_CONFIG.spinDurationMs
                   }ms cubic-bezier(0.17, 0.84, 0.44, 1)`,
                 }}
               >
                 {rouletteItems.map((item, index) => (
                   <div
                     className={`raid-roulette-item${
-                      index === winningIndex ? " winner" : ""
+                      isRevealPhase && index === winningIndex ? " winner" : ""
                     }`}
                     key={`${item.type}-${index}`}
                     style={{ height: ROULETTE_CONFIG.itemHeight }}

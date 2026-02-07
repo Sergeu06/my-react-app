@@ -22,6 +22,8 @@
 
 .raid-roulette-overlay--reveal .raid-roulette-item.winner {
   animation: winner-pulse 700ms ease-out;
+  color: #ffd58a;
+  font-weight: bold;
   box-shadow: 0 0 18px rgba(255, 209, 128, 0.5);
 }
 
@@ -81,11 +83,6 @@
   background: rgba(18, 14, 10, 0.85);
   border-radius: 10px;
   margin: 0 12px;
-}
-
-.raid-roulette-item.winner {
-  color: #ffd58a;
-  font-weight: bold;
 }
 
 .raid-roulette-item-label {
