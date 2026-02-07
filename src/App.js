@@ -30,7 +30,9 @@ import {
   onValue,
 } from "./components/firebase";
 import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 import { TouchBackend } from "react-dnd-touch-backend";
+import { MultiBackend, TouchTransition } from "react-dnd-multi-backend";
 import { useSwipeable } from "react-swipeable";
 import NavTimer from "./utils/NavTimer"; // путь к вашему файлу
 
@@ -63,6 +65,25 @@ const isMobile =
   /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent) ||
   navigator.maxTouchPoints > 1 ||
   window.innerWidth < 900;
+
+const dndBackendOptions = {
+  backends: [
+    {
+      backend: HTML5Backend,
+    },
+    {
+      backend: TouchBackend,
+      preview: true,
+      transition: TouchTransition,
+      options: {
+        enableMouseEvents: true,
+        delayTouchStart: 0,
+        delayMouseStart: 0,
+        touchSlop: 0,
+      },
+    },
+  ],
+};
 
 function checkTelegramAuth(initData, botToken) {
   const params = {};
@@ -1144,13 +1165,8 @@ function App() {
               }`}
             >
               <DndProvider
-                backend={TouchBackend}
-                options={{
-                  enableMouseEvents: true,
-                  delayTouchStart: 0,
-                  delayMouseStart: 0,
-                  touchSlop: 0,
-                }}
+                backend={MultiBackend}
+                options={dndBackendOptions}
               >
                 {lowEndMode ? (
                   <Routes location={location} key={location.pathname}>

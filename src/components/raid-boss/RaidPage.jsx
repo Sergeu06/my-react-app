@@ -60,9 +60,23 @@ function RaidPage() {
   const hpFillRef = useRef(null);
   const hpDamageRef = useRef(null);
   const previousHpPercentRef = useRef(100);
+  const bossDropRef = useRef(null);
+  const dragStateRef = useRef({
+    pointerId: null,
+    card: null,
+    startX: 0,
+    startY: 0,
+    offsetX: 0,
+    offsetY: 0,
+    isDragging: false,
+    canDrag: false,
+  });
   const [damageThisTurn, setDamageThisTurn] = useState(null);
   const [totalDamageDealt, setTotalDamageDealt] = useState(0);
   const [totalCardsPlayed, setTotalCardsPlayed] = useState(0);
+  const [draggingCard, setDraggingCard] = useState(null);
+  const [dragPosition, setDragPosition] = useState(null);
+  const [dragOverBoss, setDragOverBoss] = useState(false);
 
   const [dotEffectsQueue, setDotEffectsQueue] = useState([]);
   const [hand, setHand] = useState([]);
@@ -423,14 +437,74 @@ function RaidPage() {
     }, 350);
   }
 
-  const handleDropPlayCard = (event) => {
+  const isPointInsideBoss = (x, y) => {
+    const rect = bossDropRef.current?.getBoundingClientRect();
+    if (!rect) return false;
+    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+  };
+
+  const handlePointerStart = (event, card, canDrag) => {
+    if (!event.currentTarget) return;
     event.preventDefault();
-    if (playingCard || flyingCard) return;
-    const draggedCardId = event.dataTransfer.getData("text/plain");
-    if (!draggedCardId) return;
-    const cardToPlay = hand.find((card) => card.id === draggedCardId);
-    if (!cardToPlay) return;
-    playCard(cardToPlay);
+    const rect = event.currentTarget.getBoundingClientRect();
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      card,
+      startX: event.clientX,
+      startY: event.clientY,
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+      isDragging: false,
+      canDrag,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event) => {
+    const dragState = dragStateRef.current;
+    if (!dragState.card || dragState.pointerId !== event.pointerId) return;
+    if (!dragState.canDrag) return;
+    const deltaX = event.clientX - dragState.startX;
+    const deltaY = event.clientY - dragState.startY;
+    const distance = Math.hypot(deltaX, deltaY);
+    if (!dragState.isDragging && distance > 6) {
+      dragState.isDragging = true;
+      setDraggingCard(dragState.card);
+    }
+    if (!dragState.isDragging) return;
+    setDragPosition({ x: event.clientX, y: event.clientY });
+    setDragOverBoss(isPointInsideBoss(event.clientX, event.clientY));
+  };
+
+  const handlePointerEnd = (event) => {
+    const dragState = dragStateRef.current;
+    if (!dragState.card || dragState.pointerId !== event.pointerId) return;
+    if (dragState.isDragging && dragState.canDrag) {
+      if (
+        !playingCard &&
+        !flyingCard &&
+        isPointInsideBoss(event.clientX, event.clientY)
+      ) {
+        playCard(dragState.card);
+      }
+    } else if (dragState.card) {
+      setSelectedCardId((prev) =>
+        prev === dragState.card.id ? null : dragState.card.id
+      );
+    }
+    setDraggingCard(null);
+    setDragPosition(null);
+    setDragOverBoss(false);
+    dragStateRef.current = {
+      pointerId: null,
+      card: null,
+      startX: 0,
+      startY: 0,
+      offsetX: 0,
+      offsetY: 0,
+      isDragging: false,
+      canDrag: false,
+    };
   };
 
   return (
@@ -438,13 +512,10 @@ function RaidPage() {
       <div className="red-flash left" />
       <div className="red-flash right" />
       <div
-        className={`boss-container ${isBossShaking ? "screen-shake" : ""}`}
-        onDragOver={(event) => {
-          if (!playingCard && !flyingCard) {
-            event.preventDefault();
-          }
-        }}
-        onDrop={handleDropPlayCard}
+        className={`boss-container ${isBossShaking ? "screen-shake" : ""} ${
+          dragOverBoss ? "boss-drop-active" : ""
+        }`}
+        ref={bossDropRef}
       >
         <img
           src={bossImageUrl}
@@ -543,24 +614,18 @@ function RaidPage() {
                 return (
                   <div
                     key={card.id}
-                    className={`card-in-hand-wrapper${
+                    className={`card-in-hand-wrapper raid-card-draggable${
                       isSelected ? " selected" : ""
-                    }`}
+                    }${draggingCard?.id === card.id ? " dragging" : ""}`}
                     title={card.name}
-                    draggable={canPlayCard}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCardClick(card.id);
+                    draggable={false}
+                    onPointerDown={(event) => {
+                      event.stopPropagation();
+                      handlePointerStart(event, card, canPlayCard);
                     }}
-                    onDragStart={(event) => {
-                      if (!canPlayCard) {
-                        event.preventDefault();
-                        return;
-                      }
-                      event.dataTransfer.setData("text/plain", card.id);
-                      event.dataTransfer.effectAllowed = "move";
-                      setSelectedCardId(card.id);
-                    }}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerEnd}
+                    onPointerCancel={handlePointerEnd}
                     data-playable={playingCard ? "false" : "true"}
                   >
                     <FramedCard card={card} showLevel={true} showName={false} />
@@ -603,6 +668,41 @@ function RaidPage() {
       )}
       {notEnoughEnergyMessage && (
         <div className="energy-warning">{notEnoughEnergyMessage}</div>
+      )}
+      {draggingCard && dragPosition && (
+        <div
+          className="raid-drag-preview"
+          style={{
+            left: dragPosition.x,
+            top: dragPosition.y,
+          }}
+          aria-hidden="true"
+        >
+          <FramedCard
+            card={draggingCard}
+            showLevel={true}
+            showName={false}
+          />
+          {draggingCard.value !== undefined && (
+            <div className="card-corner cost">
+              {Math.max(
+                0,
+                Math.ceil(
+                  (draggingCard.value ?? 0) * raidModifiers.costMultiplier
+                )
+              )}
+            </div>
+          )}
+          {renderCardStats(draggingCard).map((stat, index) => (
+            <div
+              key={`${stat.label}-${index}`}
+              className={`card-corner ${stat.type} stat-${index}`}
+              aria-label={stat.label}
+            >
+              {stat.value !== null ? stat.value : "×"}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
