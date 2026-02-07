@@ -461,8 +461,6 @@ function UpgradePage() {
       });
       await completeDailyTask(database, uid, DAILY_TASK_IDS, "daily_upgrade");
 
-      setAnimationSuccess(success);
-
       setTimeout(() => {
         setSelectedCard({ ...updatedCard, card_id: selectedCard.card_id });
         setPlayerCards((prev) =>
@@ -473,11 +471,14 @@ function UpgradePage() {
           )
         );
 
+        setAnimating(false);
+        setAnimationSuccess(success);
         setUpgradeResult(success ? "success" : "fail");
         setLoadingUpgrade(false);
-        setAnimating(false);
-        setTimeout(() => setUpgradeResult(null), 2000);
-        setAnimationSuccess(null);
+        setTimeout(() => {
+          setUpgradeResult(null);
+          setAnimationSuccess(null);
+        }, 2000);
       }, 3200);
     } catch (e) {
       console.error("Ошибка улучшения:", e);
