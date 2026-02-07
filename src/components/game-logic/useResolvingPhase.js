@@ -222,11 +222,17 @@ export default function useResolvingPhase(params) {
         const attackerUid = card.owner;
 
         // Определяем: карта лечит или бьёт
-        const isHealCard =
-          typeof card.raw.heal === "number" && card.raw.heal > 0;
-        const isMultiplierCard =
-          typeof card.raw.damage_multiplier === "number" &&
-          card.raw.damage_multiplier > 0;
+        const healBonus =
+          typeof card.raw.bonus?.heal === "number" ? card.raw.bonus.heal : 0;
+        const totalHeal = (Number(card.raw.heal) || 0) + healBonus;
+        const isHealCard = totalHeal > 0;
+        const multiplierBonus =
+          typeof card.raw.bonus?.damage_multiplier === "number"
+            ? card.raw.bonus.damage_multiplier
+            : 0;
+        const totalMultiplier =
+          (Number(card.raw.damage_multiplier) || 0) + multiplierBonus;
+        const isMultiplierCard = totalMultiplier > 0;
         const isRemoveMultiplierCard = card.raw.remove_multiplier === true;
 
         // Выбираем effectiveTarget в зависимости от типа карты
