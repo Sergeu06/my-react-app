@@ -44,6 +44,11 @@ function UpgradePage() {
   const [fusionInProgress, setFusionInProgress] = useState(false);
   const [fusionPossibleCards, setFusionPossibleCards] = useState([]);
   const [fusionRewardCard, setFusionRewardCard] = useState(null);
+  const [fusionAvailabilityMap, setFusionAvailabilityMap] = useState(new Set());
+  const [fusionAvailabilityLoading, setFusionAvailabilityLoading] =
+    useState(false);
+  const [fusionAvailabilityLoaded, setFusionAvailabilityLoaded] =
+    useState(false);
   const [showFusionRewardModal, setShowFusionRewardModal] = useState(false);
   const [fusionTemplatesLoading, setFusionTemplatesLoading] = useState(false);
   const [secretBalance, setSecretBalance] = useState(
@@ -585,6 +590,45 @@ function UpgradePage() {
     []
   );
 
+  const fetchFusionAvailability = useCallback(async () => {
+    setFusionAvailabilityLoading(true);
+    try {
+      const shopSnapshot = await getDocs(collection(db, "shop"));
+      if (shopSnapshot.empty) {
+        setFusionAvailabilityMap(new Set());
+        return;
+      }
+
+      const shopCardsMap = {};
+      shopSnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        shopCardsMap[docSnap.id] = {
+          increase: data.increase,
+        };
+      });
+
+      const cardIds = new Set(Object.keys(shopCardsMap));
+      const templatesSnap = await getDocs(collection(db, "cards"));
+      const availablePairs = new Set();
+      templatesSnap.forEach((docSnap) => {
+        if (!cardIds.has(docSnap.id)) return;
+        const templateData = docSnap.data();
+        const templateRarity = normalizeRarity(templateData.rarity);
+        const templateType = getCardCharacteristicType(templateData);
+        if (!templateRarity || !templateType) return;
+        availablePairs.add(`${templateRarity}:${templateType}`);
+      });
+
+      setFusionAvailabilityMap(availablePairs);
+    } catch (error) {
+      console.error("Ошибка загрузки доступных карт для слияния:", error);
+      setFusionAvailabilityMap(new Set());
+    } finally {
+      setFusionAvailabilityLoading(false);
+      setFusionAvailabilityLoaded(true);
+    }
+  }, []);
+
   useEffect(() => {
     if (!fusionCharacteristic || !fusionNextRarity || fusionCards.length === 0) {
       setFusionPossibleCards([]);
@@ -600,6 +644,17 @@ function UpgradePage() {
   ]);
 
   useEffect(() => {
+    if (activeTab !== "fusion") return;
+    if (fusionAvailabilityLoaded || fusionAvailabilityLoading) return;
+    fetchFusionAvailability();
+  }, [
+    activeTab,
+    fetchFusionAvailability,
+    fusionAvailabilityLoaded,
+    fusionAvailabilityLoading,
+  ]);
+
+  useEffect(() => {
     if (fusionBonus > fusionMaxBonus) {
       setFusionBonus(fusionMaxBonus);
     }
@@ -609,6 +664,9 @@ function UpgradePage() {
     setFusionError("");
     setFusionSlotIndex(index);
     setShowFusionModal(true);
+    if (!fusionAvailabilityLoaded && !fusionAvailabilityLoading) {
+      fetchFusionAvailability();
+    }
   };
 
   const handleRemoveFusionCard = (index) => {
@@ -818,8 +876,24 @@ function UpgradePage() {
     if (cardRarityIndex === -1 || cardRarityIndex >= rarityOrder.length - 1) {
       return false;
     }
+    const nextRarity =
+      cardRarityIndex >= 0 && cardRarityIndex < rarityOrder.length - 1
+        ? rarityOrder[cardRarityIndex + 1]
+        : null;
+    if (!nextRarity) {
+      return false;
+    }
+    const cardType = getCardCharacteristicType(card);
+    if (
+      fusionAvailabilityLoaded &&
+      !fusionAvailabilityLoading &&
+      (!cardType ||
+        !fusionAvailabilityMap.has(`${nextRarity}:${cardType}`))
+    ) {
+      return false;
+    }
     const matchesCharacteristic = fusionCharacteristic
-      ? getCardCharacteristicType(card) === fusionCharacteristic
+      ? cardType === fusionCharacteristic
       : true;
     const matchesRarity = fusionRarity
       ? normalizeRarity(card.rarity) === fusionRarity
@@ -1218,20 +1292,6 @@ function UpgradePage() {
               <div className="fusion-result-text">
                 Слияние успешно! Карта стала более редкой.
               </div>
-              {fusionRewardCard && (
-                <div className="fusion-reward">
-                  <div className="fusion-reward-title">
-                    Полученная карта
-                  </div>
-                  <div className="fusion-reward-card">
-                    <FramedCard
-                      card={fusionRewardCard}
-                      showLevel={true}
-                      showName={false}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           )}
           {fusionResult === "fail" && (
@@ -1409,8 +1469,12 @@ function UpgradePage() {
                 ✕
               </button>
             </div>
-            {loadingCards ? (
-              renderCardSkeletons()
+            {loadingCards || fusionAvailabilityLoading ? (
+              loadingCards ? (
+                renderCardSkeletons()
+              ) : (
+                <div className="fusion-empty">Загрузка...</div>
+              )
             ) : (
               <div className="card-list">
                 {availableFusionCards.map((card) => (
@@ -1486,8 +1550,12 @@ function UpgradePage() {
                 ✕
               </button>
             </div>
-            {loadingCards ? (
-              renderCardSkeletons()
+            {loadingCards || fusionAvailabilityLoading ? (
+              loadingCards ? (
+                renderCardSkeletons()
+              ) : (
+                <div className="fusion-empty">Загрузка...</div>
+              )
             ) : (
               <div className="card-list">
                 {availableFusionCards.map((card) => (
@@ -1563,37 +1631,45 @@ function UpgradePage() {
                 ✕
               </button>
             </div>
-            <div className="card-list">
-              {availableFusionCards.map((card) => (
-                <div
-                  className="card-style clickable"
-                  key={card.card_id}
-                  onClick={() => handleFusionCardSelect(card)}
-                >
-                  <FramedCard card={card} showLevel={true} />
-                  {renderCardDetails(card)}
+            {loadingCards || fusionAvailabilityLoading ? (
+              loadingCards ? (
+                renderCardSkeletons()
+              ) : (
+                <div className="fusion-empty">Загрузка...</div>
+              )
+            ) : (
+              <div className="card-list">
+                {availableFusionCards.map((card) => (
+                  <div
+                    className="card-style clickable"
+                    key={card.card_id}
+                    onClick={() => handleFusionCardSelect(card)}
+                  >
+                    <FramedCard card={card} showLevel={true} />
+                    {renderCardDetails(card)}
 
-                  {(card.inRaid || card.inPvp) && (
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: "14px",
-                        color: "#ffa500",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      В колоде {card.inRaid ? "(Рейд)" : ""}{" "}
-                      {card.inPvp ? "(ПвП)" : ""}
-                    </div>
-                  )}
-                </div>
-              ))}
-              {availableFusionCards.length === 0 && (
-                <div className="fusion-empty">
-                  Нет подходящих карт для слияния.
-                </div>
-              )}
-            </div>
+                    {(card.inRaid || card.inPvp) && (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontSize: "14px",
+                          color: "#ffa500",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        В колоде {card.inRaid ? "(Рейд)" : ""}{" "}
+                        {card.inPvp ? "(ПвП)" : ""}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {availableFusionCards.length === 0 && (
+                  <div className="fusion-empty">
+                    Нет подходящих карт для слияния.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
