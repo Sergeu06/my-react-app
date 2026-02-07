@@ -447,7 +447,7 @@ function UpgradePage() {
         setAnimating(false);
         setTimeout(() => setUpgradeResult(null), 2000);
         setAnimationSuccess(null);
-      }, 2200);
+      }, 3200);
     } catch (e) {
       console.error("Ошибка улучшения:", e);
       alert("Произошла ошибка при улучшении.");
@@ -976,7 +976,7 @@ function UpgradePage() {
 
             <div
               className={`card-style clickable
-                  ${animating ? "upgrade-glow-pulse" : ""}
+                  ${animating ? "upgrade-glow-pulse upgrade-ritual-active" : ""}
                   ${
                     animationSuccess === null && animating
                       ? "upgrade-glow-flicker"
@@ -988,7 +988,14 @@ function UpgradePage() {
               style={{ position: "relative" }}
               onClick={() => setShowCardModal(true)}
             >
-              {animating && <div className="upgrade-mystic-fog" />}
+              {animating && (
+                <>
+                  <div className="upgrade-ritual-overlay" />
+                  <div className="upgrade-ritual-runes" />
+                  <div className="upgrade-ritual-spark" />
+                  <div className="upgrade-mystic-fog" />
+                </>
+              )}
               {selectedCard ? (
                 <>
               <FramedCard card={selectedCard} showLevel={true} />

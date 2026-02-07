@@ -744,6 +744,128 @@ h1 {
   z-index: 5;
 }
 
+.upgrade-ritual-overlay {
+  position: absolute;
+  inset: -6px;
+  border-radius: 20px;
+  background: radial-gradient(
+      circle at 20% 20%,
+      rgba(255, 165, 0, 0.35),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 80% 30%,
+      rgba(138, 43, 226, 0.35),
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 50% 80%,
+      rgba(0, 229, 255, 0.25),
+      transparent 55%
+    );
+  opacity: 0;
+  animation: ritualGlow 2.4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 6;
+  mix-blend-mode: screen;
+}
+
+.upgrade-ritual-runes {
+  position: absolute;
+  inset: 8px;
+  border-radius: 18px;
+  border: 2px dashed rgba(255, 200, 120, 0.45);
+  box-shadow: 0 0 25px rgba(255, 165, 0, 0.35);
+  opacity: 0;
+  animation: ritualRunes 2.4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 7;
+}
+
+.upgrade-ritual-spark {
+  position: absolute;
+  inset: 12px;
+  border-radius: 16px;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 215, 0, 0.2),
+    rgba(124, 58, 237, 0.4),
+    rgba(14, 116, 144, 0.2),
+    rgba(255, 215, 0, 0.2)
+  );
+  opacity: 0;
+  animation: ritualSpark 2.4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 4;
+  mix-blend-mode: screen;
+}
+
+.upgrade-ritual-active {
+  animation: ritualPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes ritualGlow {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.98);
+  }
+  40% {
+    opacity: 0.55;
+    transform: scale(1.02);
+  }
+  70% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes ritualRunes {
+  0% {
+    opacity: 0;
+    transform: rotate(0deg) scale(0.9);
+  }
+  35% {
+    opacity: 0.6;
+  }
+  70% {
+    opacity: 0.25;
+    transform: rotate(12deg) scale(1.03);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(22deg) scale(1.05);
+  }
+}
+
+@keyframes ritualSpark {
+  0% {
+    opacity: 0;
+    transform: rotate(0deg) scale(0.95);
+  }
+  45% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(180deg) scale(1.05);
+  }
+}
+
+@keyframes ritualPulse {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 4px rgba(255, 165, 0, 0.3));
+  }
+  50% {
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 16px rgba(255, 165, 0, 0.6));
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 6px rgba(255, 165, 0, 0.35));
+  }
+}
+
 @keyframes fogPulse {
   0%,
   100% {
