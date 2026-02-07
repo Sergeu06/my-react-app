@@ -524,6 +524,10 @@ a {
 }
 
 .page-bg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   transition: background-color 0.32s ease;
   opacity: 1;
   will-change: background-color;
