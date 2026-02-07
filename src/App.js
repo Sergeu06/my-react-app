@@ -230,6 +230,9 @@ function App() {
   const [previousBackgroundClass, setPreviousBackgroundClass] = useState(null);
   const [isBackgroundTransitioning, setIsBackgroundTransitioning] =
     useState(false);
+  const [displayLocation, setDisplayLocation] = useState(location);
+  const [isPageFading, setIsPageFading] = useState(false);
+  const pageFadeTimeoutRef = useRef(null);
   const [searchState, setSearchState] = useState({
     isSearching: false,
     searchStartPath: null,
@@ -274,9 +277,30 @@ function App() {
     const timeoutId = setTimeout(() => {
       setPreviousBackgroundClass(null);
       setIsBackgroundTransitioning(false);
-    }, 700);
+    }, 320);
     return () => clearTimeout(timeoutId);
   }, [activeBackgroundClass, backgroundClass]);
+
+  useEffect(() => {
+    if (location.pathname === displayLocation.pathname) {
+      setDisplayLocation(location);
+      return;
+    }
+    setIsPageFading(true);
+    if (pageFadeTimeoutRef.current) {
+      clearTimeout(pageFadeTimeoutRef.current);
+    }
+    pageFadeTimeoutRef.current = setTimeout(() => {
+      setDisplayLocation(location);
+      setIsPageFading(false);
+    }, 180);
+
+    return () => {
+      if (pageFadeTimeoutRef.current) {
+        clearTimeout(pageFadeTimeoutRef.current);
+      }
+    };
+  }, [displayLocation.pathname, location]);
 
   useEffect(() => {
     if (!isVerified) return;
@@ -1080,7 +1104,6 @@ function App() {
             className="page-bg-overlay"
             style={{
               backgroundColor: pageBackground || "transparent",
-              opacity: pageBackground ? 1 : 0,
             }}
             aria-hidden="true"
           />
@@ -1187,14 +1210,17 @@ function App() {
             <div
               className={`page-content${
                 contentReady ? " page-content--ready" : ""
-              }`}
+              }${isPageFading ? " page-content--fade-out" : ""}`}
             >
               <DndProvider
                 backend={MultiBackend}
                 options={dndBackendOptions}
               >
                 {lowEndMode ? (
-                  <Routes location={location} key={location.pathname}>
+                  <Routes
+                    location={displayLocation}
+                    key={displayLocation.pathname}
+                  >
                     <Route
                       path="/fight"
                       element={
@@ -1302,7 +1328,10 @@ function App() {
                     />
                   </Routes>
                 ) : (
-                  <Routes location={location} key={location.pathname}>
+                  <Routes
+                    location={displayLocation}
+                    key={displayLocation.pathname}
+                  >
                     <Route
                       path="/fight"
                       element={
