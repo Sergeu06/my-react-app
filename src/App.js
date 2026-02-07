@@ -1127,7 +1127,9 @@ function App() {
                   }
                 }}
                 showLabels
-                className="custom-nav"
+                className={`custom-nav${
+                  isMatchNavigationLocked ? " custom-nav--locked" : ""
+                }`}
               >
                 <BottomNavigationAction
                   label="Торговец"
@@ -1201,6 +1203,9 @@ function App() {
                             uid={uid}
                             searchState={searchState}
                             setSearchState={setSearchState}
+                            onCountdownVisibilityChange={
+                              setIsMatchNavigationLocked
+                            }
                           />
                         </AnimatedPageWrapper>
                       }
@@ -1306,6 +1311,9 @@ function App() {
                             uid={uid}
                             searchState={searchState}
                             setSearchState={setSearchState}
+                            onCountdownVisibilityChange={
+                              setIsMatchNavigationLocked
+                            }
                           />
                         </AnimatedPageWrapper>
                       }

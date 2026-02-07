@@ -38,7 +38,7 @@ import {
 } from "../utils/dailyTasks";
 import { formatRaidCountdown, getRaidEventInfo } from "../utils/raidEvents";
 
-function FightPage({ uid, searchState, setSearchState }) {
+function FightPage({ uid, searchState, setSearchState, onCountdownVisibilityChange }) {
   const { isSearching, lobbyId } = searchState;
   const { isTransitioning } = usePerformance();
   const isActive = usePageActivity({ isTransitioning });
@@ -51,6 +51,8 @@ function FightPage({ uid, searchState, setSearchState }) {
   const [tip, setTip] = useState(null);
   const [player1Name, setPlayer1Name] = useState("");
   const [player2Name, setPlayer2Name] = useState("");
+  const showCountdownOverlay =
+    Boolean(introStage) || (playersInLobby === 2 && countdown > 0);
 
   const isCancelled = useRef(false);
   const navigate = useNavigate();
@@ -102,6 +104,12 @@ function FightPage({ uid, searchState, setSearchState }) {
   };
   const [showDailyBonusModal, setShowDailyBonusModal] = useState(false);
   const [selectedDailyBonus, setSelectedDailyBonus] = useState(null);
+
+  useEffect(() => {
+    if (!onCountdownVisibilityChange) return undefined;
+    onCountdownVisibilityChange(showCountdownOverlay);
+    return () => onCountdownVisibilityChange(false);
+  }, [onCountdownVisibilityChange, showCountdownOverlay]);
 
   const dailyTasks = useMemo(
     () => [
