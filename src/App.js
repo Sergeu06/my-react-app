@@ -3,7 +3,6 @@ import { Navigate } from "react-router-dom";
 import {
   Routes,
   Route,
-  Link,
   useLocation,
   useSearchParams,
   useNavigate,
@@ -34,8 +33,6 @@ import { DndProvider } from "react-dnd";
 import { TouchBackend } from "react-dnd-touch-backend";
 import { useSwipeable } from "react-swipeable";
 import NavTimer from "./utils/NavTimer"; // путь к вашему файлу
-
-import { AnimatePresence, motion } from "framer-motion";
 
 import "./App.css";
 
@@ -109,53 +106,7 @@ async function createOrUpdateUserProfile(user) {
   }
 }
 
-const pageVariants = {
-  initial: (direction) => {
-    const dir = direction || 1;
-    return {
-      x: dir > 0 ? "100%" : "-100%",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      // убрано: position: "absolute"
-    };
-  },
-  in: {
-    x: 0,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    transition: {
-      type: "tween",
-      ease: "easeInOut",
-      duration: 0.4,
-    },
-    // убрано: position: "absolute"
-  },
-  out: (direction) => {
-    const dir = direction || 1;
-    return {
-      x: dir > 0 ? "-100%" : "100%",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      transition: {
-        type: "tween",
-        ease: "easeInOut",
-        duration: 0.4,
-      },
-      // убрано: position: "absolute"
-    };
-  },
-};
-
-// (необязательно) общий переход по умолчанию — фолбэк
-const pageTransition = {
-  default: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
-};
+ 
 
 function getPageBg(pathname) {
   if (pathname.includes("/fight")) return "rgba(11, 15, 22, 0.45)";
@@ -233,12 +184,13 @@ function App() {
   const [isKicked, setIsKicked] = useState(false);
   const [error, setError] = useState(null);
   const [lowEndMode] = useState(() => detectLowEndDevice());
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const isTransitioning = false;
   const [assetsReady, setAssetsReady] = useState(false);
   const [assetsProgress, setAssetsProgress] = useState({
     loaded: 0,
     total: 0,
   });
+  const [contentReady, setContentReady] = useState(true);
   const [searchState, setSearchState] = useState({
     isSearching: false,
     searchStartPath: null,
@@ -262,16 +214,32 @@ function App() {
     setLowEndMode(lowEndMode);
   }, [lowEndMode]);
 
+  const path = location.pathname.toLowerCase();
+  const pageBackground = getPageBg(path);
+  const backgroundClass = (() => {
+    if (path.includes("/fight")) return "bg-fight";
+    if (path.includes("/shop")) return "bg-shop";
+    if (path.includes("/collection")) return "bg-collection";
+    if (path.includes("/upgrade")) return "bg-upgrade";
+    if (path.includes("/profile")) return "bg-profile";
+    if (path.includes("/raid")) return "bg-raid";
+    if (path.includes("/game")) return "bg-game";
+    if (path.includes("/open-box")) return "bg-open-box";
+    if (path.includes("/result")) return "bg-result";
+    return "bg-shop";
+  })();
+
   useEffect(() => {
-    setIsTransitioning(true);
-    if (lowEndMode) {
-      const rafId = requestAnimationFrame(() => {
-        setIsTransitioning(false);
-      });
-      return () => cancelAnimationFrame(rafId);
+    if (!pageBackground) {
+      setContentReady(true);
+      return;
     }
-    return undefined;
-  }, [location.pathname, lowEndMode]);
+    setContentReady(false);
+    const timeoutId = setTimeout(() => {
+      setContentReady(true);
+    }, 350);
+    return () => clearTimeout(timeoutId);
+  }, [pageBackground, location.pathname]);
 
   useEffect(() => {
     if (!isVerified) return;
@@ -524,93 +492,151 @@ function App() {
     `/upgrade?start=${uid}`,
     `/profile?start=${uid}`,
   ];
-  // базовый slide-анимации
-  const pageVariantsDefault = {
-    initial: (direction) => ({
-      x: direction > 0 ? "100%" : "-100%",
-      opacity: 0,
-      position: "absolute",
-    }),
-    in: {
-      x: 0,
-      opacity: 1,
-      position: "absolute",
-      transition: { duration: 0.4, ease: "easeInOut" },
-    },
-    out: (direction) => ({
-      x: direction > 0 ? "-100%" : "100%",
-      opacity: 0,
-      position: "absolute",
-      transition: { duration: 0.4, ease: "easeInOut" },
-    }),
-  };
+  const skeletonVariant = (() => {
+    if (path.includes("/shop")) return "shop";
+    if (path.includes("/collection")) return "collection";
+    if (path.includes("/upgrade")) return "upgrade";
+    if (path.includes("/profile")) return "profile";
+    if (path.includes("/raid")) return "raid";
+    if (path.includes("/game")) return "game";
+    if (path.includes("/open-box")) return "open-box";
+    if (path.includes("/result")) return "result";
+    if (path.includes("/fight")) return "fight";
+    return "default";
+  })();
 
-  // спец fade-анимации для game ↔ result
-  const pageVariantsGameResult = {
-    initial: { opacity: 0 },
-    in: {
-      opacity: 1,
-      transition: { duration: 0.6, ease: "easeInOut" },
-    },
-    out: {
-      opacity: 0,
-      transition: { duration: 0.4, ease: "easeInOut" },
-    },
-  };
+  const renderSkeletonContent = () => {
+    if (skeletonVariant === "profile") {
+      return (
+        <>
+          <div className="skeleton-circle" />
+          <div className="skeleton-line short" />
+          <div className="skeleton-line long" />
+        </>
+      );
+    }
 
+    if (
+      skeletonVariant === "shop" ||
+      skeletonVariant === "collection" ||
+      skeletonVariant === "upgrade"
+    ) {
+      return (
+        <div className="page-skeleton__grid">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={`card-skeleton-${index}`} className="skeleton-card">
+              <div className="skeleton-block skeleton-block--image" />
+              <div className="skeleton-block skeleton-block--text" />
+              <div className="skeleton-block skeleton-block--price" />
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (skeletonVariant === "fight") {
+      return (
+        <>
+          <div className="skeleton-block skeleton-block--title" />
+          <div className="skeleton-block skeleton-block--hero" />
+          <div className="page-skeleton__row">
+            <div className="skeleton-block skeleton-block--chip" />
+            <div className="skeleton-block skeleton-block--chip" />
+            <div className="skeleton-block skeleton-block--chip" />
+          </div>
+          <div className="skeleton-block skeleton-block--wide" />
+        </>
+      );
+    }
+
+    if (skeletonVariant === "raid") {
+      return (
+        <>
+          <div className="skeleton-block skeleton-block--title" />
+          <div className="skeleton-block skeleton-block--hero" />
+          <div className="page-skeleton__row">
+            <div className="skeleton-block skeleton-block--stat" />
+            <div className="skeleton-block skeleton-block--stat" />
+          </div>
+          <div className="skeleton-block skeleton-block--wide" />
+        </>
+      );
+    }
+
+    if (skeletonVariant === "game") {
+      return (
+        <>
+          <div className="skeleton-block skeleton-block--title" />
+          <div className="skeleton-block skeleton-block--hero" />
+          <div className="page-skeleton__row">
+            <div className="skeleton-block skeleton-block--chip" />
+            <div className="skeleton-block skeleton-block--chip" />
+            <div className="skeleton-block skeleton-block--chip" />
+          </div>
+          <div className="page-skeleton__row">
+            <div className="skeleton-block skeleton-block--stat" />
+            <div className="skeleton-block skeleton-block--stat" />
+            <div className="skeleton-block skeleton-block--stat" />
+          </div>
+        </>
+      );
+    }
+
+    if (skeletonVariant === "open-box") {
+      return (
+        <>
+          <div className="skeleton-block skeleton-block--title" />
+          <div className="skeleton-block skeleton-block--hero" />
+          <div className="skeleton-block skeleton-block--wide" />
+          <div className="page-skeleton__row">
+            <div className="skeleton-block skeleton-block--chip" />
+            <div className="skeleton-block skeleton-block--chip" />
+          </div>
+        </>
+      );
+    }
+
+    if (skeletonVariant === "result") {
+      return (
+        <>
+          <div className="skeleton-block skeleton-block--title" />
+          <div className="skeleton-block skeleton-block--hero" />
+          <div className="page-skeleton__row">
+            <div className="skeleton-block skeleton-block--stat" />
+            <div className="skeleton-block skeleton-block--stat" />
+          </div>
+          <div className="skeleton-block skeleton-block--wide" />
+        </>
+      );
+    }
+
+    return (
+      <>
+        <div className="skeleton-block skeleton-block--title" />
+        <div className="skeleton-block skeleton-block--hero" />
+        <div className="skeleton-block skeleton-block--wide" />
+        <div className="page-skeleton__row">
+          <div className="skeleton-block skeleton-block--chip" />
+          <div className="skeleton-block skeleton-block--chip" />
+        </div>
+      </>
+    );
+  };
   const AnimatedPageWrapper = ({ children, direction }) => {
     const location = useLocation();
-    const isGameOrResult =
-      location.pathname.startsWith("/game") ||
-      location.pathname.startsWith("/result");
     const isFullBleedPage =
       location.pathname.startsWith("/raid") ||
       location.pathname.startsWith("/game") ||
       location.pathname.startsWith("/open-box");
 
-    if (lowEndMode) {
-      return (
-        <div
-          className={`page-shell${
-            isFullBleedPage ? " page-shell--full-bleed" : ""
-          }`}
-        >
-          {children}
-        </div>
-      );
-    }
-
     return (
-      <motion.div
-        custom={direction}
-        initial="initial"
-        animate="in"
-        exit="out"
-        variants={isGameOrResult ? pageVariantsGameResult : pageVariantsDefault}
-        className="animated-page"
-        onAnimationComplete={(definition) => {
-          if (definition === "in") {
-            setIsTransitioning(false);
-          }
-        }}
-        style={{
-          position: "relative",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          overflowY: "visible",
-          background: isGameOrResult ? "black" : "transparent",
-        }}
+      <div
+        className={`page-shell${
+          isFullBleedPage ? " page-shell--full-bleed" : ""
+        }`}
       >
-        <div
-          className={`page-shell${
-            isFullBleedPage ? " page-shell--full-bleed" : ""
-          }`}
-        >
-          {children}
-        </div>
-      </motion.div>
+        {children}
+      </div>
     );
   };
 
@@ -981,22 +1007,8 @@ function App() {
     );
   }
 
-  const path = location.pathname.toLowerCase();
   const isGameOrProfile = path === "/game";
   const isRaid = path === "/raid";
-  const pageBackground = getPageBg(path);
-  const backgroundClass = (() => {
-    if (path.includes("/fight")) return "bg-fight";
-    if (path.includes("/shop")) return "bg-shop";
-    if (path.includes("/collection")) return "bg-collection";
-    if (path.includes("/upgrade")) return "bg-upgrade";
-    if (path.includes("/profile")) return "bg-profile";
-    if (path.includes("/raid")) return "bg-raid";
-    if (path.includes("/game")) return "bg-game";
-    if (path.includes("/open-box")) return "bg-open-box";
-    if (path.includes("/result")) return "bg-result";
-    return "bg-shop";
-  })();
 
   return (
     <PerformanceProvider value={{ lowEndMode, isTransitioning }}>
@@ -1053,15 +1065,11 @@ function App() {
                 <BottomNavigationAction
                   label="Торговец"
                   icon={<StoreIcon />}
-                  component={Link}
-                  to={`/shop?start=${uid}`}
                   value={0}
                 />
                 <BottomNavigationAction
                   label="Архив"
                   icon={<CollectionsIcon />}
-                  component={Link}
-                  to={`/collection?start=${uid}`}
                   value={1}
                 />
                 <BottomNavigationAction
@@ -1081,256 +1089,260 @@ function App() {
                       color={searchState.isSearching ? "warning" : "inherit"}
                     />
                   }
-                  component={Link}
-                  to={
-                    searchState.isSearching
-                      ? searchState.searchStartPath
-                      : `/fight?start=${uid}`
-                  }
                   value={2}
                 />
 
                 <BottomNavigationAction
                   label="Эволюция"
                   icon={<UpgradeIcon />}
-                  component={Link}
-                  to={`/upgrade?start=${uid}`}
                   value={3}
                 />
                 <BottomNavigationAction
                   label="Профиль"
                   icon={<AccountCircleIcon />}
-                  component={Link}
-                  to={`/profile?start=${uid}`}
                   value={4}
                 />
               </BottomNavigation>
             </div>
           )}
 
-          <DndProvider
-            backend={TouchBackend}
-            options={{
-              enableMouseEvents: true,
-              delayTouchStart: 0,
-              delayMouseStart: 0,
-              touchSlop: 0,
-            }}
-          >
-            {lowEndMode ? (
-              <Routes location={location} key={location.pathname}>
-                <Route
-                  path="/fight"
-                  element={
-                    <AnimatedPageWrapper direction={direction}>
-                      <FightPage
-                        uid={uid}
-                        searchState={searchState}
-                        setSearchState={setSearchState}
-                      />
-                    </AnimatedPageWrapper>
-                  }
-                />
+          <div className="page-stage">
+            <div
+              className={`page-skeleton page-skeleton--${skeletonVariant}${
+                contentReady ? " page-skeleton--hidden" : ""
+              }`}
+              aria-hidden="true"
+            >
+              {renderSkeletonContent()}
+            </div>
+            <div
+              className={`page-content${
+                contentReady ? " page-content--ready" : ""
+              }`}
+            >
+              <DndProvider
+                backend={TouchBackend}
+                options={{
+                  enableMouseEvents: true,
+                  delayTouchStart: 0,
+                  delayMouseStart: 0,
+                  touchSlop: 0,
+                }}
+              >
+                {lowEndMode ? (
+                  <Routes location={location} key={location.pathname}>
+                    <Route
+                      path="/fight"
+                      element={
+                        <AnimatedPageWrapper direction={direction}>
+                          <FightPage
+                            uid={uid}
+                            searchState={searchState}
+                            setSearchState={setSearchState}
+                          />
+                        </AnimatedPageWrapper>
+                      }
+                    />
 
-                <Route
-                  path="/"
-                  element={<Navigate to={`/fight?start=${uid}`} replace />}
-                />
+                    <Route
+                      path="/"
+                      element={<Navigate to={`/fight?start=${uid}`} replace />}
+                    />
 
-                <Route
-                  path="/shop"
-                  element={
-                    <AnimatedPageWrapper
-                      direction={direction}
-                      allowScroll={true}
-                    >
-                      <Shop uid={uid} />
-                    </AnimatedPageWrapper>
-                  }
-                />
-                <Route
-                  path="/collection"
-                  element={
-                    <AnimatedPageWrapper
-                      direction={direction}
-                      allowScroll={true}
-                    >
-                      <Collection uid={uid} />
-                    </AnimatedPageWrapper>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <AnimatedPageWrapper
-                      direction={direction}
-                      allowScroll={true}
-                    >
-                      <Profile uid={uid} />
-                    </AnimatedPageWrapper>
-                  }
-                />
-                <Route
-                  path="/upgrade"
-                  element={
-                    <AnimatedPageWrapper direction={direction}>
-                      <UpgradePage uid={uid} />
-                    </AnimatedPageWrapper>
-                  }
-                />
-                <Route
-                  path="/game"
-                  element={
-                    <AnimatedPageWrapper direction={direction}>
-                      <Game uid={uid} />
-                    </AnimatedPageWrapper>
-                  }
-                />
-                <Route
-                  path="/raid"
-                  element={
-                    <AnimatedPageWrapper direction={direction}>
-                      <Raid uid={uid} />
-                    </AnimatedPageWrapper>
-                  }
-                />
-                <Route
-                  path="/profile/:userId"
-                  element={
-                    <AnimatedPageWrapper
-                      direction={direction}
-                      allowScroll={true}
-                    >
-                      <Profile />
-                    </AnimatedPageWrapper>
-                  }
-                />
-                <Route
-                  path="/open-box"
-                  element={
-                    <AnimatedPageWrapper direction={direction}>
-                      <OpenBoxPage uid={uid} />
-                    </AnimatedPageWrapper>
-                  }
-                />
-                <Route
-                  path="/result"
-                  element={
-                    <AnimatedPageWrapper direction={direction}>
-                      <ResultPage uid={uid} />
-                    </AnimatedPageWrapper>
-                  }
-                />
-              </Routes>
-            ) : (
-              <AnimatePresence mode="wait" initial={false}>
-                <Routes location={location} key={location.pathname}>
-                  <Route
-                    path="/fight"
-                    element={
-                      <AnimatedPageWrapper direction={direction}>
-                        <FightPage
-                          uid={uid}
-                          searchState={searchState}
-                          setSearchState={setSearchState}
-                        />
-                      </AnimatedPageWrapper>
-                    }
-                  />
+                    <Route
+                      path="/shop"
+                      element={
+                        <AnimatedPageWrapper
+                          direction={direction}
+                          allowScroll={true}
+                        >
+                          <Shop uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/collection"
+                      element={
+                        <AnimatedPageWrapper
+                          direction={direction}
+                          allowScroll={true}
+                        >
+                          <Collection uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/profile"
+                      element={
+                        <AnimatedPageWrapper
+                          direction={direction}
+                          allowScroll={true}
+                        >
+                          <Profile uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/upgrade"
+                      element={
+                        <AnimatedPageWrapper direction={direction}>
+                          <UpgradePage uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/game"
+                      element={
+                        <AnimatedPageWrapper direction={direction}>
+                          <Game uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/raid"
+                      element={
+                        <AnimatedPageWrapper direction={direction}>
+                          <Raid uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/profile/:userId"
+                      element={
+                        <AnimatedPageWrapper
+                          direction={direction}
+                          allowScroll={true}
+                        >
+                          <Profile />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/open-box"
+                      element={
+                        <AnimatedPageWrapper direction={direction}>
+                          <OpenBoxPage uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/result"
+                      element={
+                        <AnimatedPageWrapper direction={direction}>
+                          <ResultPage uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                  </Routes>
+                ) : (
+                  <Routes location={location} key={location.pathname}>
+                    <Route
+                      path="/fight"
+                      element={
+                        <AnimatedPageWrapper direction={direction}>
+                          <FightPage
+                            uid={uid}
+                            searchState={searchState}
+                            setSearchState={setSearchState}
+                          />
+                        </AnimatedPageWrapper>
+                      }
+                    />
 
-                  <Route
-                    path="/"
-                    element={<Navigate to={`/fight?start=${uid}`} replace />}
-                  />
+                    <Route
+                      path="/"
+                      element={<Navigate to={`/fight?start=${uid}`} replace />}
+                    />
 
-                  <Route
-                    path="/shop"
-                    element={
-                      <AnimatedPageWrapper
-                        direction={direction}
-                        allowScroll={true}
-                      >
-                        <Shop uid={uid} />
-                      </AnimatedPageWrapper>
-                    }
-                  />
-                  <Route
-                    path="/collection"
-                    element={
-                      <AnimatedPageWrapper
-                        direction={direction}
-                        allowScroll={true}
-                      >
-                        <Collection uid={uid} />
-                      </AnimatedPageWrapper>
-                    }
-                  />
-                  <Route
-                    path="/profile"
-                    element={
-                      <AnimatedPageWrapper
-                        direction={direction}
-                        allowScroll={true}
-                      >
-                        <Profile uid={uid} />
-                      </AnimatedPageWrapper>
-                    }
-                  />
-                  <Route
-                    path="/upgrade"
-                    element={
-                      <AnimatedPageWrapper direction={direction}>
-                        <UpgradePage uid={uid} />
-                      </AnimatedPageWrapper>
-                    }
-                  />
-                  <Route
-                    path="/game"
-                    element={
-                      <AnimatedPageWrapper direction={direction}>
-                        <Game uid={uid} />
-                      </AnimatedPageWrapper>
-                    }
-                  />
-                  <Route
-                    path="/raid"
-                    element={
-                      <AnimatedPageWrapper direction={direction}>
-                        <Raid uid={uid} />
-                      </AnimatedPageWrapper>
-                    }
-                  />
-                  <Route
-                    path="/profile/:userId"
-                    element={
-                      <AnimatedPageWrapper
-                        direction={direction}
-                        allowScroll={true}
-                      >
-                        <Profile />
-                      </AnimatedPageWrapper>
-                    }
-                  />
-                  <Route
-                    path="/open-box"
-                    element={
-                      <AnimatedPageWrapper direction={direction}>
-                        <OpenBoxPage uid={uid} />
-                      </AnimatedPageWrapper>
-                    }
-                  />
-                  <Route
-                    path="/result"
-                    element={
-                      <AnimatedPageWrapper direction={direction}>
-                        <ResultPage uid={uid} />
-                      </AnimatedPageWrapper>
-                    }
-                  />
-                </Routes>
-              </AnimatePresence>
-            )}
-          </DndProvider>
+                    <Route
+                      path="/shop"
+                      element={
+                        <AnimatedPageWrapper
+                          direction={direction}
+                          allowScroll={true}
+                        >
+                          <Shop uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/collection"
+                      element={
+                        <AnimatedPageWrapper
+                          direction={direction}
+                          allowScroll={true}
+                        >
+                          <Collection uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/profile"
+                      element={
+                        <AnimatedPageWrapper
+                          direction={direction}
+                          allowScroll={true}
+                        >
+                          <Profile uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/upgrade"
+                      element={
+                        <AnimatedPageWrapper direction={direction}>
+                          <UpgradePage uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/game"
+                      element={
+                        <AnimatedPageWrapper direction={direction}>
+                          <Game uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/raid"
+                      element={
+                        <AnimatedPageWrapper direction={direction}>
+                          <Raid uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/profile/:userId"
+                      element={
+                        <AnimatedPageWrapper
+                          direction={direction}
+                          allowScroll={true}
+                        >
+                          <Profile />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/open-box"
+                      element={
+                        <AnimatedPageWrapper direction={direction}>
+                          <OpenBoxPage uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                    <Route
+                      path="/result"
+                      element={
+                        <AnimatedPageWrapper direction={direction}>
+                          <ResultPage uid={uid} />
+                        </AnimatedPageWrapper>
+                      }
+                    />
+                  </Routes>
+                )}
+              </DndProvider>
+            </div>
+          </div>
         </div>
       </div>
       </UserProvider>
