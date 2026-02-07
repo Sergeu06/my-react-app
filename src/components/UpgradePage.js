@@ -524,17 +524,26 @@ function UpgradePage() {
   const fusionRarity = fusionCards.length
     ? normalizeRarity(fusionCards[0].rarity)
     : null;
-  const fusionMaxBonus = Math.max(
-    0,
-    Math.min(100 - fusionBaseChance, secretBalance)
-  );
-  const fusionTotalChance = Math.min(100, fusionBaseChance + fusionBonus);
   const rarityOrder = ["обычная", "редкая", "эпическая", "легендарная"];
   const fusionRarityIndex = fusionRarity ? rarityOrder.indexOf(fusionRarity) : -1;
   const fusionNextRarity =
     fusionRarityIndex >= 0 && fusionRarityIndex < rarityOrder.length - 1
       ? rarityOrder[fusionRarityIndex + 1]
       : null;
+  const fusionCostPerPercent =
+    fusionNextRarity === "легендарная"
+      ? 3
+      : fusionNextRarity === "эпическая"
+        ? 2
+        : 1;
+  const fusionMaxBonus = Math.max(
+    0,
+    Math.min(
+      100 - fusionBaseChance,
+      Math.floor(secretBalance / fusionCostPerPercent)
+    )
+  );
+  const fusionTotalChance = Math.min(100, fusionBaseChance + fusionBonus);
 
   const fetchFusionTemplates = useCallback(
     async (targetRarity, targetCharacteristic) => {
@@ -739,6 +748,7 @@ function UpgradePage() {
     const baseChance = fusionCards.length * 20;
     const totalChance = Math.min(100, baseChance + fusionBonus);
     const nextRarity = fusionNextRarity;
+    const totalCost = fusionBonus * fusionCostPerPercent;
 
     if (!nextRarity) {
       setFusionError("Для слияния нужна карта не выше эпической редкости.");
@@ -752,8 +762,10 @@ function UpgradePage() {
       if (!userSnap.exists()) throw new Error("Пользователь не найден.");
       const userDoc = userSnap.data();
 
-      if ((userDoc.SecretRecipes ?? 0) < fusionBonus) {
-        setFusionError("Недостаточно SecretRecipes для выбранного бонуса.");
+      if ((userDoc.SecretRecipes ?? 0) < totalCost) {
+        setFusionError(
+          "Недостаточно SecretRecipes для выбранного бонуса."
+        );
         setFusionInProgress(false);
         return;
       }
@@ -820,7 +832,7 @@ function UpgradePage() {
         cards: updatedCards,
         deck_raid: updatedRaid,
         deck_pvp: updatedPvp,
-        SecretRecipes: (userDoc.SecretRecipes ?? 0) - fusionBonus,
+        SecretRecipes: (userDoc.SecretRecipes ?? 0) - totalCost,
       });
 
       await Promise.all(
@@ -829,7 +841,7 @@ function UpgradePage() {
         )
       );
 
-      setSecretBalance((prev) => Math.max(0, prev - fusionBonus));
+      setSecretBalance((prev) => Math.max(0, prev - totalCost));
       setPlayerCards((prev) => {
         const remaining = prev.filter(
           (card) => !consumedIds.includes(card.card_id)
@@ -1282,7 +1294,8 @@ function UpgradePage() {
               }
             />
             <div className="fusion-slider-meta">
-              Доступно: {secretBalance} | Потратится: {fusionBonus}
+              Доступно: {secretBalance} | Цена 1%: {fusionCostPerPercent} |{" "}
+              Потратится: {fusionBonus * fusionCostPerPercent}
             </div>
           </div>
 
