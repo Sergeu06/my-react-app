@@ -25,8 +25,8 @@ img {
 }
 :root {
   color-scheme: dark;
-  --app-font: system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue",
-    "Inter", "Manrope", "Rubik", "Arial", sans-serif;
+  --app-font: "Unbounded", "Rubik", "Manrope", system-ui, -apple-system,
+    "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
   --app-bg: #0b0f14;
   --surface-1: #121826;
   --surface-2: #0f141f;
@@ -145,7 +145,7 @@ a {
 }
 
 /* Контейнер для фонового изображения */
-.background-container {
+.background-layer {
   position: fixed; /* ✅ Фиксировано — не влияет на прокрутку */
   top: 0;
   left: 0;
@@ -157,8 +157,21 @@ a {
   background-size: cover;
   z-index: -2;
   pointer-events: none;
-  transition: background-color 600ms ease, opacity 600ms ease;
-  will-change: background-position, background-color, opacity;
+  transition: opacity 700ms ease;
+  will-change: background-position, opacity;
+}
+
+.background-layer--fade-in {
+  animation: bgFadeIn 700ms ease;
+}
+
+@keyframes bgFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .card-image {
@@ -170,14 +183,14 @@ a {
   opacity: 0;
 }
 
-.background-container.bg-fight {
+.background-layer.bg-fight {
   background-image: url("/public/озеро3.png");
   background-size: 100% auto; /* ширина по экрану, высота естественная */
   background-repeat: repeat-y; /* повтор только по вертикали */
   background-position: center 0px; /* начальное значение */
 }
 
-.background-container.bg-shop {
+.background-layer.bg-shop {
   background-image: radial-gradient(circle at 20% 15%, rgba(255, 160, 0, 0.22), transparent 45%),
     radial-gradient(circle at 85% 30%, rgba(255, 87, 34, 0.18), transparent 55%),
     linear-gradient(160deg, #2b1b12 0%, #251814 45%, #140d0b 100%),
@@ -188,7 +201,7 @@ a {
   background-position: center 0;
 }
 
-.background-container.bg-collection {
+.background-layer.bg-collection {
   background-image: radial-gradient(circle at 10% 15%, rgba(0, 200, 190, 0.2), transparent 50%),
     radial-gradient(circle at 90% 20%, rgba(0, 150, 255, 0.16), transparent 55%),
     radial-gradient(circle at 20% 20%, #10313a 0%, #142635 50%, #0b141c 100%),
@@ -199,7 +212,7 @@ a {
   background-position: center 0;
 }
 
-.background-container.bg-upgrade {
+.background-layer.bg-upgrade {
   background-image: radial-gradient(circle at 70% 20%, rgba(186, 104, 200, 0.22), transparent 50%),
     radial-gradient(circle at 25% 25%, rgba(94, 53, 177, 0.18), transparent 50%),
     linear-gradient(180deg, #23143b 0%, #1a1b33 45%, #0d0f1b 100%),
@@ -207,7 +220,7 @@ a {
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 5px, rgba(255, 255, 255, 0) 5px 22px);
 }
 
-.background-container.bg-profile {
+.background-layer.bg-profile {
   background-image: radial-gradient(circle at 20% 20%, rgba(76, 175, 80, 0.2), transparent 50%),
     radial-gradient(circle at 85% 30%, rgba(0, 230, 118, 0.16), transparent 55%),
     radial-gradient(circle at 30% 15%, #123126 0%, #182a2a 55%, #0a1110 100%),
@@ -218,7 +231,7 @@ a {
   background-position: center 0;
 }
 
-.background-container.bg-raid {
+.background-layer.bg-raid {
   background-image: radial-gradient(circle at 70% 15%, rgba(244, 67, 54, 0.16), transparent 50%),
     radial-gradient(circle at 20% 20%, rgba(255, 152, 0, 0.12), transparent 45%),
     linear-gradient(135deg, #2a1b1f 0%, #1a212d 55%, #0b1016 100%),
@@ -226,7 +239,7 @@ a {
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 5px, rgba(255, 255, 255, 0) 5px 22px);
 }
 
-.background-container.bg-game {
+.background-layer.bg-game {
   background-image: radial-gradient(circle at 50% 0%, rgba(63, 81, 181, 0.18), transparent 55%),
     radial-gradient(circle at 20% 25%, rgba(0, 188, 212, 0.12), transparent 50%),
     radial-gradient(circle at 50% 0%, #223044 0%, #121824 55%, #0a0f15 100%),
@@ -234,7 +247,7 @@ a {
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 5px, rgba(255, 255, 255, 0) 5px 22px);
 }
 
-.background-container.bg-open-box {
+.background-layer.bg-open-box {
   background-image: radial-gradient(circle at 75% 20%, rgba(0, 188, 212, 0.16), transparent 55%),
     radial-gradient(circle at 20% 25%, rgba(255, 193, 7, 0.12), transparent 45%),
     linear-gradient(200deg, #1a2032 0%, #24314a 45%, #0d121a 100%),
@@ -242,7 +255,7 @@ a {
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 5px, rgba(255, 255, 255, 0) 5px 22px);
 }
 
-.background-container.bg-result {
+.background-layer.bg-result {
   background-image: radial-gradient(circle at 50% 30%, rgba(156, 39, 176, 0.18), transparent 55%),
     radial-gradient(circle at 20% 20%, rgba(255, 111, 0, 0.12), transparent 45%),
     radial-gradient(circle at 50% 30%, #2a1d3a 0%, #151b26 55%, #090b12 100%),
@@ -441,7 +454,7 @@ a {
 }
 
 .page-bg-overlay {
-  transition: background-color 0.35s ease, opacity 0.35s ease;
+  transition: background-color 0.6s ease, opacity 0.6s ease;
 }
 
 .page-stage {
@@ -451,12 +464,14 @@ a {
 
 .page-content {
   opacity: 0;
-  transition: opacity 0.35s ease;
+  transform: translateY(8px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
 }
 
 .page-content.page-content--ready {
   opacity: 1;
-  transition-delay: 0.05s;
+  transform: translateY(0);
+  transition-delay: 0.08s;
 }
 
 .page-skeleton {
