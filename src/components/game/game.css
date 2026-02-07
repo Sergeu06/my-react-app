@@ -144,19 +144,23 @@
   z-index: 1000; /* чтобы быть поверх */
 }
 
-.end-turn-button {
-  position: absolute;
-  top: 12px;
-  right: 12px;
+.turn-controls {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   z-index: 10;
+}
 
-  width: 140px; /* меньше */
-  height: 34px; /* чуть меньше */
+.end-turn-button {
+  width: max-content;
+  min-width: 190px;
+  height: 36px;
   background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
   border: 1px solid rgba(255, 165, 0, 0.2);
   color: #f5f5f5;
   font-weight: 700;
-  font-size: 12px; /* уменьшенный шрифт */
+  font-size: 13px;
   text-align: center;
   text-transform: uppercase;
 
@@ -166,6 +170,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+
+  padding: 0 16px;
 
   box-shadow: 0 10px 18px rgba(0, 0, 0, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
