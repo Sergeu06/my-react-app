@@ -22,6 +22,18 @@
   touch-action: none;
 }
 
+@media (max-width: 768px) {
+  .player-hand {
+    gap: 18px;
+    width: 92vw;
+  }
+
+  .card-in-hand-wrapper {
+    width: 22vw;
+    max-width: 160px;
+  }
+}
+
 .card-in-hand-wrapper:hover {
   transform: translateY(-20px) scale(1.1) rotateZ(8deg);
   z-index: 3;

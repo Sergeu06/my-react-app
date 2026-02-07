@@ -190,6 +190,7 @@ function GamePage() {
   const [hand, setHand] = useState([]);
   const [deck, setDeck] = useState([]);
   const [playedCards, setPlayedCards] = useState([]);
+  const [opponentHandCount, setOpponentHandCount] = useState(null);
   const [recipes, setRecipes] = useState(0);
   const [round, setRound] = useState(1);
   const [showDamageFlash, setShowDamageFlash] = useState(false);
@@ -265,6 +266,30 @@ function GamePage() {
     uid,
     opponentUid: gameData?.opponentUid,
   });
+
+  useEffect(() => {
+    if (!lobbyId || !uid || !isActive) return;
+    const handCountRef = databaseRef(
+      database,
+      `lobbies/${lobbyId}/handCounts/${uid}`
+    );
+    set(handCountRef, hand.length);
+  }, [database, hand.length, isActive, lobbyId, uid]);
+
+  useEffect(() => {
+    if (!lobbyId || !gameData?.opponentUid) return;
+    const opponentHandRef = databaseRef(
+      database,
+      `lobbies/${lobbyId}/handCounts/${gameData.opponentUid}`
+    );
+    const handleSnapshot = (snap) => {
+      const value = snap.val();
+      const count = Number(value);
+      setOpponentHandCount(Number.isFinite(count) ? count : 0);
+    };
+    onValue(opponentHandRef, handleSnapshot);
+    return () => off(opponentHandRef, "value", handleSnapshot);
+  }, [database, gameData?.opponentUid, lobbyId]);
 
   // Подписка на завершение игры
   useEffect(() => {
@@ -903,6 +928,8 @@ function GamePage() {
   const opponentMultiplierLabel = buildMultiplierLabel(
     effectsByUid[gameData.opponentUid]?.mult
   );
+  const opponentHandDisplayCount =
+    opponentHandCount ?? gameData.opponent.hand.length ?? 0;
 
   return (
     <div className="game-container">
@@ -915,7 +942,7 @@ function GamePage() {
       />
 
       <OpponentHand
-        count={gameData.opponent.hand.length}
+        count={opponentHandDisplayCount}
         style={{
           position: "absolute",
           top: "6%",
