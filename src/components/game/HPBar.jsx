@@ -71,7 +71,7 @@ function HPBar({
 
       {hasPriority && (
         <span
-          className="priority-label"
+          className={`priority-label priority-label-${position}`}
           onClick={(e) => {
             e.stopPropagation();
             setShowTooltip(true);

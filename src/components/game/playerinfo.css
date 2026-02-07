@@ -31,11 +31,27 @@
   font-weight: bold;
   font-size: 1.1em;
   color: #ffa500;
-  margin-left: 6px; /* 👈 добавляем отступ справа от HP */
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: absolute;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(30, 30, 30, 0.7);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.priority-label-top {
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.priority-label-bottom {
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .hp-bar-container {
@@ -49,7 +65,8 @@
 .hp-multiplier-label {
   position: absolute;
   top: -26px;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   padding: 2px 8px;
   border-radius: 10px;
   background: rgba(130, 77, 255, 0.9);
@@ -63,23 +80,30 @@
 }
 
 .avatar-multiplier-label {
-  margin-top: 6px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: rgba(130, 77, 255, 0.9);
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.95em;
-  letter-spacing: 0.5px;
-  text-shadow: 0 0 8px rgba(88, 40, 175, 0.8);
-  box-shadow: 0 0 12px rgba(130, 77, 255, 0.6);
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(50, 44, 94, 0.92);
+  color: #e6ddff;
+  font-weight: 600;
+  font-size: 0.85em;
+  letter-spacing: 0.3px;
+  text-shadow: 0 0 6px rgba(88, 40, 175, 0.6);
+  box-shadow: 0 4px 10px rgba(65, 44, 140, 0.35);
   pointer-events: none;
   text-align: center;
+  min-width: 34px;
 }
 
 .avatar-multiplier-top {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.avatar-multiplier-bottom {
+  position: absolute;
+  bottom: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
 }
