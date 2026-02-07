@@ -54,6 +54,8 @@ function UpgradePage() {
     (event) => {
       if (!animating || !upgradeCardRef.current) return;
       const rect = upgradeCardRef.current.getBoundingClientRect();
+      const offsetX = event.clientX - rect.left - rect.width / 2;
+      const offsetY = event.clientY - rect.top - rect.height / 2;
       const x = Math.min(
         100,
         Math.max(0, ((event.clientX - rect.left) / rect.width) * 100)
@@ -62,8 +64,22 @@ function UpgradePage() {
         100,
         Math.max(0, ((event.clientY - rect.top) / rect.height) * 100)
       );
+      const tiltX = (offsetX / rect.width) * 40;
+      const tiltY = (offsetY / rect.height) * 40;
       upgradeCardRef.current.style.setProperty("--chaos-x", `${x.toFixed(2)}%`);
       upgradeCardRef.current.style.setProperty("--chaos-y", `${y.toFixed(2)}%`);
+      upgradeCardRef.current.style.setProperty(
+        "--chaos-tilt-x",
+        `${tiltX.toFixed(2)}px`
+      );
+      upgradeCardRef.current.style.setProperty(
+        "--chaos-tilt-y",
+        `${tiltY.toFixed(2)}px`
+      );
+      upgradeCardRef.current.style.setProperty(
+        "--chaos-rot",
+        `${(tiltX * 0.4).toFixed(2)}deg`
+      );
     },
     [animating]
   );
@@ -72,12 +88,18 @@ function UpgradePage() {
     if (!upgradeCardRef.current) return;
     upgradeCardRef.current.style.setProperty("--chaos-x", "50%");
     upgradeCardRef.current.style.setProperty("--chaos-y", "50%");
+    upgradeCardRef.current.style.setProperty("--chaos-tilt-x", "0px");
+    upgradeCardRef.current.style.setProperty("--chaos-tilt-y", "0px");
+    upgradeCardRef.current.style.setProperty("--chaos-rot", "0deg");
   }, []);
 
   useEffect(() => {
     if (!animating || !upgradeCardRef.current) return;
     upgradeCardRef.current.style.setProperty("--chaos-x", "50%");
     upgradeCardRef.current.style.setProperty("--chaos-y", "50%");
+    upgradeCardRef.current.style.setProperty("--chaos-tilt-x", "0px");
+    upgradeCardRef.current.style.setProperty("--chaos-tilt-y", "0px");
+    upgradeCardRef.current.style.setProperty("--chaos-rot", "0deg");
   }, [animating]);
 
   useEffect(() => {
@@ -944,6 +966,8 @@ function UpgradePage() {
           <div
             className="upgrade-panel"
             style={{ display: "flex", alignItems: "center" }}
+            onPointerMove={handleChaosMove}
+            onPointerLeave={handleChaosLeave}
           >
             <div className="card-style">{renderPreviewCard()}</div>
 
@@ -1029,6 +1053,7 @@ function UpgradePage() {
                   <div className="upgrade-chaos-shards" />
                   <div className="upgrade-chaos-sparks" />
                   <div className="upgrade-chaos-orbs" />
+                  <div className="upgrade-chaos-parallax" />
                 </>
               )}
               {selectedCard ? (
