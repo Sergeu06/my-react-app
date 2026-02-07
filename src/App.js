@@ -1045,6 +1045,8 @@ function App() {
 
   const isGameOrProfile = path === "/game";
   const isRaid = path === "/raid";
+  const shouldShowAmbientAnimations =
+    !path.includes("/fight") && !path.includes("/raid");
 
   return (
     <PerformanceProvider value={{ lowEndMode, isTransitioning }}>
@@ -1081,6 +1083,13 @@ function App() {
             }`}
             ref={backgroundRef}
           />
+          {shouldShowAmbientAnimations && (
+            <div className="ambient-animations" aria-hidden="true">
+              <span className="ambient-animations__orb ambient-animations__orb--one" />
+              <span className="ambient-animations__orb ambient-animations__orb--two" />
+              <span className="ambient-animations__orb ambient-animations__orb--three" />
+            </div>
+          )}
           <div className="game-version">v0.9.96.14</div>
 
           <CurrencyBalance />
