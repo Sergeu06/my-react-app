@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import {
   Routes,
@@ -243,6 +243,18 @@ function App() {
     path.includes("/profile");
   const shouldShowSkeleton = isSkeletonPage && progressRatio < 0.85;
   const contentReady = !shouldShowSkeleton;
+
+  useEffect(() => {
+    if (backgroundClass === activeBackgroundClass) return;
+    setPreviousBackgroundClass(activeBackgroundClass);
+    setActiveBackgroundClass(backgroundClass);
+    setIsBackgroundTransitioning(true);
+    const timeoutId = setTimeout(() => {
+      setPreviousBackgroundClass(null);
+      setIsBackgroundTransitioning(false);
+    }, 700);
+    return () => clearTimeout(timeoutId);
+  }, [activeBackgroundClass, backgroundClass]);
 
   useEffect(() => {
     if (backgroundClass === activeBackgroundClass) return;
