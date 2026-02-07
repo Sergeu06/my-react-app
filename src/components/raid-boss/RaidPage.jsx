@@ -86,6 +86,10 @@ function RaidPage() {
   const [energy, setEnergy] = useState(baseEnergy);
 
   const [turn, setTurn] = useState(0);
+  const maxHandSize = 4;
+  const handRef = useRef(hand);
+  const deckRef = useRef(deck);
+  const energyRef = useRef(energy);
 
   const effectiveDamageMultipliers = damageMultiplierEffect
     ? [damageMultiplierEffect]
@@ -117,6 +121,18 @@ function RaidPage() {
     if (gameStarted) return;
     setEnergy(Math.round(baseEnergy * raidModifiers.energyMultiplier));
   }, [baseEnergy, gameStarted, raidModifiers.energyMultiplier]);
+
+  useEffect(() => {
+    handRef.current = hand;
+  }, [hand]);
+
+  useEffect(() => {
+    deckRef.current = deck;
+  }, [deck]);
+
+  useEffect(() => {
+    energyRef.current = energy;
+  }, [energy]);
 
   useEffect(() => {
     const updateEvent = () => {
@@ -291,7 +307,7 @@ function RaidPage() {
     setDamageThisTurn(null);
   }
 
-  function playCard(card) {
+  function playCard(card, availableEnergy = energyRef.current) {
     if (flyingCard) return;
 
     const baseCost = card.value ?? 0;
@@ -299,13 +315,16 @@ function RaidPage() {
       0,
       Math.ceil(baseCost * raidModifiers.costMultiplier)
     );
-    if (energy < cardCost) {
-      setNotEnoughEnergyMessage(`Недостаточно энергии (${energy}/${cardCost})`);
+    if (availableEnergy < cardCost) {
+      setNotEnoughEnergyMessage(
+        `Недостаточно энергии (${availableEnergy}/${cardCost})`
+      );
       setTimeout(() => setNotEnoughEnergyMessage(null), 2000);
       return;
     }
 
-    setEnergy((prev) => prev - cardCost);
+    const energyAfterPlay = Math.max(0, availableEnergy - cardCost);
+    setEnergy(energyAfterPlay);
 
     setFlyingCard(card);
     setSelectedCardId(null);
@@ -381,22 +400,32 @@ function RaidPage() {
       }
 
       setHand((prevHand) => prevHand.filter((c) => c.id !== card.id));
+      const handSizeAfterPlay = Math.max(0, handRef.current.length - 1);
       setDeck((prevDeck) => {
         const newDeck = [...prevDeck, card];
         if (newDeck.length === 0) return newDeck;
-        const nextCard = newDeck[0];
-        setHand((prevHand) => [...prevHand, nextCard]);
-        return newDeck.slice(1);
+        if (handSizeAfterPlay >= maxHandSize) {
+          return newDeck;
+        }
+        const [nextCard, ...restDeck] = newDeck;
+        setHand((prevHand) =>
+          prevHand.length >= maxHandSize ? prevHand : [...prevHand, nextCard]
+        );
+        return restDeck;
       });
 
       setPlayingCard(null);
       setFlyingCard(null);
 
-      const updatedHand = [...hand.filter((c) => c.id !== card.id)];
-      const newDeckTop = deck.length > 0 ? [deck[0]] : [];
-      const totalNewHand = [...updatedHand, ...newDeckTop];
-
-      const energyAfterPlay = energy - cardCost;
+      const updatedHand = handRef.current.filter((c) => c.id !== card.id);
+      const deckTopCard =
+        deckRef.current.length > 0 &&
+        updatedHand.length < maxHandSize
+          ? deckRef.current[0]
+          : null;
+      const totalNewHand = deckTopCard
+        ? [...updatedHand, deckTopCard]
+        : updatedHand;
       const canPlayAny = totalNewHand.some(
         (c) =>
           Math.ceil((c.value ?? 0) * raidModifiers.costMultiplier) <=
@@ -430,7 +459,7 @@ function RaidPage() {
             (extraCard.value ?? 0) * raidModifiers.costMultiplier
           );
           if (energyAfterPlay >= extraCost) {
-            playCard(extraCard);
+            playCard(extraCard, energyAfterPlay);
           }
         }
       }
