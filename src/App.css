@@ -151,6 +151,7 @@ a {
   left: 0;
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
   background-color: #0b0f16;
   background-position: center;
   background-repeat: no-repeat;
@@ -175,9 +176,9 @@ a {
 }
 
 .ambient-animations {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   pointer-events: none;
   overflow: hidden;
   mix-blend-mode: screen;
@@ -186,9 +187,9 @@ a {
 .ambient-animations__orb {
   position: absolute;
   border-radius: 999px;
-  opacity: 0.35;
-  filter: blur(6px);
-  animation: floatOrb 18s ease-in-out infinite;
+  opacity: 0.3;
+  filter: blur(8px);
+  animation: floatOrb 48s ease-in-out infinite;
 }
 
 .ambient-animations__orb--one {
@@ -197,7 +198,7 @@ a {
   left: 8%;
   top: 18%;
   background: radial-gradient(circle, rgba(255, 255, 255, 0.28), rgba(0, 188, 212, 0));
-  animation-duration: 20s;
+  animation-duration: 54s;
 }
 
 .ambient-animations__orb--two {
@@ -206,8 +207,8 @@ a {
   right: 12%;
   top: 35%;
   background: radial-gradient(circle, rgba(255, 255, 255, 0.22), rgba(156, 39, 176, 0));
-  animation-duration: 24s;
-  animation-delay: -6s;
+  animation-duration: 60s;
+  animation-delay: -12s;
 }
 
 .ambient-animations__orb--three {
@@ -216,8 +217,8 @@ a {
   left: 35%;
   bottom: 12%;
   background: radial-gradient(circle, rgba(255, 255, 255, 0.22), rgba(255, 193, 7, 0));
-  animation-duration: 22s;
-  animation-delay: -10s;
+  animation-duration: 50s;
+  animation-delay: -18s;
 }
 
 @keyframes floatOrb {
@@ -225,7 +226,7 @@ a {
     transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    transform: translate3d(24px, -18px, 0) scale(1.08);
+    transform: translate3d(60px, -40px, 0) scale(1.12);
   }
   100% {
     transform: translate3d(0, 0, 0) scale(1);

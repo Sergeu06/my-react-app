@@ -1095,14 +1095,15 @@ function App() {
               isBackgroundTransitioning ? " background-layer--fade-in" : ""
             }`}
             ref={backgroundRef}
-          />
-          {shouldShowAmbientAnimations && (
-            <div className="ambient-animations" aria-hidden="true">
-              <span className="ambient-animations__orb ambient-animations__orb--one" />
-              <span className="ambient-animations__orb ambient-animations__orb--two" />
-              <span className="ambient-animations__orb ambient-animations__orb--three" />
-            </div>
-          )}
+          >
+            {shouldShowAmbientAnimations && (
+              <div className="ambient-animations" aria-hidden="true">
+                <span className="ambient-animations__orb ambient-animations__orb--one" />
+                <span className="ambient-animations__orb ambient-animations__orb--two" />
+                <span className="ambient-animations__orb ambient-animations__orb--three" />
+              </div>
+            )}
+          </div>
           <div className="game-version">v0.9.96.14</div>
 
           <CurrencyBalance />
