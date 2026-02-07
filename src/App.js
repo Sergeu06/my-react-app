@@ -236,6 +236,7 @@ function App() {
     secondsElapsed: 0,
     lobbyId: null,
   });
+  const [isMatchNavigationLocked, setIsMatchNavigationLocked] = useState(false);
   const [tabIndex, setTabIndex] = useState(() => {
     const path = location.pathname.toLowerCase();
     if (path.includes("/shop")) return 0;
@@ -677,6 +678,7 @@ function App() {
   };
 
   const updateTab = (newIndex, dir = null) => {
+    if (isMatchNavigationLocked) return;
     const newDirection = dir !== null ? dir : newIndex > tabIndex ? 1 : -1;
 
     setDirection(newDirection);
@@ -691,6 +693,7 @@ function App() {
 
   const handlers = useSwipeable({
     onSwipedLeft: (eventData) => {
+      if (isMatchNavigationLocked) return;
       if (eventData.event.target.closest(".fusion-slider")) return;
 
       if (
@@ -702,6 +705,7 @@ function App() {
       }
     },
     onSwipedRight: (eventData) => {
+      if (isMatchNavigationLocked) return;
       if (eventData.event.target.closest(".fusion-slider")) return;
 
       if (!path.includes("/raid") && !path.includes("/game") && tabIndex > 0) {
@@ -736,6 +740,9 @@ function App() {
         players.includes(uid)
       ) {
         const currentPath = location.pathname.toLowerCase();
+        if (!isMatchNavigationLocked) {
+          setIsMatchNavigationLocked(true);
+        }
         if (!currentPath.includes("/fight")) {
           setUiLocked(true);
           navigate(searchState.searchStartPath || `/fight?start=${uid}`);
@@ -751,7 +758,13 @@ function App() {
     location.pathname,
     navigate,
     searchState.searchStartPath,
+    isMatchNavigationLocked,
   ]);
+  useEffect(() => {
+    if (!path.includes("/fight") && isMatchNavigationLocked) {
+      setIsMatchNavigationLocked(false);
+    }
+  }, [path, isMatchNavigationLocked]);
   useEffect(() => {
     const reset = searchParams.get("resetSearch");
     if (reset === "1") {
@@ -1045,6 +1058,8 @@ function App() {
 
   const isGameOrProfile = path === "/game";
   const isRaid = path === "/raid";
+  const shouldShowAmbientAnimations =
+    !path.includes("/fight") && !path.includes("/raid");
 
   return (
     <PerformanceProvider value={{ lowEndMode, isTransitioning }}>
@@ -1080,12 +1095,20 @@ function App() {
               isBackgroundTransitioning ? " background-layer--fade-in" : ""
             }`}
             ref={backgroundRef}
-          />
+          >
+            {shouldShowAmbientAnimations && (
+              <div className="ambient-animations" aria-hidden="true">
+                <span className="ambient-animations__orb ambient-animations__orb--one" />
+                <span className="ambient-animations__orb ambient-animations__orb--two" />
+                <span className="ambient-animations__orb ambient-animations__orb--three" />
+              </div>
+            )}
+          </div>
           <div className="game-version">v0.9.96.14</div>
 
           <CurrencyBalance />
 
-          {!isGameOrProfile && !isRaid && (
+          {!isGameOrProfile && !isRaid && !isMatchNavigationLocked && (
             <div
               style={{
                 position: "fixed",
