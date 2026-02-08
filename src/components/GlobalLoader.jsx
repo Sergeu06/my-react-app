@@ -8,7 +8,12 @@ function GlobalLoader({ loaded = 0, total = 0 }) {
     <div className="global-loader">
       <div className="global-loader__badge">Архив карт</div>
       <div className="global-loader__spinner" />
-      <div className="global-loader__title">Готовим коллекцию</div>
+      <div
+        className="global-loader__title cp-glitch"
+        data-text="Готовим коллекцию"
+      >
+        Готовим коллекцию
+      </div>
       <div className="global-loader__text">
         Ищем локальные арты в кеше, догружаем недостающие.
       </div>

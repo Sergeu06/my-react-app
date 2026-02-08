@@ -245,6 +245,14 @@ function App() {
     setLowEndMode(lowEndMode);
   }, [lowEndMode]);
 
+  useEffect(() => {
+    document.body.classList.add("cp-root");
+    document.body.classList.toggle("cp-low", lowEndMode);
+    return () => {
+      document.body.classList.remove("cp-root", "cp-low");
+    };
+  }, [lowEndMode]);
+
   const path = location.pathname.toLowerCase();
   const backgroundClass = getBackgroundClass(path);
   const progressRatio =
