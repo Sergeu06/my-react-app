@@ -129,14 +129,6 @@ async function createOrUpdateUserProfile(user) {
 
  
 
-function getPageBg(pathname) {
-  if (pathname.includes("/shop")) return "rgba(43, 27, 18, 0.45)";
-  if (pathname.includes("/collection")) return "rgba(16, 38, 53, 0.45)";
-  if (pathname.includes("/upgrade")) return "rgba(26, 27, 51, 0.45)";
-  if (pathname.includes("/profile")) return "rgba(18, 49, 38, 0.45)";
-  return null;
-}
-
 function getBackgroundClass(pathname) {
   if (pathname.includes("/fight")) return "bg-fight";
   if (pathname.includes("/shop")) return "bg-shop";
@@ -254,7 +246,6 @@ function App() {
   }, [lowEndMode]);
 
   const path = location.pathname.toLowerCase();
-  const pageBackground = getPageBg(path);
   const backgroundClass = getBackgroundClass(path);
   const progressRatio =
     assetsProgress.total > 0 ? assetsProgress.loaded / assetsProgress.total : 0;
@@ -1094,15 +1085,6 @@ function App() {
                 zIndex: 2000,
                 background: "transparent",
               }}
-            />
-          )}
-          {pageBackground && (
-            <div
-              className="page-bg-overlay"
-              style={{
-                backgroundColor: pageBackground,
-              }}
-              aria-hidden="true"
             />
           )}
           {previousBackgroundClass && (
