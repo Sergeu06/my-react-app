@@ -2,8 +2,8 @@
   position: relative;
 
   height: 100vh;
-  background: linear-gradient(to top, #1a1a1a, #2e2e2e);
-  color: white;
+  background: linear-gradient(to top, #0b1020, #141a2b);
+  color: var(--text-primary);
   font-family: var(--app-font);
   box-sizing: border-box;
   overflow: hidden;
@@ -40,7 +40,7 @@
   width: 35vw; /* фиксированная ширина */
   height: 20px; /* высота вертикального бара */
   background-color: rgba(12, 16, 28, 0.9);
-  border: 1px solid #777;
+  border: var(--border-soft);
   border-radius: 10px;
   overflow: hidden;
   display: flex;
@@ -56,7 +56,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--text-primary);
   font-weight: bold;
   font-size: 12px;
 }
@@ -66,7 +66,7 @@
   transform: rotate(180deg); /* чтобы числа шли "правильно" */
   font-size: 12px;
   text-align: center;
-  color: white;
+  color: var(--text-primary);
 }
 .game-card {
   position: relative; /* для абсолютного позиционирования кнопки */
@@ -228,7 +228,7 @@
 
 @keyframes pulseGlowStrong {
   0% {
-    box-shadow: 0 0 14px rgba(255, 255, 255, 0.18), 0 0 0 transparent;
+    box-shadow: 0 0 14px rgba(232, 240, 255, 0.18), 0 0 0 transparent;
     transform: scale(1);
   }
   50% {
@@ -254,12 +254,12 @@
   height: 180px;
   border: 2px solid #ffa500;
   border-radius: 8px;
-  background-color: #2e2e2e;
+  background-color: var(--surface-2);
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 8px;
-  color: white;
+  color: var(--text-primary);
   box-shadow: 0 0 10px #ffa500;
 }
 .undo-card-button {
@@ -274,7 +274,7 @@
   background-color: #ff4d4d;
   border: none;
   border-radius: 4px;
-  color: white;
+  color: var(--text-primary);
   transition: background-color 0.2s ease;
   z-index: 10; /* чтобы быть поверх карты */
 }
@@ -290,7 +290,7 @@
   margin-bottom: 6px;
 }
 .playcardbutton:disabled {
-  background-color: #555;
+  background-color: rgba(16, 20, 32, 0.9);
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -306,11 +306,11 @@
   border: 2px solid rgba(173, 255, 47, 0.5); /* полупрозрачная рамка */
   padding: 10px 20px;
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.8); /* слегка затемнённый фон */
+  background: rgba(4, 6, 14, 0.8); /* слегка затемнённый фон */
   font-size: 1.2rem;
   font-weight: bold;
   text-align: center;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 10px rgba(4, 6, 14, 0.3);
 
   /* 👇 позволяет регулировать расположение */
   position: absolute;
@@ -419,6 +419,6 @@
   }
 }
 .damage-number {
-  text-shadow: 0 0 6px black;
+  text-shadow: 0 0 6px rgba(6, 10, 20, 0.85);
   z-index: 3000;
 }

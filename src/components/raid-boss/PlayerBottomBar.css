@@ -82,7 +82,7 @@
   font-size: 1.8rem;
   font-weight: bold;
   color: #00ff00; /* ярко-зелёный */
-  text-shadow: 1px 1px 2px #000;
+  text-shadow: 1px 1px 2px rgba(6, 10, 20, 0.85);
   padding: 4px 10px;
   border-radius: 6px;
   pointer-events: none;

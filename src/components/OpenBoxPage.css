@@ -108,8 +108,20 @@
   border-radius: 50%;
   filter: blur(60px);
   z-index: 0;
-  opacity: 0.5;
+  opacity: calc(0.5 * var(--effects));
   pointer-events: none;
+  animation: cp-flicker 2.8s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rarity-glow {
+    animation: none;
+  }
+}
+
+.cp-low .rarity-glow,
+[data-effects="low"] .rarity-glow {
+  opacity: calc(0.25 * var(--effects));
 }
 
 .rarity-common {

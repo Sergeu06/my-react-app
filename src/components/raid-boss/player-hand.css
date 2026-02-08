@@ -50,7 +50,7 @@
   border-radius: 6px;
   user-select: none;
   pointer-events: none;
-  text-shadow: 2px 2px 3px #000;
+  text-shadow: 2px 2px 3px rgba(6, 10, 20, 0.85);
   color: var(--text-primary);
   white-space: nowrap;
   z-index: 5;

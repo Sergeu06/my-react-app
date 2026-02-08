@@ -12,7 +12,7 @@
   position: relative;
   width: 100%;
   height: 100%;
-  background-color: #000;
+  background-color: var(--app-bg);
 }
 
 .boss-container.boss-drop-active {
@@ -26,7 +26,7 @@
   color: #ffa500;
   font-weight: bold;
   font-size: 14px;
-  text-shadow: 0 0 3px #000;
+  text-shadow: 0 0 3px rgba(6, 10, 20, 0.85);
 }
 
 .damage-multiplier-effect {
@@ -60,7 +60,7 @@
   width: 80vw;
   max-width: 600px;
   height: 20px;
-  background: #555;
+  background: rgba(14, 18, 30, 0.9);
   border-radius: 10px;
   margin-top: 8px;
   overflow: hidden;
@@ -81,8 +81,8 @@
   left: 0;
   height: 100%;
   font-weight: bold;
-  color: white;
-  text-shadow: 0 0 5px #000;
+  color: var(--text-primary);
+  text-shadow: 0 0 5px rgba(6, 10, 20, 0.85);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -94,7 +94,7 @@
   top: 0;
   right: 0; /* Белый фрагмент прикреплен к правому краю красной полосы */
   height: 100%;
-  background-color: white;
+  background-color: rgba(232, 240, 255, 0.75);
   border-radius: 0 10px 10px 0;
   z-index: 3;
   transition: width 1.2s ease;
@@ -135,7 +135,7 @@
   position: relative;
   width: 300px;
   height: 24px;
-  background-color: #555; /* фон полосы (серый) */
+  background-color: rgba(14, 18, 30, 0.9); /* фон полосы */
   border-radius: 12px;
   overflow: hidden;
   margin-top: 10px;
@@ -157,7 +157,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  background-color: white;
+  background-color: rgba(232, 240, 255, 0.75);
   opacity: 0.6;
   border-radius: 0; /* без скруглений */
   transition: width 1.2s ease, opacity 0.3s ease;
@@ -177,10 +177,10 @@
   font-size: 2.2rem;
   letter-spacing: 1.5px;
   padding: 8px 24px;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(4, 6, 14, 0.5);
   border-radius: 20px;
   user-select: none;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+  text-shadow: 0 2px 6px rgba(4, 6, 14, 0.9);
   min-width: 220px;
   max-width: 90vw;
   white-space: nowrap;
@@ -249,8 +249,9 @@
   position: relative;
   z-index: 5;
   font-weight: 700;
-  color: white;
-  text-shadow: 0 0 6px rgba(0, 0, 0, 0.85), 0 0 10px rgba(0, 0, 0, 0.7);
+  color: var(--text-primary);
+  text-shadow: 0 0 6px rgba(4, 6, 14, 0.85),
+    0 0 10px rgba(4, 6, 14, 0.7);
   font-size: 1.1rem;
   line-height: 28px;
   user-select: none;
@@ -264,7 +265,7 @@
   z-index: 3;
   text-align: center;
   font-weight: bold;
-  color: white;
+  color: var(--text-primary);
   user-select: none;
   margin-top: 4px;
 }
@@ -365,7 +366,7 @@
   left: 50%;
   transform: translateX(-50%);
   background: rgba(255, 80, 80, 0.9);
-  color: white;
+  color: var(--text-primary);
   padding: 10px 20px;
   border-radius: 8px;
   font-weight: bold;

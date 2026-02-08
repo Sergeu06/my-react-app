@@ -555,7 +555,7 @@
   left: 4px; /* сдвигаем влево */
   background: rgba(255, 0, 0, 0.7);
   border: none;
-  color: white;
+  color: var(--text-primary);
   font-weight: bold;
   cursor: pointer;
   border-radius: 3px;
@@ -674,7 +674,7 @@ select option {
   font-weight: 600;
   font-size: 0.9rem;
   text-align: center;
-  text-shadow: 0 0 5px #000;
+  text-shadow: 0 0 5px rgba(6, 10, 20, 0.85);
   pointer-events: none; /* чтобы не мешал кликам */
   user-select: none;
 }
