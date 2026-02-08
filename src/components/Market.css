@@ -16,9 +16,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background-color: #2e2e2e;
-  color: #ffa500;
-  border: 1px solid #ffa500;
+  background: linear-gradient(
+    135deg,
+    rgba(49, 247, 255, 0.15),
+    rgba(255, 79, 216, 0.12)
+  );
+  color: var(--cp-accent-cyan);
+  border: 1px solid rgba(49, 247, 255, 0.45);
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 13px;
@@ -27,11 +31,11 @@
 }
 
 .market-filter-toggle.open {
-  box-shadow: 0 0 8px rgba(255, 165, 0, 0.3);
+  box-shadow: 0 0 12px rgba(49, 247, 255, 0.4);
 }
 
 .market-filter-toggle:hover {
-  background-color: #1f1f1f;
+  background-color: rgba(12, 16, 28, 0.9);
 }
 
 .market-filter-panel {
@@ -39,11 +43,12 @@
   top: calc(100% + 10px);
   right: 0;
   width: min(320px, calc(100vw - 24px));
-  background-color: #1b1b1b;
-  border: 1px solid rgba(255, 165, 0, 0.35);
+  background-color: rgba(12, 16, 28, 0.95);
+  border: 1px solid rgba(49, 247, 255, 0.3);
   border-radius: 10px;
   padding: 14px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5),
+    0 0 16px rgba(49, 247, 255, 0.15);
   z-index: 10;
   max-height: calc(100vh - 180px);
   overflow-y: auto;
@@ -62,7 +67,7 @@
 
 .market-filter-label {
   font-size: 12px;
-  color: #ffa500;
+  color: var(--cp-accent-cyan);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -75,9 +80,9 @@
 
 .market-filter-input {
   flex: 1 1 0;
-  background-color: #2a2a2a;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(12, 18, 32, 0.9);
+  color: var(--text-primary);
+  border: 1px solid rgba(49, 247, 255, 0.2);
   border-radius: 6px;
   padding: 6px 8px;
   font-size: 13px;
@@ -86,8 +91,8 @@
 
 .market-filter-input:focus {
   outline: none;
-  border-color: #ffa500;
-  box-shadow: 0 0 6px rgba(255, 165, 0, 0.4);
+  border-color: var(--cp-accent-cyan);
+  box-shadow: 0 0 10px rgba(49, 247, 255, 0.4);
 }
 
 .market-filter-separator {
@@ -97,9 +102,9 @@
 
 .market-filter-select {
   width: 100%;
-  background-color: #2a2a2a;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(12, 18, 32, 0.9);
+  color: var(--text-primary);
+  border: 1px solid rgba(49, 247, 255, 0.2);
   border-radius: 6px;
   padding: 8px;
   font-size: 13px;
@@ -107,8 +112,8 @@
 
 .market-filter-select:focus {
   outline: none;
-  border-color: #ffa500;
-  box-shadow: 0 0 6px rgba(255, 165, 0, 0.4);
+  border-color: var(--cp-accent-cyan);
+  box-shadow: 0 0 10px rgba(49, 247, 255, 0.4);
 }
 
 .market-filter-options {
@@ -122,11 +127,11 @@
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #f0f0f0;
+  color: var(--text-primary);
 }
 
 .market-filter-checkbox input {
-  accent-color: #ffa500;
+  accent-color: var(--cp-accent-cyan);
 }
 
 @media (max-width: 520px) {
