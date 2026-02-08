@@ -113,7 +113,11 @@
 }
 
 .rarity-common {
-  background: radial-gradient(circle, #aaaaaa 0%, #444444 80%);
+  background: radial-gradient(
+    circle,
+    rgba(49, 247, 255, 0.4) 0%,
+    rgba(12, 16, 28, 0.9) 80%
+  );
 }
 
 .rarity-rare {

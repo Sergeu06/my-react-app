@@ -1371,14 +1371,14 @@ function UpgradePage() {
             className="modal-window"
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: "#2e2e2e",
+              background: "var(--modal-card-bg)",
               padding: "10px",
               borderRadius: "8px",
               maxWidth: "500px",
               width: "96%", // ширина окна
               height: "67vh", // 70% высоты экрана
               overflowY: "auto", // прокрутка при переполнении
-              color: "#fff",
+              color: "var(--modal-card-text)",
             }}
           >
             <div>{infoContent}</div>

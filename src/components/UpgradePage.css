@@ -8,7 +8,7 @@ button {
   flex-direction: column;
   align-items: center;
   padding: 0.5rem 1rem 0.75rem;
-  color: #fff;
+  color: var(--text-primary);
   min-height: 100vh;
   position: relative;
   z-index: 10;
@@ -37,9 +37,9 @@ h1 {
 }
 
 .card-style {
-  background-color: rgba(30, 30, 30, 0.8); /* Прозрачный фон */
-  color: #f0f0f0;
-  border: 1px solid #2e2e2e; /* Непрозрачный контур */
+  background-color: rgba(12, 16, 28, 0.8); /* Прозрачный фон */
+  color: var(--text-primary);
+  border: 1px solid rgba(49, 247, 255, 0.2); /* Непрозрачный контур */
   border-radius: 16px;
   padding: 0.75rem;
   width: 160px;
@@ -65,13 +65,13 @@ h1 {
 }
 
 .card-style .card-name {
-  color: #ffb347;
+  color: var(--cp-accent-cyan);
   font-weight: bold;
   margin-bottom: 0.3rem;
 }
 
 .card-style .card-details {
-  color: #bbbbbb;
+  color: var(--text-muted);
   font-size: 0.85rem;
 }
 
@@ -95,16 +95,15 @@ h1 {
 
 .success-rate {
   font-size: 0.9rem;
-  color: #ffa500;
+  color: var(--cp-accent-yellow);
 }
 
 .upgrade-button {
   margin-top: 1rem;
   padding: 0.75rem 2rem;
-  background-color: rgba(25, 25, 25, 0.8); /* Прозрачный фон */
-
-  color: #ffa500;
-  border: 1px solid #444;
+  background-color: rgba(12, 16, 28, 0.85); /* Прозрачный фон */
+  color: var(--cp-accent-yellow);
+  border: 1px solid rgba(49, 247, 255, 0.35);
   border-radius: 12px;
   font-weight: bold;
   font-size: 1rem;
@@ -115,7 +114,7 @@ h1 {
 }
 
 .upgrade-button:hover {
-  background-color: #333;
+  background-color: rgba(12, 16, 28, 0.95);
 }
 
 .fusion-panel {
@@ -131,7 +130,7 @@ h1 {
 .fusion-hint {
   margin: 0;
   font-size: 0.85rem;
-  color: #cfcfcf;
+  color: var(--text-muted);
 }
 
 .fusion-slots {
@@ -151,8 +150,8 @@ h1 {
   position: relative;
   width: var(--fusion-slot-size);
   min-height: 78px;
-  background: rgba(20, 20, 20, 0.8);
-  border: 1px dashed #444;
+  background: rgba(12, 16, 28, 0.85);
+  border: 1px dashed rgba(49, 247, 255, 0.3);
   border-radius: 12px;
   padding: 4px;
   display: flex;
@@ -171,7 +170,7 @@ h1 {
   height: 100%;
   border: none;
   background: transparent;
-  color: #ffa500;
+  color: var(--cp-accent-cyan);
   font-size: 28px;
   cursor: pointer;
 }
@@ -184,9 +183,9 @@ h1 {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 1px solid #444;
-  background: #2a2a2a;
-  color: #fff;
+  border: 1px solid rgba(49, 247, 255, 0.3);
+  background: rgba(12, 16, 28, 0.9);
+  color: var(--text-primary);
   font-size: 12px;
   cursor: pointer;
   display: flex;
@@ -371,14 +370,14 @@ h1 {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
-  color: #ffa500;
+  color: var(--cp-accent-cyan);
   font-weight: 600;
 }
 
 .fusion-modal-close {
   border: none;
   background: transparent;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 18px;
   cursor: pointer;
 }
@@ -387,7 +386,7 @@ h1 {
   width: 100%;
   padding: 20px;
   text-align: center;
-  color: #bbb;
+  color: var(--text-muted);
 }
 
 .card-modal {
@@ -486,8 +485,8 @@ h1 {
 .close-button {
   margin-top: 1rem;
   padding: 0.5rem 1.5rem;
-  background: #ff4f4f;
-  color: #fff;
+  background: rgba(255, 77, 109, 0.85);
+  color: var(--text-primary);
   border: none;
   border-radius: 12px;
   font-weight: bold;
@@ -505,12 +504,12 @@ h1 {
 }
 
 .upgrade-success {
-  color: #00ff88;
+  color: var(--cp-success);
   animation: successBurst 1.4s cubic-bezier(0.18, 0.75, 0.2, 1) forwards;
 }
 
 .upgrade-failure {
-  color: #ff4f4f;
+  color: var(--cp-danger);
   animation: failCrash 1.2s ease-in-out forwards;
 }
 
@@ -1196,8 +1195,8 @@ h1 {
 
 .info-modalU .close-button {
   margin-top: 1rem;
-  background: #444;
-  color: #ffa500;
+  background: rgba(12, 16, 28, 0.9);
+  color: var(--cp-accent-cyan);
   border: none;
   border-radius: 8px;
   padding: 0.5rem 1rem;
@@ -1206,5 +1205,5 @@ h1 {
 }
 
 .info-modalU .close-button:hover {
-  background: #666;
+  background: rgba(12, 16, 28, 0.95);
 }

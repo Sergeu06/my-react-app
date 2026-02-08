@@ -181,16 +181,16 @@ function CurrencyBalance({
             top: `calc(env(safe-area-inset-top, 0px) + ${BALANCE_DOCK.offset})`,
             left: `calc(env(safe-area-inset-left, 0px) + ${BALANCE_DOCK.offset})`,
             right: "auto",
-            backgroundColor: "#1e1e1e",
-            color: "#fff",
+            backgroundColor: "var(--surface-2)",
+            color: "var(--text-primary)",
             padding: "12px 16px",
             borderRadius: "8px",
-            border: "1px solid #ffa500",
+            border: "1px solid rgba(49, 247, 255, 0.4)",
             fontSize: "12px",
             zIndex: 10002,
             width: "100%",
             maxWidth: "240px",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+            boxShadow: "0 10px 20px rgba(0, 0, 0, 0.35)",
           }}
         >
           <strong>Золото:</strong> <br />
@@ -209,16 +209,16 @@ function CurrencyBalance({
             top: `calc(env(safe-area-inset-top, 0px) + ${BALANCE_DOCK.offset} + 56px)`,
             left: `calc(env(safe-area-inset-left, 0px) + ${BALANCE_DOCK.offset})`,
             right: "auto",
-            backgroundColor: "#1e1e1e",
-            color: "#fff",
+            backgroundColor: "var(--surface-2)",
+            color: "var(--text-primary)",
             padding: "12px 16px",
             borderRadius: "8px",
-            border: "1px solid #ffa500",
+            border: "1px solid rgba(49, 247, 255, 0.4)",
             fontSize: "12px",
             zIndex: 10002,
             width: "100%",
             maxWidth: "240px",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+            boxShadow: "0 10px 20px rgba(0, 0, 0, 0.35)",
           }}
         >
           <strong>Билеты:</strong> <br />
@@ -237,16 +237,16 @@ function CurrencyBalance({
             top: `calc(env(safe-area-inset-top, 0px) + ${BALANCE_DOCK.offset} + 56px)`,
             left: `calc(env(safe-area-inset-left, 0px) + ${BALANCE_DOCK.offset})`,
             right: "auto",
-            backgroundColor: "#1e1e1e",
-            color: "#fff",
+            backgroundColor: "var(--surface-2)",
+            color: "var(--text-primary)",
             padding: "12px 16px",
             borderRadius: "8px",
-            border: "1px solid #ffa500",
+            border: "1px solid rgba(49, 247, 255, 0.4)",
             fontSize: "12px",
             zIndex: 10002,
             width: "100%",
             maxWidth: "240px",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+            boxShadow: "0 10px 20px rgba(0, 0, 0, 0.35)",
           }}
         >
           <strong>Рецеты:</strong> <br />

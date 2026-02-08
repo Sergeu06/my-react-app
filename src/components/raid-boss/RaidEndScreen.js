@@ -776,11 +776,11 @@ function RaidEndScreen({ totalDamage = 0, cardsUsed = 0 }) {
               className="raid-result-exit"
               onMouseEnter={(e) =>
                 (e.currentTarget.style.background =
-                  "linear-gradient(160deg, #444, #2f2f2f)")
+                  "linear-gradient(160deg, rgba(12, 16, 28, 0.95), rgba(9, 12, 20, 0.95))")
               }
               onMouseLeave={(e) =>
                 (e.currentTarget.style.background =
-                  "linear-gradient(160deg, #3a3a3a, #2a2a2a)")
+                  "linear-gradient(160deg, rgba(12, 16, 28, 0.85), rgba(9, 12, 20, 0.85))")
               }
             >
               Выйти
