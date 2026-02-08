@@ -130,14 +130,10 @@ async function createOrUpdateUserProfile(user) {
  
 
 function getPageBg(pathname) {
-  if (pathname.includes("/fight")) return "rgba(11, 15, 22, 0.45)";
   if (pathname.includes("/shop")) return "rgba(43, 27, 18, 0.45)";
   if (pathname.includes("/collection")) return "rgba(16, 38, 53, 0.45)";
   if (pathname.includes("/upgrade")) return "rgba(26, 27, 51, 0.45)";
   if (pathname.includes("/profile")) return "rgba(18, 49, 38, 0.45)";
-  if (pathname.includes("/raid")) return "rgba(55, 18, 14, 0.45)";
-  if (pathname.includes("/open-box")) return "rgba(10, 33, 41, 0.45)";
-  if (pathname.includes("/result")) return "rgba(28, 16, 38, 0.45)";
   return null;
 }
 
@@ -151,7 +147,7 @@ function getBackgroundClass(pathname) {
   if (pathname.includes("/game")) return "bg-game";
   if (pathname.includes("/open-box")) return "bg-open-box";
   if (pathname.includes("/result")) return "bg-result";
-  return "bg-shop";
+  return null;
 }
 
 function collectDeviceInfo() {
@@ -1100,33 +1096,37 @@ function App() {
               }}
             />
           )}
-          <div
-            className="page-bg-overlay"
-            style={{
-              backgroundColor: pageBackground || "transparent",
-            }}
-            aria-hidden="true"
-          />
+          {pageBackground && (
+            <div
+              className="page-bg-overlay"
+              style={{
+                backgroundColor: pageBackground,
+              }}
+              aria-hidden="true"
+            />
+          )}
           {previousBackgroundClass && (
             <div
               className={`background-layer ${previousBackgroundClass}`}
               aria-hidden="true"
             />
           )}
-          <div
-            className={`background-layer ${activeBackgroundClass}${
-              isBackgroundTransitioning ? " background-layer--fade-in" : ""
-            }`}
-            ref={backgroundRef}
-          >
-            {shouldShowAmbientAnimations && (
-              <div className="ambient-animations" aria-hidden="true">
-                <span className="ambient-animations__orb ambient-animations__orb--one" />
-                <span className="ambient-animations__orb ambient-animations__orb--two" />
-                <span className="ambient-animations__orb ambient-animations__orb--three" />
-              </div>
-            )}
-          </div>
+          {activeBackgroundClass && (
+            <div
+              className={`background-layer ${activeBackgroundClass}${
+                isBackgroundTransitioning ? " background-layer--fade-in" : ""
+              }`}
+              ref={backgroundRef}
+            >
+              {shouldShowAmbientAnimations && (
+                <div className="ambient-animations" aria-hidden="true">
+                  <span className="ambient-animations__orb ambient-animations__orb--one" />
+                  <span className="ambient-animations__orb ambient-animations__orb--two" />
+                  <span className="ambient-animations__orb ambient-animations__orb--three" />
+                </div>
+              )}
+            </div>
+          )}
           <div className="game-version">v0.9.96.14</div>
 
           <CurrencyBalance />
