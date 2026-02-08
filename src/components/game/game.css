@@ -33,13 +33,13 @@
 .nickname {
   font-size: 16px;
   white-space: nowrap;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .hp-bar {
   width: 35vw; /* фиксированная ширина */
   height: 20px; /* высота вертикального бара */
-  background-color: #444;
+  background-color: rgba(12, 16, 28, 0.9);
   border: 1px solid #777;
   border-radius: 10px;
   overflow: hidden;
@@ -70,8 +70,8 @@
 }
 .game-card {
   position: relative; /* для абсолютного позиционирования кнопки */
-  background-color: #333;
-  border: 1px solid #fff;
+  background-color: rgba(12, 16, 28, 0.85);
+  border: 1px solid rgba(49, 247, 255, 0.3);
   padding: 8px;
   border-radius: 8px;
   width: 90px;
@@ -113,7 +113,7 @@
 
 .nickname.center {
   font-size: 18px;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: bold;
   position: relative;
   text-align: center;
@@ -183,7 +183,7 @@
 }
 
 .end-turn-button:hover {
-  background: linear-gradient(145deg, #444, #2f2f2f);
+  background: linear-gradient(145deg, rgba(12, 16, 28, 0.95), rgba(9, 12, 20, 0.95));
   transform: scale(1.08);
   box-shadow: 0 14px 24px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(255, 165, 0, 0.2);

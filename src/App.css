@@ -1,4 +1,5 @@
 @import "./theme/cyberpunk.css";
+@import "./styles/cyberpunk.css";
 
 /* Запрет выделения текста по всему приложению */
 body,
@@ -245,120 +246,18 @@ a:focus-visible,
   }
 }
 
-@keyframes cp-flicker {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  92% {
-    opacity: 0.8;
-  }
-  94% {
-    opacity: 0.4;
-  }
-  96% {
-    opacity: 0.9;
-  }
-}
-
-@keyframes cp-glitch {
-  0%,
-  100% {
-    transform: translate(0);
-    opacity: 0.95;
-  }
-  20% {
-    transform: translate(-1px, 1px);
-  }
-  40% {
-    transform: translate(1px, -1px);
-  }
-  60% {
-    transform: translate(-2px, 0);
-  }
-  80% {
-    transform: translate(2px, 1px);
-  }
-}
-
-@keyframes cp-scan {
-  0% {
-    transform: translateX(-120%);
-  }
-  100% {
-    transform: translateX(120%);
-  }
-}
-
-@keyframes cp-border-run {
-  0% {
-    background-position: 0% 50%;
-  }
-  100% {
-    background-position: 200% 50%;
-  }
-}
-
-@keyframes cp-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.9;
-  }
-  50% {
-    transform: scale(1.04);
-    opacity: 1;
-  }
-}
-
-@keyframes cp-enter {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.cp-glitch {
-  position: relative;
-  display: inline-block;
-}
-
-.cp-glitch::before,
-.cp-glitch::after {
-  content: attr(data-text);
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  overflow: hidden;
-  opacity: 0.6;
-  clip-path: inset(0 0 0 0);
-}
-
-.cp-glitch::before {
-  text-shadow: -2px 0 rgba(49, 247, 255, 0.6);
-  animation: cp-glitch 2.6s infinite;
-}
-
-.cp-glitch::after {
-  text-shadow: 2px 0 rgba(255, 79, 216, 0.6);
-  animation: cp-glitch 3.2s infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .cp-glitch::before,
-  .cp-glitch::after,
   .global-loader__progress-bar::after {
+    animation: none;
+  }
+
+  .custom-nav
+    .MuiBottomNavigationAction-root.Mui-selected
+    .MuiBottomNavigationAction-label {
     animation: none;
   }
 }
 
-.cp-low .cp-glitch::before,
-.cp-low .cp-glitch::after,
 .cp-low .global-loader__progress-bar::after {
   animation: none;
 }
@@ -776,6 +675,9 @@ a:focus-visible,
   .MuiBottomNavigationAction-label {
   font-weight: bold;
   opacity: 1;
+  text-shadow: 1px 0 rgba(49, 247, 255, 0.35),
+    -1px 0 rgba(255, 79, 216, 0.35);
+  animation: cp-glitch-burst 600ms steps(2, end);
 }
 
 /* Подчёркивание — регулируем height здесь */

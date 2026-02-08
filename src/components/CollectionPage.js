@@ -379,15 +379,15 @@ function Collection({ uid }) {
               position: "fixed",
               top: 150,
               right: "5%",
-              backgroundColor: "#1e1e1e",
-              color: "#fff",
+              backgroundColor: "var(--surface-2)",
+              color: "var(--text-primary)",
               padding: "12px 16px",
               borderRadius: "8px",
-              border: "1px solid #ffa500",
+              border: "1px solid rgba(49, 247, 255, 0.4)",
               fontSize: "12px",
               zIndex: 10002,
               maxWidth: "260px",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.35)",
             }}
           >
             ⚠️ Для начала {activeDeck === 1 ? "PvP" : "Raid"} матча требуется

@@ -38,9 +38,9 @@ export default function EditFloatingButton({ isEditMode, onToggle }) {
         onBlur={() => setShowTooltip(false)}
       >
         {isEditMode ? (
-          <CloseIcon style={{ color: "#ffa500" }} />
+          <CloseIcon style={{ color: "var(--cp-accent-cyan)" }} />
         ) : (
-          <EditIcon style={{ color: "#ffa500" }} />
+          <EditIcon style={{ color: "var(--cp-accent-cyan)" }} />
         )}
       </button>
 
@@ -51,15 +51,15 @@ export default function EditFloatingButton({ isEditMode, onToggle }) {
             position: "fixed",
             bottom: 140,
             right: 20,
-            backgroundColor: "#1e1e1e",
-            color: "#fff",
+            backgroundColor: "var(--surface-2)",
+            color: "var(--text-primary)",
             padding: "8px 12px",
             borderRadius: "6px",
-            border: "1px solid #ffa500",
+            border: "1px solid rgba(49, 247, 255, 0.4)",
             fontSize: "12px",
             zIndex: 10001,
             maxWidth: "250px",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+            boxShadow: "0 10px 20px rgba(0, 0, 0, 0.35)",
           }}
         >
           {tooltipText}

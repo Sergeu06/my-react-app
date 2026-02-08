@@ -55,7 +55,7 @@
   background-image: linear-gradient(
     90deg,
     #22c55e 0%,
-    #ffffff 40%,
+    rgba(255, 255, 255, 0.85) 40%,
     #22c55e 80%
   );
   background-size: 200% 100%; /* расширенный фон для движения */
@@ -67,7 +67,7 @@
   background-image: linear-gradient(
     90deg,
     #ef4444 0%,
-    #ffffff 40%,
+    rgba(255, 255, 255, 0.85) 40%,
     #ef4444 80%
   );
   background-size: 200% 100%;

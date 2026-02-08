@@ -99,9 +99,9 @@
 }
 
 .notification.error {
-  background-color: #f8d7da;
-  color: #800000;
-  border: 1px solid #ff0000;
+  background-color: rgba(255, 77, 109, 0.12);
+  color: var(--cp-danger);
+  border: 1px solid rgba(255, 77, 109, 0.4);
 }
 
 /* =======================
@@ -116,8 +116,8 @@
   padding: 18px;
   font-size: 20px;
   cursor: pointer;
-  background-color: #000;
-  color: #fff;
+  background-color: rgba(9, 12, 20, 0.9);
+  color: var(--text-primary);
   font-weight: 400;
   opacity: 1;
   transform: scale(1);
@@ -127,19 +127,20 @@
     transform 0.4s ease-in-out;
   z-index: 1;
   border-radius: 8px;
+  border: 1px solid rgba(49, 247, 255, 0.2);
 }
 
 .tabs .tab:focus,
 .tabs .tab:focus-visible {
   outline: none;
   box-shadow: none;
-  background-color: #000;
-  color: #fff;
+  background-color: rgba(9, 12, 20, 0.9);
+  color: var(--text-primary);
 }
 
 .tabs .tab:hover {
-  background-color: #000;
-  color: #fff;
+  background-color: rgba(9, 12, 20, 0.95);
+  color: var(--text-primary);
 }
 .tabs .tab {
   -webkit-tap-highlight-color: transparent; /* убирает синий highlight в Chrome/Android */
@@ -147,7 +148,7 @@
 }
 
 .tabs .tab.active {
-  color: #ffa500;
+  color: var(--cp-accent-cyan);
   animation: neonPulseOnce 1s ease-in-out 1 forwards;
 }
 
@@ -159,7 +160,7 @@
   transform: translateX(-50%);
   height: 3px;
   width: 0;
-  background: #ffa500;
+  background: var(--cp-accent-cyan);
   box-shadow: none;
   transition: width 0.4s ease-in-out, box-shadow 0.4s ease-in-out;
 }
@@ -169,12 +170,12 @@
   height: 4px;
   background: linear-gradient(
     to bottom,
-    #ffa500 0%,
-    rgba(255, 165, 0, 0.6) 60%,
-    rgba(255, 165, 0, 0.05) 100%
+    rgba(49, 247, 255, 0.9) 0%,
+    rgba(49, 247, 255, 0.6) 60%,
+    rgba(49, 247, 255, 0.05) 100%
   );
-  box-shadow: 0 4px 12px rgba(255, 165, 0, 0.8),
-    0 20px 24px rgba(255, 165, 0, 0.6);
+  box-shadow: 0 4px 12px rgba(49, 247, 255, 0.6),
+    0 20px 24px rgba(49, 247, 255, 0.4);
   filter: blur(1px);
   border-radius: 2px;
   pointer-events: none;
@@ -182,15 +183,16 @@
 
 @keyframes neonPulseOnce {
   0% {
-    color: #ffa500;
+    color: var(--cp-accent-cyan);
     text-shadow: none;
   }
   50% {
-    color: #ffb733;
-    text-shadow: 0 0 8px #ffb733, 0 0 16px #ffb733;
+    color: #5ffbff;
+    text-shadow: 0 0 8px rgba(95, 251, 255, 0.7),
+      0 0 16px rgba(95, 251, 255, 0.7);
   }
   100% {
-    color: #ffa500;
+    color: var(--cp-accent-cyan);
     text-shadow: none;
   }
 }
@@ -200,12 +202,12 @@
   height: 4px;
   background: linear-gradient(
     to bottom,
-    #ffa500 0%,
-    rgba(255, 165, 0, 0.6) 60%,
-    rgba(255, 165, 0, 0.05) 100%
+    rgba(49, 247, 255, 0.9) 0%,
+    rgba(49, 247, 255, 0.6) 60%,
+    rgba(49, 247, 255, 0.05) 100%
   );
-  box-shadow: 0 4px 12px rgba(255, 165, 0, 0.8),
-    0 20px 24px rgba(255, 165, 0, 0.6);
+  box-shadow: 0 4px 12px rgba(49, 247, 255, 0.6),
+    0 20px 24px rgba(49, 247, 255, 0.4);
   filter: blur(1px);
   border-radius: 2px;
   /* Позиция: чтобы не мешать тексту */
@@ -432,7 +434,7 @@
   border-radius: 50%;
   font-size: 0.9rem;
   font-weight: 900;
-  color: #fff; /* основной цвет цифры */
+  color: var(--text-primary); /* основной цвет цифры */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -440,8 +442,12 @@
   pointer-events: none;
   text-shadow: 0 0 3px #000, 1px 1px 2px #000; /* 👈 контрастная обводка */
 
-  background: radial-gradient(circle at 30% 30%, #ffa500, #cc7000);
-  box-shadow: 0 0 8px rgba(255, 165, 0, 0.8),
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(49, 247, 255, 0.9),
+    rgba(0, 169, 195, 0.85)
+  );
+  box-shadow: 0 0 8px rgba(49, 247, 255, 0.6),
     inset 0 0 4px rgba(255, 255, 255, 0.6);
 
   overflow: hidden;
@@ -514,16 +520,16 @@
   justify-content: center;
   align-items: center;
   gap: 10px;
-  color: #ddd;
+  color: var(--text-muted);
   font-size: 16px;
 }
 
 .collection-container .pagination button {
-  background: linear-gradient(160deg, #2e2e2e 0%, #1c1c1c 100%);
-  color: #ccc;
+  background: rgba(12, 16, 28, 0.85);
+  color: var(--text-primary);
   padding: 8px 16px;
   border-radius: 6px;
-  border: 1px solid #333;
+  border: 1px solid rgba(49, 247, 255, 0.2);
   cursor: pointer;
   transition: background-color 0.3s ease;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06),
@@ -531,8 +537,8 @@
 }
 
 .collection-container .pagination button:hover {
-  background: linear-gradient(160deg, #3a3a3a 0%, #262626 100%);
-  color: #f5f5f5;
+  background: rgba(12, 16, 28, 0.95);
+  color: var(--text-primary);
 }
 
 .page-btn {
@@ -559,7 +565,7 @@
 }
 
 .page-btn:disabled {
-  color: #666;
+  color: var(--text-muted);
   cursor: not-allowed;
   background-color: rgba(14, 18, 30, 0.8);
 }
@@ -661,9 +667,14 @@
 
 .collection-container .overlay-content button {
   padding: 10px 20px;
-  background: linear-gradient(160deg, #3a3a3a 0%, #2a2a2a 100%);
-  color: var(--accent-color);
-  border: 1px solid rgba(255, 165, 0, 0.2);
+  background: linear-gradient(
+      135deg,
+      rgba(49, 247, 255, 0.16),
+      rgba(255, 79, 216, 0.12)
+    )
+    padding-box;
+  color: var(--cp-accent-yellow);
+  border: 1px solid rgba(49, 247, 255, 0.35);
   border-radius: 8px;
   font-size: 16px;
   cursor: pointer;
@@ -674,19 +685,19 @@
 }
 
 .collection-container .overlay-content button:hover {
-  background: linear-gradient(160deg, #444 0%, #2f2f2f 100%);
-  color: var(--accent-color);
+  transform: translateY(-1px);
+  color: var(--text-primary);
   box-shadow: 0 12px 22px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 165, 0, 0.2);
+    0 0 12px rgba(49, 247, 255, 0.35);
 }
 
 .collection-container .overlay-content input[type="number"] {
   width: 100%;
   padding: 10px;
   border-radius: 8px;
-  border: 1px solid #444;
-  background-color: #2a2a2a;
-  color: var(--accent-color);
+  border: 1px solid rgba(49, 247, 255, 0.25);
+  background-color: rgba(12, 16, 28, 0.9);
+  color: var(--text-primary);
   font-size: 16px;
   margin-top: 8px;
   margin-bottom: 12px;
@@ -696,12 +707,12 @@
   display: block;
   margin-bottom: 8px;
   font-weight: bold;
-  color: #ccc;
+  color: var(--text-primary);
 }
 
 .collection-container .overlay-content .modal-summary {
   margin-bottom: 12px;
-  color: #bbb;
+  color: var(--text-muted);
   font-size: 15px;
 }
 
@@ -842,9 +853,14 @@
 .overlay-content button {
   margin: 10px;
   padding: 10px 20px;
-  background: linear-gradient(160deg, #3a3a3a 0%, #2a2a2a 100%);
-  color: #f5f5f5;
-  border: 1px solid rgba(255, 165, 0, 0.18);
+  background: linear-gradient(
+      135deg,
+      rgba(49, 247, 255, 0.16),
+      rgba(255, 79, 216, 0.12)
+    )
+    padding-box;
+  color: var(--cp-accent-yellow);
+  border: 1px solid rgba(49, 247, 255, 0.35);
   border-radius: 8px;
   cursor: pointer;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45),
@@ -853,9 +869,10 @@
 }
 
 .overlay-content button:hover {
-  background: linear-gradient(160deg, #444 0%, #2f2f2f 100%);
+  transform: translateY(-1px);
+  color: var(--text-primary);
   box-shadow: 0 12px 22px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 165, 0, 0.2);
+    0 0 12px rgba(49, 247, 255, 0.35);
 }
 
 .deck-info.highlight-text {
@@ -871,14 +888,14 @@
 }
 .deck-info {
   font-size: 1.6rem;
-  color: #ffa500;
+  color: var(--cp-accent-cyan);
   font-weight: bold;
   text-align: center;
   margin: 1rem 0;
 }
 .edit-icon-button {
-  background-color: #2e2e2e;
-  border: 2px solid #ffa500;
+  background-color: rgba(12, 16, 28, 0.9);
+  border: 2px solid rgba(49, 247, 255, 0.45);
   border-radius: 50%;
   padding: 0.4rem;
   cursor: pointer;
@@ -891,8 +908,8 @@
   bottom: 80px;
   right: 20px;
   z-index: 1000;
-  background-color: #2e2e2e;
-  border: 2px solid #ffa500;
+  background-color: rgba(12, 16, 28, 0.9);
+  border: 2px solid rgba(49, 247, 255, 0.45);
   border-radius: 50%;
   width: 56px; /* фиксируем ширину */
   height: 56px; /* фиксируем высоту */
@@ -905,26 +922,26 @@
 }
 
 .edit-floating-button:hover {
-  background-color: #2e2e2e;
+  background-color: rgba(12, 16, 28, 0.95);
 }
 
 .sort-direction-button {
-  background-color: #2e2e2e;
-  border: 1px solid #ffa500;
+  background-color: rgba(12, 16, 28, 0.9);
+  border: 1px solid rgba(49, 247, 255, 0.35);
   border-radius: 5px;
   height: 36px;
   width: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffa500;
+  color: var(--cp-accent-cyan);
   cursor: pointer;
   padding: 0;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .sort-direction-button:hover {
-  background-color: #1f1f1f;
+  background-color: rgba(12, 16, 28, 0.95);
 }
 
 .sort-direction-button:focus-visible {

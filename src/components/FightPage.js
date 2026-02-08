@@ -1445,7 +1445,7 @@ function FightPage({ uid, searchState, setSearchState, onCountdownVisibilityChan
                     alignItems: "center",
                     gap: "8px",
                     padding: "6px 0",
-                    borderBottom: "1px solid #333",
+                    borderBottom: "1px solid rgba(49, 247, 255, 0.25)",
                     cursor: "pointer",
                   }}
                   onClick={() => handleOpenProfile(player.userId)}

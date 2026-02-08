@@ -9,7 +9,7 @@ function GlobalLoader({ loaded = 0, total = 0 }) {
       <div className="global-loader__badge">Архив карт</div>
       <div className="global-loader__spinner" />
       <div
-        className="global-loader__title cp-glitch"
+        className="global-loader__title cp-glitch cp-glitch--soft is-active"
         data-text="Готовим коллекцию"
       >
         Готовим коллекцию

@@ -70,7 +70,7 @@
   padding: 2px 8px;
   border-radius: 10px;
   background: rgba(130, 77, 255, 0.9);
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 700;
   font-size: 0.95em;
   letter-spacing: 0.5px;
@@ -116,7 +116,7 @@
   left: 100%; /* справа от буквы */
   transform: translateY(-50%) translateX(8px); /* вертикально по центру, небольшой отступ справа */
   background: rgba(46, 46, 46, 0.95);
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.8em;
   padding: 8px 12px;
   border-radius: 8px;

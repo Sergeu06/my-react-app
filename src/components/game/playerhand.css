@@ -64,7 +64,7 @@
   user-select: none;
   pointer-events: none;
   text-shadow: 2px 2px 3px #000;
-  color: #fff;
+  color: var(--text-primary);
   white-space: nowrap;
   z-index: 5;
 }
@@ -119,7 +119,7 @@
     inset 0 -2px 0 rgba(0, 0, 0, 0.45);
 }
 .playcardbutton:hover {
-  background: linear-gradient(145deg, #444, #2f2f2f);
+  background: linear-gradient(145deg, rgba(12, 16, 28, 0.95), rgba(9, 12, 20, 0.95));
   transform: translateX(-50%) scale(1.08);
   box-shadow: 0 12px 22px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(255, 165, 0, 0.2);
