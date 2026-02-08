@@ -248,10 +248,65 @@ function App() {
   useEffect(() => {
     document.body.classList.add("cp-root");
     document.body.classList.toggle("cp-low", lowEndMode);
+    if (lowEndMode) {
+      document.body.setAttribute("data-effects", "low");
+    } else {
+      document.body.removeAttribute("data-effects");
+    }
     return () => {
       document.body.classList.remove("cp-root", "cp-low");
+      document.body.removeAttribute("data-effects");
     };
   }, [lowEndMode]);
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      const target = event.target.closest(
+        ".cp-card, .card, .card-style, .card-reveal, .result-card, .card-modal-content, .card-modal-content-upgrade"
+      );
+      if (!target) return;
+      target.classList.add("cp-card", "cp-glitch-burst");
+      const existingLayer = target.querySelector(":scope > .cp-glitch-layer");
+      if (!existingLayer) {
+        const layer = document.createElement("span");
+        layer.className = "cp-glitch-layer";
+        layer.setAttribute("aria-hidden", "true");
+        target.appendChild(layer);
+      }
+      window.setTimeout(() => {
+        target.classList.remove("cp-glitch-burst");
+      }, 520);
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, []);
+
+  useEffect(() => {
+    const headings = document.querySelectorAll("h1, h2");
+    headings.forEach((heading) => {
+      const text = heading.textContent?.trim();
+      if (!text) return;
+      heading.classList.add("cp-glitch-text--soft", "is-active");
+      heading.setAttribute("data-text", text);
+      window.setTimeout(() => {
+        heading.classList.remove("is-active");
+      }, 480);
+    });
+    const cards = document.querySelectorAll(
+      ".card, .card-style, .card-reveal, .result-card, .card-modal-content, .card-modal-content-upgrade"
+    );
+    cards.forEach((card) => {
+      card.classList.add("cp-card");
+      if (!card.querySelector(":scope > .cp-glitch-layer")) {
+        const layer = document.createElement("span");
+        layer.className = "cp-glitch-layer";
+        layer.setAttribute("aria-hidden", "true");
+        card.appendChild(layer);
+      }
+    });
+  }, [location.pathname]);
 
   const path = location.pathname.toLowerCase();
   const backgroundClass = getBackgroundClass(path);
@@ -1006,8 +1061,8 @@ function App() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0b0f16",
-          color: "white",
+          background: "var(--app-bg)",
+          color: "var(--text-primary)",
           textAlign: "center",
           padding: 24,
         }}
@@ -1029,8 +1084,8 @@ function App() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#1c1c1c",
-          color: "white",
+          background: "var(--surface-1)",
+          color: "var(--text-primary)",
           textAlign: "center",
           padding: 20,
         }}

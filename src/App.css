@@ -36,6 +36,9 @@ img {
   --surface-3: #1d263b;
   --text-primary: var(--cp-text);
   --text-muted: var(--cp-text-dim);
+  --accent-cyan: var(--cp-accent-cyan);
+  --accent-magenta: var(--cp-accent-magenta);
+  --accent-yellow: var(--cp-accent-yellow);
   --accent-pvp: var(--cp-danger);
   --accent-pve: var(--cp-success);
   --accent-magic: var(--cp-accent-magenta);
@@ -43,28 +46,33 @@ img {
   --accent-glow: 0 0 18px rgba(249, 199, 79, 0.4);
   --border-soft: 1px solid rgba(49, 247, 255, 0.14);
   --border-strong: 1px solid rgba(49, 247, 255, 0.5);
-  --radius-md: var(--cp-radius-sm);
-  --radius-lg: var(--cp-radius);
+  --radius-sm: var(--cp-radius-sm);
+  --radius-md: var(--cp-radius);
+  --radius-lg: calc(var(--cp-radius) + 6px);
   --shadow-soft: var(--cp-shadow);
+  --glow-cyan: var(--cp-glow-cyan);
+  --glow-magenta: var(--cp-glow-magenta);
+  --effects: var(--cp-effects);
+  --scanline-opacity: var(--cp-scanline-opacity);
+  --noise-opacity: var(--cp-noise-opacity);
+  --motion-fast: var(--cp-motion-fast);
+  --motion-med: var(--cp-motion-med);
   --modal-overlay-bg: rgba(5, 6, 12, 0.78);
   --modal-overlay-blur: 6px;
   --modal-card-bg: var(--cp-panel);
   --modal-card-border: 1px solid rgba(49, 247, 255, 0.35);
   --modal-card-radius: 16px;
-  --modal-card-shadow: 0 0 24px rgba(0, 0, 0, 0.55),
+  --modal-card-shadow: 0 0 24px rgba(4, 6, 14, 0.55),
     0 0 18px rgba(49, 247, 255, 0.15);
   --modal-card-text: var(--cp-text);
   --modal-card-padding: 24px;
   --modal-card-width: min(90vw, 520px);
-  --secondary-color: var(--cp-panel-2);
-  --border-radius: var(--cp-radius-sm);
-  --box-shadow: var(--cp-shadow);
   --primary-bg: var(--cp-panel);
   --primary-text: var(--cp-text);
   --secondary-bg: #0a0f1c;
   --accent-color: var(--cp-accent-cyan);
   --highlight-color: rgba(49, 247, 255, 0.18);
-  --card-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+  --card-shadow: 0 16px 30px rgba(4, 6, 14, 0.35);
 }
 
 /* Затемнённый фон */
@@ -112,21 +120,21 @@ body::after {
 body::before {
   background: repeating-linear-gradient(
     180deg,
-    rgba(255, 255, 255, var(--cp-scanline-opacity)) 0 1px,
+    rgba(232, 240, 255, var(--scanline-opacity)) 0 1px,
     transparent 1px 3px
   );
   mix-blend-mode: soft-light;
-  opacity: var(--cp-effects);
+  opacity: var(--effects);
 }
 
 body::after {
   background-image: repeating-radial-gradient(
     circle at 20% 20%,
-    rgba(255, 255, 255, var(--cp-noise-opacity)) 0 1px,
+    rgba(232, 240, 255, var(--noise-opacity)) 0 1px,
     transparent 1px 4px
   );
   mix-blend-mode: soft-light;
-  opacity: var(--cp-effects);
+  opacity: var(--effects);
 }
 
 #root {
@@ -159,18 +167,19 @@ button {
   color: var(--text-primary);
   font-weight: 700;
   padding: 12px 18px;
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  min-height: 44px;
+  box-shadow: 0 16px 32px rgba(4, 6, 14, 0.4),
+    inset 0 1px 0 rgba(232, 240, 255, 0.08);
   position: relative;
   overflow: hidden;
-  transition: transform var(--cp-motion-fast) ease,
-    box-shadow var(--cp-motion-fast) ease, background-position 0.6s ease,
-    opacity var(--cp-motion-fast) ease;
+  transition: transform var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease, background-position 0.6s ease,
+    opacity var(--motion-fast) ease;
 }
 
 button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.5),
+  box-shadow: 0 18px 36px rgba(4, 6, 14, 0.5),
     0 0 18px rgba(49, 247, 255, 0.28);
 }
 
@@ -187,7 +196,7 @@ button::after {
   background: linear-gradient(
     120deg,
     transparent,
-    rgba(255, 255, 255, 0.35),
+    rgba(232, 240, 255, 0.35),
     transparent
   );
   transform: translateX(-120%);
@@ -203,11 +212,22 @@ input,
 select,
 textarea {
   background: var(--surface-2);
+  background-image: linear-gradient(
+    120deg,
+    rgba(49, 247, 255, 0.08),
+    transparent 40%,
+    rgba(255, 79, 216, 0.08)
+  );
+  background-size: 240% 100%;
+  background-position: 120% 0;
   color: var(--text-primary);
   border-radius: var(--radius-md);
   border: var(--border-soft);
   padding: 10px 12px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  min-height: 44px;
+  box-shadow: inset 0 0 0 1px rgba(232, 240, 255, 0.02);
+  transition: background-position var(--motion-med) ease,
+    box-shadow var(--motion-fast) ease, border-color var(--motion-fast) ease;
 }
 
 input:focus,
@@ -215,8 +235,18 @@ select:focus,
 textarea:focus {
   outline: none;
   border: var(--border-strong);
+  background-position: -120% 0;
   box-shadow: 0 0 0 2px rgba(49, 247, 255, 0.3),
     0 0 16px rgba(49, 247, 255, 0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  input,
+  select,
+  textarea {
+    transition-duration: 1ms;
+  }
 }
 
 a {

@@ -1074,12 +1074,12 @@ function UpgradePage() {
                   fontSize: "40px",
                   fontWeight: "bold",
                   color: "#ffa500",
-                  WebkitTextStroke: "1px black",
+                  WebkitTextStroke: "1px rgba(6, 10, 20, 0.9)",
                   textShadow: `
-                  -1px -1px 0 #000,
-                   1px -1px 0 #000,
-                  -1px  1px 0 #000,
-                   1px  1px 0 #000
+                  -1px -1px 0 rgba(6, 10, 20, 0.9),
+                   1px -1px 0 rgba(6, 10, 20, 0.9),
+                  -1px  1px 0 rgba(6, 10, 20, 0.9),
+                   1px  1px 0 rgba(6, 10, 20, 0.9)
                 `,
                 }}
               >
@@ -1095,12 +1095,12 @@ function UpgradePage() {
                     fontSize: "28px",
                     whiteSpace: "nowrap",
                     color: "#ffa500",
-                    WebkitTextStroke: "1px black",
+                    WebkitTextStroke: "1px rgba(6, 10, 20, 0.9)",
                     textShadow: `
-          -1px -1px 0 #000,
-          1px -1px 0 #000,
-          -1px 1px 0 #000,
-          1px 1px 0 #000
+          -1px -1px 0 rgba(6, 10, 20, 0.9),
+          1px -1px 0 rgba(6, 10, 20, 0.9),
+          -1px 1px 0 rgba(6, 10, 20, 0.9),
+          1px 1px 0 rgba(6, 10, 20, 0.9)
         `,
                   }}
                 >

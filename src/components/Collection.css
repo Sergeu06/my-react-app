@@ -8,7 +8,6 @@
   --accent-color: var(--cp-accent-cyan);
   --highlight-color: rgba(49, 247, 255, 0.16);
   --card-shadow: var(--cp-shadow);
-  --border-radius: var(--cp-radius-sm);
 }
 
 .dark-theme {
@@ -53,10 +52,10 @@
     rgba(12, 16, 28, 0.85),
     rgba(18, 24, 40, 0.9)
   );
-  border-radius: 22px;
+  border-radius: var(--radius-lg);
   padding: 18px 20px 22px;
   border: 1px solid rgba(49, 247, 255, 0.18);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35),
+  box-shadow: 0 20px 40px rgba(4, 6, 14, 0.35),
     0 0 18px rgba(49, 247, 255, 0.12);
 }
 
@@ -223,7 +222,7 @@
     rgba(12, 16, 28, 0.9),
     rgba(18, 24, 40, 0.95)
   );
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-md);
   box-shadow: var(--card-shadow);
   text-align: center;
   display: flex;
@@ -231,8 +230,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  transition: transform var(--cp-motion-fast) ease,
-    box-shadow var(--cp-motion-fast) ease;
+  transition: transform var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
   overflow: hidden;
   cursor: pointer;
   border: 1px solid rgba(49, 247, 255, 0.2);
@@ -244,32 +243,12 @@
   box-shadow: 0 0 20px rgba(49, 247, 255, 0.3);
 }
 
-.card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    120deg,
-    transparent,
-    rgba(49, 247, 255, 0.3),
-    transparent
-  );
-  transform: translateX(-120%);
-  opacity: 0;
-  transition: opacity var(--cp-motion-fast) ease;
-  pointer-events: none;
+.card:active,
+.card:focus-visible {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: 0 0 18px rgba(49, 247, 255, 0.35);
 }
 
-.card:hover::after {
-  opacity: 0.8;
-  animation: cp-scan 1.8s linear;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .card:hover::after {
-    animation: none;
-  }
-}
 
 .card img {
   display: block;
@@ -304,7 +283,7 @@
   margin-top: 14px;
   font-size: 14px;
   text-align: center;
-  color: #ccc;
+  color: var(--text-muted);
   flex-grow: 1;
   overflow-y: auto;
 }
@@ -323,10 +302,12 @@
   pointer-events: none;
   user-select: none;
   z-index: 100;
-  -webkit-text-stroke: 1px black;
+  -webkit-text-stroke: 1px rgba(6, 10, 20, 0.85);
 
-  text-shadow: 1px 1px 2px black, 0 0 6px rgba(255, 165, 0, 0.9),
+  text-shadow: 1px 1px 2px rgba(6, 10, 20, 0.85),
+    0 0 6px rgba(255, 165, 0, 0.9),
     0 0 12px rgba(255, 165, 0, 0.6);
+  animation: cp-flicker 3s infinite;
 }
 
 /* Обертка для изображения карты и оверлея */
@@ -374,8 +355,12 @@
   position: relative;
   width: 100%;
   height: 100% + 20px;
-  background: linear-gradient(135deg, #3a3a3a, #141414);
-  border-radius: var(--border-radius);
+  background: linear-gradient(
+    135deg,
+    rgba(12, 16, 28, 0.9),
+    rgba(18, 24, 40, 0.95)
+  );
+  border-radius: var(--radius-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -383,8 +368,9 @@
   padding: 8px;
   box-sizing: border-box;
   z-index: 1;
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.1),
-    inset 0 -3px 6px rgba(0, 0, 0, 0.6), 0 6px 12px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 2px 4px rgba(232, 240, 255, 0.1),
+    inset 0 -3px 6px rgba(4, 6, 14, 0.6),
+    0 6px 12px rgba(4, 6, 14, 0.5);
 }
 
 .framed-container::before {
@@ -396,7 +382,7 @@
   height: 40%;
   background: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.12),
+    rgba(232, 240, 255, 0.12),
     transparent
   );
   pointer-events: none;
@@ -440,7 +426,8 @@
   justify-content: center;
   z-index: 120;
   pointer-events: none;
-  text-shadow: 0 0 3px #000, 1px 1px 2px #000; /* 👈 контрастная обводка */
+  text-shadow: 0 0 3px rgba(6, 10, 20, 0.85),
+    1px 1px 2px rgba(6, 10, 20, 0.85); /* 👈 контрастная обводка */
 
   background: radial-gradient(
     circle at 30% 30%,
@@ -448,9 +435,24 @@
     rgba(0, 169, 195, 0.85)
   );
   box-shadow: 0 0 8px rgba(49, 247, 255, 0.6),
-    inset 0 0 4px rgba(255, 255, 255, 0.6);
+    inset 0 0 4px rgba(232, 240, 255, 0.6);
 
   overflow: hidden;
+  animation: cp-flicker 3.2s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-level-overlay,
+  .card-priority-overlay {
+    animation: none;
+  }
+}
+
+.cp-low .card-level-overlay,
+.cp-low .card-priority-overlay,
+[data-effects="low"] .card-level-overlay,
+[data-effects="low"] .card-priority-overlay {
+  animation: none;
 }
 
 .card-priority-overlay::after {
@@ -575,13 +577,13 @@
 ======================= */
 .skeleton-card {
   background-color: rgba(12, 16, 28, 0.9);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-md);
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   border: 1px solid rgba(49, 247, 255, 0.2);
-  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 22px rgba(4, 6, 14, 0.45);
 }
 
 .skeleton {
@@ -863,15 +865,15 @@
   border: 1px solid rgba(49, 247, 255, 0.35);
   border-radius: 8px;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 18px rgba(4, 6, 14, 0.45),
+    inset 0 1px 0 rgba(232, 240, 255, 0.08),
+    inset 0 -2px 0 rgba(4, 6, 14, 0.4);
 }
 
 .overlay-content button:hover {
   transform: translateY(-1px);
   color: var(--text-primary);
-  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.55),
+  box-shadow: 0 12px 22px rgba(4, 6, 14, 0.55),
     0 0 12px rgba(49, 247, 255, 0.35);
 }
 
@@ -883,8 +885,10 @@
   margin: 16px 0;
 
   /* Чёрная обводка */
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000,
-    1px 1px 0 #000;
+  text-shadow: -1px -1px 0 rgba(6, 10, 20, 0.85),
+    1px -1px 0 rgba(6, 10, 20, 0.85),
+    -1px 1px 0 rgba(6, 10, 20, 0.85),
+    1px 1px 0 rgba(6, 10, 20, 0.85);
 }
 .deck-info {
   font-size: 1.6rem;
